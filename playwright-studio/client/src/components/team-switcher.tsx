@@ -20,16 +20,25 @@ import { ChevronsUpDown, Plus, ArrowLeftRight } from "lucide-react"
 
 export function TeamSwitcher({
   teams,
+  currentProjectId,
+  onTeamChange,
 }: {
   teams: {
     name: string
     logo: React.ElementType
     plan: string
+    id?: string
   }[]
+  currentProjectId?: string
+  onTeamChange?: (team: any) => void
 }) {
   const { isMobile } = useSidebar()
-  const [activeTeam, setActiveTeam] = React.useState(teams[0])
   const navigate = useNavigate();
+
+  // Find active team based on currentProjectId
+  const activeTeam = React.useMemo(() => {
+    return teams.find(t => t.id === currentProjectId) || teams[0];
+  }, [teams, currentProjectId]);
 
   if (!activeTeam) return null;
 
@@ -63,8 +72,8 @@ export function TeamSwitcher({
             </DropdownMenuLabel>
             {teams.map((team, index) => (
               <DropdownMenuItem
-                key={team.name}
-                onClick={() => setActiveTeam(team)}
+                key={team.id || team.name}
+                onClick={() => onTeamChange?.(team)}
                 className="gap-2 p-2"
               >
                 <div className="flex size-6 items-center justify-center rounded-md border">
@@ -81,7 +90,7 @@ export function TeamSwitcher({
               </div>
               <div className="font-medium text-muted-foreground">Switch Project</div>
             </DropdownMenuItem>
-            <DropdownMenuItem className="gap-2 p-2">
+            <DropdownMenuItem className="gap-2 p-2" onClick={() => navigate('/app/projects/new')}>
               <div className="flex size-6 items-center justify-center rounded-md border bg-transparent">
                 <Plus className="size-4" />
               </div>

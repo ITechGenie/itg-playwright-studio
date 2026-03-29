@@ -1,3 +1,7 @@
+import { db } from './db/index.js';
+import { executions } from './db/schema.js';
+import { eq, desc, and, gte, lte } from 'drizzle-orm';
+
 export interface RunLog {
   timestamp: string;
   type: 'stdout' | 'stderr' | 'info' | 'done' | 'error';
@@ -15,59 +19,125 @@ export interface TestRun {
   endTime?: string;
   logs: RunLog[];
   exitCode?: number;
+  triggeredBy?: string;
+  targetPaths?: string[];
 }
 
 class RunStore {
-  private runs: Map<string, TestRun> = new Map();
-  private maxRuns = 100;
+  // We still keep logs in memory for ACTIVE runs to avoid DB bloat
+  // or reading files constantly during execution. 
+  // For finished runs, we'll fetch metadata from DB.
+  private activeLogs: Map<string, RunLog[]> = new Map();
 
-  getRun(runId: string): TestRun | undefined {
-    return this.runs.get(runId);
+  async getRun(runId: string): Promise<TestRun | undefined> {
+    const [record] = await db.select().from(executions).where(eq(executions.id, runId));
+    if (!record) return undefined;
+
+    return {
+      runId: record.id,
+      projectId: record.projectId,
+      path: record.targetPath,
+      command: record.command,
+      status: record.status as any,
+      startTime: record.startTime.toISOString(),
+      endTime: record.endTime?.toISOString(),
+      triggeredBy: record.triggeredBy,
+      exitCode: record.exitCode ?? undefined,
+      logs: this.activeLogs.get(record.id) || [],
+      targetPaths: record.targetPaths ? JSON.parse(record.targetPaths) : undefined,
+    };
   }
 
-  createRun(projectId: string, runId: string, path: string, command: string): TestRun {
-    const newRun: TestRun = {
-      runId,
+  async createRun(projectId: string, runId: string, path: string, command: string, triggeredBy: string = 'anonymous', targetPaths?: string[]): Promise<void> {
+    await db.insert(executions).values({
+      id: runId,
       projectId,
-      path,
+      targetPath: path,
       command,
       status: 'running',
-      startTime: new Date().toISOString(),
-      logs: [],
-    };
+      startTime: new Date(),
+      triggeredBy,
+      targetPaths: targetPaths ? JSON.stringify(targetPaths) : null,
+    });
     
-    // Maintain max history size
-    if (this.runs.size >= this.maxRuns) {
-      const oldestKey = this.runs.keys().next().value;
-      if (oldestKey) this.runs.delete(oldestKey);
-    }
-    
-    this.runs.set(runId, newRun);
-    return newRun;
+    this.activeLogs.set(runId, []);
   }
 
-  addLog(runId: string, type: RunLog['type'], data: string, exitCode?: number) {
-    const run = this.runs.get(runId);
-    if (!run) return;
-
-    run.logs.push({
+  async addLog(runId: string, type: RunLog['type'], data: string, exitCode?: number) {
+    // Update memory logs for active run
+    const logs = this.activeLogs.get(runId) || [];
+    logs.push({
       timestamp: new Date().toISOString(),
       type,
       data,
       exitCode,
     });
+    this.activeLogs.set(runId, logs);
 
+    // If finished, update DB metadata
     if (type === 'done' || type === 'error') {
-      run.status = type === 'done' && exitCode === 0 ? 'completed' : 'failed';
-      run.endTime = new Date().toISOString();
-      run.exitCode = exitCode;
+      const status = type === 'done' && exitCode === 0 ? 'completed' : 'failed';
+      const now = new Date();
+      
+      // Calculate duration if possible
+      const [run] = await db.select().from(executions).where(eq(executions.id, runId));
+      let duration = null;
+      if (run) {
+        duration = now.getTime() - run.startTime.getTime();
+      }
+
+      await db.update(executions).set({
+        status,
+        endTime: now,
+        exitCode: exitCode ?? (type === 'error' ? -1 : 0),
+        duration,
+      }).where(eq(executions.id, runId));
+
+      // In a real app, we might dump logs to a file here and clear memory
+      // this.activeLogs.delete(runId);
     }
   }
 
-  getRecentRuns(projectId: string): TestRun[] {
-    return Array.from(this.runs.values())
-      .filter(r => r.projectId === projectId)
-      .sort((a, b) => b.startTime.localeCompare(a.startTime));
+  async getRecentRuns(projectId: string, options: { 
+    limit?: number; 
+    offset?: number; 
+    status?: string; 
+    startDate?: Date; 
+    endDate?: Date;
+  } = {}): Promise<any[]> {
+    const { limit = 10, offset = 0, status, startDate, endDate } = options;
+    
+    let whereClause = eq(executions.projectId, projectId);
+    
+    const conditions: any[] = [whereClause];
+    if (status && status !== 'all') {
+      conditions.push(eq(executions.status, status.toLowerCase()));
+    }
+    if (startDate) {
+      conditions.push(gte(executions.startTime, startDate));
+    }
+    if (endDate) {
+      conditions.push(lte(executions.startTime, endDate));
+    }
+
+    const results = await db.select()
+      .from(executions)
+      .where(and(...conditions))
+      .orderBy(desc(executions.startTime))
+      .limit(limit)
+      .offset(offset);
+
+    return results.map(record => ({
+      runId: record.id,
+      projectId: record.projectId,
+      timestamp: record.startTime.toISOString(),
+      status: record.status,
+      command: record.command,
+      duration: record.duration,
+      triggeredBy: record.triggeredBy,
+      path: record.targetPath,
+      targetPaths: record.targetPaths ? JSON.parse(record.targetPaths) : undefined,
+    }));
   }
 }
 
