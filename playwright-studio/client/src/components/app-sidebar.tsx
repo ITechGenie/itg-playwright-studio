@@ -30,12 +30,17 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     }).catch(err => console.error(err))
   }, [])
 
-  const [user, setUser] = React.useState<any>(null)
-
   const { user: authUser, logout } = useAuth();
 
   const data = getNavData(projectId);
   
+  // Consolidate user data for NavUser component
+  const navUser = authUser ? {
+    name: authUser.name,
+    email: authUser.email,
+    avatar: authUser.avatarUrl || data.user.avatar
+  } : data.user;
+
   // Transform projects into teams for TeamSwitcher
   const teams = projectsList.map(p => ({
     name: p.name,
@@ -64,7 +69,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       </SidebarContent>
       <SidebarFooter>
         <NavUser
-          user={authUser || data.user}
+          user={navUser}
           onLogout={logout}
         />
       </SidebarFooter>
