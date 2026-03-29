@@ -2,10 +2,15 @@ import * as ResizablePrimitive from "react-resizable-panels"
 
 import { cn } from "@/lib/utils"
 
+// Explicitly extend the props to include 'direction' if it's missing from the type
+interface CustomGroupProps extends ResizablePrimitive.GroupProps {
+  direction?: "horizontal" | "vertical" | any;
+}
+
 function ResizablePanelGroup({
   className,
   ...props
-}: ResizablePrimitive.GroupProps) {
+}: CustomGroupProps) {
   return (
     <ResizablePrimitive.Group
       data-slot="resizable-panel-group"

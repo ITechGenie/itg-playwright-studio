@@ -1,0 +1,26 @@
+# Node modules
+node_modules
+**/node_modules
+
+# Build artifacts
+dist
+**/dist
+static
+**/static
+
+# Local database and data
+sqlite.db*
+projects
+executions
+test-results
+
+# Environment files
+.env
+.env.*
+
+# Logs and system files
+*.log
+.DS_Store
+.git
+.gitignore
+.vscode

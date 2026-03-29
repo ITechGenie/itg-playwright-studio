@@ -3,6 +3,7 @@ import { ThemeProvider } from "@/components/theme-provider"
 import { TooltipProvider } from "@/components/ui/tooltip"
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom"
 import PageLoader from "./pages/PageLoader"
+import { AuthProvider } from "./contexts/AuthContext"
 
 const Login = lazy(() => import("./pages/Login"))
 const Projects = lazy(() => import("./pages/Projects"))
@@ -12,6 +13,7 @@ const MenuOverview = lazy(() => import("./pages/MenuOverview"))
 const NotFound = lazy(() => import("./pages/NotFound"))
 const RunLogPage = lazy(() => import("./pages/RunLogPage"))
 const ExecutionsRuns = lazy(() => import("./pages/ExecutionsRuns"))
+const NewProject = lazy(() => import("./pages/NewProject"))
 
 export default function App() {
   return (
@@ -19,10 +21,12 @@ export default function App() {
       <TooltipProvider>
         <BrowserRouter>
           <Suspense fallback={<PageLoader />}>
-            <Routes>
-              <Route path="/" element={<Navigate to="/app/login" replace />} />
+            <AuthProvider>
+              <Routes>
+                <Route path="/" element={<Navigate to="/app/login" replace />} />
               <Route path="/app/login" element={<Login />} />
               <Route path="/app/projects" element={<Projects />} />
+              <Route path="/app/projects/new" element={<NewProject />} />
 
               <Route path="/app/project/:id" element={<DashboardLayout />}>
                 {/* Menu Overviews */}
@@ -40,9 +44,11 @@ export default function App() {
               {/* 404 catch-all */}
               <Route path="*" element={<NotFound />} />
             </Routes>
-          </Suspense>
-        </BrowserRouter>
-      </TooltipProvider>
-    </ThemeProvider>
-  )
+          </AuthProvider>
+        </Suspense>
+      </BrowserRouter>
+    </TooltipProvider>
+  </ThemeProvider>
+)
 }
+

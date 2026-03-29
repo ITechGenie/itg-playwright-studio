@@ -8,9 +8,8 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { XIcon, PlayIcon, RotateCcwIcon, ExternalLinkIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
-
-const WS_URL = "ws://localhost:3000";
-const API_URL = "http://localhost:3000";
+import { apiClient } from "@/services/api-client";
+import { WS_ENDPOINT } from "@/services/api-endpoints";
 
 // Simple ANSI to HTML converter
 function ansiToHtml(text: string): string {
@@ -21,27 +20,16 @@ function ansiToHtml(text: string): string {
     '94': '#60a5fa', '95': '#c084fc', '96': '#22d3ee', '97': '#f3f4f6',
   };
 
-  // First escape HTML
   let result = text
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;');
 
-  // Then convert ANSI color codes to HTML spans
   result = result.replace(/\x1b\[([0-9;]+)m/g, (_match, codes) => {
     const codeList = codes.split(';');
-    
-    // Reset code
-    if (codeList.includes('0') || codes === '') {
-      return '</span>';
-    }
-    
-    // Find color code
+    if (codeList.includes('0') || codes === '') return '</span>';
     const colorCode = codeList.find((code: string) => ansiColors[code]);
-    if (colorCode && ansiColors[colorCode]) {
-      return `<span style="color: ${ansiColors[colorCode]}">`;
-    }
-    
+    if (colorCode && ansiColors[colorCode]) return `<span style="color: ${ansiColors[colorCode]}">`;
     return '';
   });
 
@@ -50,23 +38,16 @@ function ansiToHtml(text: string): string {
 
 export interface TestRunnerPanelProps {
   projectId: string;
-  /** Relative path to a file or folder. Empty = root (run all). */
   targetPath?: string;
-  /** Existing run ID to attach to */
+  targetPaths?: string[];
   initialRunId?: string;
   onClose?: () => void;
   showNewTab?: boolean;
-  /** Browser to use for tests */
   browser?: string;
-  /** Viewport width */
   width?: number;
-  /** Viewport height */
   height?: number;
-  /** Base URL for tests */
   baseURL?: string;
-  /** Video recording mode */
   video?: string;
-  /** Screenshot mode */
   screenshot?: string;
 }
 
@@ -81,6 +62,7 @@ let _lineSeq = 0;
 export function TestRunnerPanel({ 
   projectId, 
   targetPath = "", 
+  targetPaths,
   initialRunId, 
   onClose,
   showNewTab = true,
@@ -108,8 +90,7 @@ export function TestRunnerPanel({
   // ── Fetch existing logs if attaching to a run ────────────────────────────
   useEffect(() => {
     if (initialRunId) {
-      fetch(`${API_URL}/api/projects/${projectId}/run/${initialRunId}`)
-        .then(res => res.json())
+      apiClient.getRunDetails(projectId, initialRunId)
         .then(data => {
           if (data.logs) {
             const history = data.logs.map((l: any) => ({
@@ -130,14 +111,16 @@ export function TestRunnerPanel({
     }
   }, [initialRunId, projectId]);
 
-  // Auto-scroll to bottom on new log lines
+  // Auto-scroll
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [logs]);
 
   // ── WebSocket connection ─────────────────────────────────────────────────
   useEffect(() => {
-    const ws = new WebSocket(WS_URL);
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const wsUrl = `${protocol}//${window.location.host}${WS_ENDPOINT}`;
+    const ws = new WebSocket(wsUrl);
     wsRef.current = ws;
 
     ws.onmessage = (event) => {
@@ -185,8 +168,9 @@ export function TestRunnerPanel({
     setRunning(true);
 
     try {
-      const body: Record<string, unknown> = {
+      const options = {
         path: targetPath,
+        paths: targetPaths,
         headless,
         workers: parseInt(workers) || 1,
         browser,
@@ -195,23 +179,10 @@ export function TestRunnerPanel({
         baseURL,
         video,
         screenshot,
+        grep: grep || undefined,
       };
-      if (grep) body.grep = grep;
 
-      const res = await fetch(`${API_URL}/api/projects/${projectId}/run`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      });
-
-      if (!res.ok) {
-        const err = await res.json();
-        addLog("error", `Failed to start run: ${err.error}`);
-        setRunning(false);
-        return;
-      }
-
-      const data = await res.json();
+      const data = await apiClient.runTests(projectId, options);
       setRunId(data.runId);
       addLog("info", `🆔 Run ID: ${data.runId}`);
     } catch (e: any) {
@@ -224,8 +195,8 @@ export function TestRunnerPanel({
     if (running) return <Badge variant="secondary" className="animate-pulse">Running…</Badge>;
     if (exitCode === null) return null;
     return exitCode === 0
-      ? <Badge className="bg-green-600 text-white">Passed</Badge>
-      : <Badge variant="destructive">Failed (exit {exitCode})</Badge>;
+      ? <Badge className="bg-green-600 text-white font-bold">Passed</Badge>
+      : <Badge variant="destructive" className="font-bold">Failed (exit {exitCode})</Badge>;
   };
 
   const lineColor = (type: LogLine["type"]) => {
@@ -234,44 +205,44 @@ export function TestRunnerPanel({
       case "info":   return "text-blue-300";
       case "done":   return exitCode === 0 ? "text-green-400" : "text-red-400";
       case "error":  return "text-red-500 font-bold";
-      default:       return "text-gray-200";
+      default:       return "text-zinc-400";
     }
   };
 
   return (
-    <div className="flex flex-col h-full bg-zinc-950 text-sm font-mono rounded-t-lg border border-zinc-700 overflow-hidden">
+    <div className="flex flex-col h-full bg-zinc-950 text-sm font-mono rounded-t-lg border border-zinc-800 overflow-hidden shadow-2xl">
       {/* ── Toolbar ── */}
-      <div className="flex items-center gap-3 px-3 py-2 bg-zinc-900 border-b border-zinc-700 shrink-0 flex-wrap gap-y-2">
+      <div className="flex items-center gap-3 px-3 py-2 bg-zinc-900 border-b border-zinc-800 shrink-0 flex-wrap gap-y-2">
         <span className="text-zinc-300 font-semibold truncate max-w-[200px]">
-          {targetPath || "All tests"} {statusBadge()}
+          {targetPaths ? `${targetPaths.length} files` : (targetPath || "All tests")} {statusBadge()}
         </span>
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-1.5 ml-2">
           <Switch
             id="headless-toggle"
             checked={headless}
             onCheckedChange={setHeadless}
             disabled={running}
-            className="scale-75"
+            className="scale-75 data-[state=checked]:bg-blue-600"
           />
-          <Label htmlFor="headless-toggle" className="text-zinc-400 text-xs">Headless</Label>
+          <Label htmlFor="headless-toggle" className="text-zinc-500 text-[10px] uppercase font-bold tracking-tight">Headless</Label>
         </div>
-        <div className="flex items-center gap-1">
-          <Label className="text-zinc-400 text-xs">Workers</Label>
+        <div className="flex items-center gap-1.5">
+          <Label className="text-zinc-500 text-[10px] uppercase font-bold tracking-tight">Workers</Label>
           <Input
             value={workers}
             onChange={e => setWorkers(e.target.value)}
             disabled={running}
-            className="h-6 w-12 px-1.5 text-xs bg-zinc-800 border-zinc-600 text-zinc-200"
+            className="h-6 w-10 px-1.5 text-[10px] bg-zinc-950 border-zinc-800 text-zinc-300"
           />
         </div>
-        <div className="flex items-center gap-1">
-          <Label className="text-zinc-400 text-xs">Grep</Label>
+        <div className="flex items-center gap-1.5">
+          <Label className="text-zinc-500 text-[10px] uppercase font-bold tracking-tight">Filter</Label>
           <Input
             value={grep}
             onChange={e => setGrep(e.target.value)}
             placeholder="regex…"
             disabled={running}
-            className="h-6 w-28 px-1.5 text-xs bg-zinc-800 border-zinc-600 text-zinc-200"
+            className="h-6 w-24 px-1.5 text-[10px] bg-zinc-950 border-zinc-800 text-zinc-300"
           />
         </div>
         <div className="flex-1" />
@@ -279,10 +250,10 @@ export function TestRunnerPanel({
           <Button
             size="sm" variant="ghost"
             onClick={() => window.open(`/app/project/${projectId}/run/${runId}`, '_blank')}
-            className="h-7 text-xs text-zinc-400 hover:text-white gap-1"
+            className="h-7 text-[10px] text-zinc-500 hover:text-white gap-1 hover:bg-zinc-800"
             title="Open in new tab"
           >
-            <ExternalLinkIcon className="h-3.5 w-3.5" />
+            <ExternalLinkIcon className="h-3 w-3" />
             <span className="hidden sm:inline">New Tab</span>
           </Button>
         )}
@@ -290,43 +261,45 @@ export function TestRunnerPanel({
           size="sm" variant="ghost"
           onClick={() => setLogs([])}
           disabled={running}
-          className="h-7 text-xs text-zinc-400 hover:text-white"
+          className="h-7 text-[10px] text-zinc-500 hover:text-white hover:bg-zinc-800"
           title="Clear output"
         >
-          <RotateCcwIcon className="h-3.5 w-3.5" />
+          <RotateCcwIcon className="h-3 w-3" />
         </Button>
         <Button
           size="sm"
           onClick={handleRun}
           disabled={running}
-          className={cn("h-7 text-xs gap-1.5", running ? "bg-zinc-700" : "bg-green-700 hover:bg-green-600")}
+          className={cn("h-7 text-xs gap-1.5 font-bold px-4", running ? "bg-zinc-800 text-zinc-500" : "bg-blue-700 hover:bg-blue-600 text-white")}
         >
           <PlayIcon className="h-3.5 w-3.5" />
           {running ? "Running…" : "Run"}
         </Button>
         {onClose && (
-          <Button size="sm" variant="ghost" onClick={onClose} className="h-7 w-7 p-0 text-zinc-500 hover:text-white">
+          <Button size="sm" variant="ghost" onClick={onClose} className="h-7 w-7 p-0 text-zinc-600 hover:text-white hover:bg-red-500/20">
             <XIcon className="h-4 w-4" />
           </Button>
         )}
       </div>
 
       {/* ── Terminal Output ── */}
-      <div className="flex-1 overflow-y-auto p-3 space-y-0.5">
+      <div className="flex-1 overflow-y-auto p-4 space-y-0.5 selection:bg-blue-500/30">
         {logs.length === 0 && !running && (
-          <p className="text-zinc-600 text-xs mt-4 text-center">
-            Press <span className="text-zinc-400">Run</span> to execute tests
-            {targetPath ? ` in "${targetPath}"` : " (all)"}
-          </p>
+          <div className="flex flex-col items-center justify-center h-full text-zinc-700">
+             <PlayIcon className="h-8 w-8 mb-2 opacity-20" />
+             <p className="text-[10px] uppercase font-bold tracking-widest">
+               READY TO EXECUTE {targetPaths ? `(${targetPaths.length} files)` : (targetPath ? `"${targetPath}"` : "WORKSPACE")}
+             </p>
+          </div>
         )}
         {logs.map(line => (
           <div 
             key={line.id} 
-            className={cn("whitespace-pre-wrap break-all leading-5 font-mono text-xs", lineColor(line.type))}
+            className={cn("whitespace-pre-wrap break-all leading-relaxed font-mono text-[11px]", lineColor(line.type))}
             dangerouslySetInnerHTML={{ __html: ansiToHtml(line.text) }}
           />
         ))}
-        <div ref={bottomRef} />
+        <div ref={bottomRef} className="h-4" />
       </div>
     </div>
   );

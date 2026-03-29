@@ -1,4 +1,4 @@
-import { FileText, Play, Settings, Command, Box } from "lucide-react"
+import { FileText, Play, Settings, Command } from "lucide-react"
 
 export const getNavData = (projectId: string) => ({
   user: {

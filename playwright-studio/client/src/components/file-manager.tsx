@@ -18,7 +18,7 @@ import {
     Edit3Icon,
     FolderOpenIcon,
     Trash2Icon,
-    DownloadIcon,
+    DownloadIcon
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -49,6 +49,7 @@ import {
 import Editor, { DiffEditor } from "@monaco-editor/react";
 
 import FileManagerPagination from "./pagination";
+import { apiClient } from "@/services/api-client";
 
 export type FileItem = any;
 
@@ -58,6 +59,8 @@ export interface FileManagerProps {
     actions?: React.ReactNode;
     /** Called when user requests to run tests for a specific file/folder path */
     onRunFile?: (relativePath: string) => void;
+    /** Called whenever the set of selected files changes */
+    onSelectionChange?: (paths: string[]) => void;
 }
 
 function getFileIcon(iconType: string, size: "sm" | "md" = "sm") {
@@ -74,7 +77,7 @@ function getFileIcon(iconType: string, size: "sm" | "md" = "sm") {
     }
 }
 
-// ── Left-pane tree item (defined outside to avoid remount on each render) ──
+// ── Left-pane tree item ──
 interface TreeItemProps {
     item: FileItem;
     depth: number;
@@ -87,9 +90,7 @@ interface TreeItemProps {
 
 function LeftTreeItem({ item, depth, pathSegments, BASE, projectId, navigate, setSelectedFile }: TreeItemProps) {
     const isFolder = item.type === "folder";
-    // A root folder is "expanded" when the first path segment matches it
     const isExpanded = depth === 0 && pathSegments[0] === item.name;
-    // Highlight: root folder when it's the sole/deepest path segment, or child when matching
     const isActive =
         (depth === 0 && pathSegments[0] === item.name) ||
         (depth === 1 && pathSegments[1] === item.name);
@@ -100,9 +101,7 @@ function LeftTreeItem({ item, depth, pathSegments, BASE, projectId, navigate, se
     useEffect(() => {
         if (isFolder && isExpanded && children.length === 0 && !loading) {
             setLoading(true);
-            // Fetch dynamically based on item ID (relative path)
-            fetch(`http://localhost:3000/api/projects/${projectId}/files?path=${encodeURIComponent(item.id || item.name)}`)
-                .then(res => res.json())
+            apiClient.getProjectFiles(projectId, item.id || item.name)
                 .then(data => setChildren(data))
                 .catch(err => console.error(err))
                 .finally(() => setLoading(false));
@@ -113,10 +112,8 @@ function LeftTreeItem({ item, depth, pathSegments, BASE, projectId, navigate, se
         e.stopPropagation();
         if (isFolder) {
             if (depth === 0) {
-                // Toggle: collapse if already expanded, otherwise expand
                 navigate(isExpanded ? BASE : `${BASE}/${item.name}`);
             } else {
-                // Drill into child folder
                 navigate(`${BASE}/${pathSegments[0]}/${item.name}`);
             }
         } else {
@@ -145,7 +142,6 @@ function LeftTreeItem({ item, depth, pathSegments, BASE, projectId, navigate, se
                 {loading ? <span className="animate-spin h-3 w-3 shrink-0 border-2 border-primary border-t-transparent rounded-full" /> : <span className="shrink-0">{getFileIcon(item.icon)}</span>}
                 <span className="truncate">{item.name}</span>
             </div>
-            {/* Expand one level of children in left tree (max 2 levels) */}
             {isFolder && isExpanded && depth === 0 &&
                 children.map((child: FileItem) => (
                     <LeftTreeItem
@@ -167,16 +163,23 @@ function LeftTreeItem({ item, depth, pathSegments, BASE, projectId, navigate, se
 type SortOption = "name" | "date" | "size";
 type SortDirection = "asc" | "desc";
 
-export function FileManager({ basePath = "", title = "File Manager", actions, onRunFile }: FileManagerProps) {
+export function FileManager({ basePath = "", title = "File Manager", actions, onRunFile, onSelectionChange }: FileManagerProps) {
     const navigate = useNavigate();
     const params = useParams();
     const splatPath: string = (params as any)["*"] || "";
-    const projectId = params.id || "1";
+    const projectId = params.id || "";
 
     const [selectedFile, setSelectedFile] = useState<FileItem | null>(null);
     const [sortBy, setSortBy] = useState<SortOption>("name");
     const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
     const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
+    
+    // Sync selections back to parent
+    useEffect(() => {
+        if (onSelectionChange) {
+            onSelectionChange(Array.from(selectedItems));
+        }
+    }, [selectedItems, onSelectionChange]);
     const [isEditing, setIsEditing] = useState(false);
     const [isReviewingDiff, setIsReviewingDiff] = useState(false);
     const [originalContent, setOriginalContent] = useState("");
@@ -200,9 +203,9 @@ export function FileManager({ basePath = "", title = "File Manager", actions, on
 
     // Fetch root directory items
     useEffect(() => {
+        if (!projectId) return;
         setLoadingRoot(true);
-        fetch(`http://localhost:3000/api/projects/${projectId}/files`)
-            .then(res => res.json())
+        apiClient.getProjectFiles(projectId)
             .then(data => setRootItems(data))
             .catch(err => console.error(err))
             .finally(() => setLoadingRoot(false));
@@ -210,15 +213,14 @@ export function FileManager({ basePath = "", title = "File Manager", actions, on
 
     // Fetch dynamic path items for right pane
     useEffect(() => {
+        if (!projectId) return;
         setLoadingFolder(true);
         const folderPath = pathSegments.join("/");
-        fetch(`http://localhost:3000/api/projects/${projectId}/files?path=${encodeURIComponent(folderPath)}`)
-            .then(res => res.json())
+        apiClient.getProjectFiles(projectId, folderPath)
             .then(data => setCurrentFolderItems(data))
             .catch(err => console.error(err))
             .finally(() => setLoadingFolder(false));
 
-        // Reset state on navigation
         setSelectedFile(null);
         setIsEditing(false);
     }, [currentPath, projectId]);
@@ -290,7 +292,6 @@ export function FileManager({ basePath = "", title = "File Manager", actions, on
         setIsEditing(true);
     };
 
-    // ── Detail panel content ─────────────────────────────────────────────────
     const FileDetailPanel = ({ item }: { item: FileItem }) => (
         <div className="flex flex-col h-full">
             <div className="flex items-center justify-between px-4 py-3 border-b shrink-0">
@@ -302,7 +303,6 @@ export function FileManager({ basePath = "", title = "File Manager", actions, on
 
             <div className="flex-1 overflow-y-auto">
                 <div className="p-4 space-y-5">
-                    {/* Icon + actions */}
                     <div className="flex flex-col items-center pt-2 pb-1 gap-4">
                         <div className="scale-[2.5] mt-1">{getFileIcon(item.icon, "md")}</div>
                         <div className="flex items-center gap-2 w-full mt-2">
@@ -326,7 +326,6 @@ export function FileManager({ basePath = "", title = "File Manager", actions, on
 
                     <Separator />
 
-                    {/* Info section */}
                     <div>
                         <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground mb-3">Info</p>
                         <div className="space-y-2.5 text-sm">
@@ -347,7 +346,6 @@ export function FileManager({ basePath = "", title = "File Manager", actions, on
 
                     <Separator />
 
-                    {/* Settings section */}
                     <div>
                         <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground mb-3">Settings</p>
                         <div className="space-y-3">
@@ -366,7 +364,6 @@ export function FileManager({ basePath = "", title = "File Manager", actions, on
         </div>
     );
 
-    // ── Monaco Editor (full-screen edit mode) ────────────────────────────────
     if (isEditing && selectedFile) {
         if (isReviewingDiff) {
             return (
@@ -416,7 +413,6 @@ export function FileManager({ basePath = "", title = "File Manager", actions, on
         );
     }
 
-    // ── Main Explorer Layout ─────────────────────────────────────────────────
     const sortLabel = (opt: SortOption) => {
         if (sortBy !== opt) return opt === "name" ? "Name" : opt === "date" ? "Date" : "Size";
         return `${opt === "name" ? "Name" : opt === "date" ? "Date" : "Size"} ${sortDirection === "asc" ? "↑" : "↓"}`;
@@ -424,8 +420,6 @@ export function FileManager({ basePath = "", title = "File Manager", actions, on
 
     return (
         <div className="flex flex-col h-full border rounded-lg overflow-hidden bg-background">
-
-            {/* ── Header ── */}
             <div className="flex items-center justify-between px-4 py-2.5 border-b bg-muted/20 shrink-0">
                 <div className="flex items-center gap-3 min-w-0">
                     <h1 className="font-bold tracking-tight text-sm whitespace-nowrap">{title}</h1>
@@ -454,11 +448,7 @@ export function FileManager({ basePath = "", title = "File Manager", actions, on
                 <div className="flex items-center gap-2 shrink-0">{actions}</div>
             </div>
 
-            {/* ── Body ── */}
-            {/* @ts-ignore */}
             <ResizablePanelGroup direction="horizontal" className="flex-1 overflow-hidden">
-
-                {/* ── LEFT TREE PANE ── */}
                 {!isMobile && (
                     <ResizablePanel id="left-pane" defaultSize={20} minSize={10} className="flex flex-col bg-muted/5 min-w-0">
                         <div className="px-3 py-2 border-b">
@@ -481,20 +471,17 @@ export function FileManager({ basePath = "", title = "File Manager", actions, on
                             ))}
                             {loadingRoot && (
                                 <div className="p-4 flex flex-col items-center justify-center opacity-50 space-y-2">
-                                    <span className="w-4 h-4 rounded-full border-2 border-primary border-t-transparent animate-spin"/>
+                                    <span className="w-4 h-4 rounded-full border-2 border-primary border-t-transparent animate-spin" />
                                     <span className="text-xs">Loading tree...</span>
                                 </div>
                             )}
                         </div>
                     </ResizablePanel>
                 )}
-                
+
                 {!isMobile && <ResizableHandle withHandle id="pane-handle" />}
 
-                {/* ── RIGHT CONTENT PANE ── */}
                 <ResizablePanel id="right-pane" defaultSize={isMobile ? 100 : 80} minSize={10} className="flex flex-col relative overflow-hidden bg-background min-w-0">
-
-                    {/* Column header */}
                     <div className="flex items-center justify-between border-b px-4 py-2 bg-muted/10 shrink-0 text-xs text-muted-foreground">
                         <div className="flex items-center gap-3">
                             <Checkbox
@@ -516,7 +503,6 @@ export function FileManager({ basePath = "", title = "File Manager", actions, on
                         </div>
                     </div>
 
-                    {/* File list + overlay detail panel */}
                     <div className="flex-1 overflow-hidden relative min-w-0">
                         <div className={cn(
                             "h-full overflow-y-auto transition-[margin] duration-200 min-w-0",
@@ -524,7 +510,7 @@ export function FileManager({ basePath = "", title = "File Manager", actions, on
                         )}>
                             {loadingFolder && (
                                 <div className="flex flex-col items-center justify-center h-full gap-3 text-muted-foreground opacity-50">
-                                    <span className="w-8 h-8 rounded-full border-4 border-primary border-t-transparent animate-spin"/>
+                                    <span className="w-8 h-8 rounded-full border-4 border-primary border-t-transparent animate-spin" />
                                     <p className="text-sm">Loading folder contents...</p>
                                 </div>
                             )}
@@ -615,7 +601,6 @@ export function FileManager({ basePath = "", title = "File Manager", actions, on
                             )}
                         </div>
 
-                        {/* Desktop detail panel — slides in from right */}
                         {selectedFile && !isMobile && (
                             <div className="absolute top-0 right-0 h-full w-72 border-l bg-background shadow-xl animate-in slide-in-from-right duration-200 overflow-hidden">
                                 <FileDetailPanel item={selectedFile} />
@@ -625,7 +610,6 @@ export function FileManager({ basePath = "", title = "File Manager", actions, on
                 </ResizablePanel>
             </ResizablePanelGroup>
 
-            {/* Mobile detail sheet */}
             {selectedFile && isMobile && (
                 <Sheet open={!!selectedFile} onOpenChange={(open) => !open && setSelectedFile(null)}>
                     <SheetContent>
