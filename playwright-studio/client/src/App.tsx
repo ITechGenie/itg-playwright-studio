@@ -4,11 +4,14 @@ import { TooltipProvider } from "@/components/ui/tooltip"
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom"
 import PageLoader from "./pages/PageLoader"
 
-const Login         = lazy(() => import("./pages/Login"))
-const Projects      = lazy(() => import("./pages/Projects"))
+const Login = lazy(() => import("./pages/Login"))
+const Projects = lazy(() => import("./pages/Projects"))
 const DashboardLayout = lazy(() => import("./pages/DashboardLayout"))
-const TestSpecs     = lazy(() => import("./pages/TestSpecs"))
-const NotFound      = lazy(() => import("./pages/NotFound"))
+const TestSpecs = lazy(() => import("./pages/TestSpecs"))
+const MenuOverview = lazy(() => import("./pages/MenuOverview"))
+const NotFound = lazy(() => import("./pages/NotFound"))
+const RunLogPage = lazy(() => import("./pages/RunLogPage"))
+const ExecutionsRuns = lazy(() => import("./pages/ExecutionsRuns"))
 
 export default function App() {
   return (
@@ -22,8 +25,15 @@ export default function App() {
               <Route path="/app/projects" element={<Projects />} />
 
               <Route path="/app/project/:id" element={<DashboardLayout />}>
-                <Route path="specs"   element={<TestSpecs />} />
+                {/* Menu Overviews */}
+                <Route path="test-specs" element={<MenuOverview section="Test Specs" />} />
+                <Route path="executions" element={<MenuOverview section="Executions" />} />
+                <Route path="settings" element={<MenuOverview section="Settings" />} />
+
+                <Route path="specs" element={<TestSpecs />} />
                 <Route path="specs/*" element={<TestSpecs />} />
+                <Route path="run/:runId" element={<RunLogPage />} />
+                <Route path="executions/runs" element={<ExecutionsRuns />} />
                 {/* Other nested routes go here */}
               </Route>
 

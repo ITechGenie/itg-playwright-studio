@@ -2,14 +2,20 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { useNavigate } from "react-router-dom"
-
-const MOCK_PROJECTS = [
-  { id: 1, name: "Acme Inc E2E", grouper: "Enterprise", createdBy: "Alice", limit: 5, target: 18, status: "Done" },
-  { id: 2, name: "Evil Corp Scripts", grouper: "Internal", createdBy: "Bob", limit: 24, target: 29, status: "In Process" }
-]
+import { useState, useEffect } from "react"
 
 export default function Projects() {
   const navigate = useNavigate();
+  const [projects, setProjects] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch('http://localhost:3000/api/projects')
+      .then(res => res.json())
+      .then(data => setProjects(data))
+      .catch(err => console.error("Failed to fetch projects", err))
+      .finally(() => setLoading(false));
+  }, []);
 
   return (
     <div className="min-h-screen bg-background flex flex-col items-center">
@@ -22,11 +28,16 @@ export default function Projects() {
           </div>
         </div>
 
-        <div className="rounded-md border bg-card">
+        <div className="rounded-md border bg-card relative">
+          {loading && (
+             <div className="absolute inset-0 bg-background/50 flex items-center justify-center z-10">
+                <span className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></span>
+             </div>
+          )}
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Project Name</TableHead>
+                <TableHead>Workspace Path</TableHead>
                 <TableHead>Project Grouper</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Created By</TableHead>
@@ -34,28 +45,28 @@ export default function Projects() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {MOCK_PROJECTS.map((proj) => (
+              {!loading && projects.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={5} className="text-center h-24 text-muted-foreground">
+                    No workspaces found in environment path.
+                  </TableCell>
+                </TableRow>
+              )}
+              {projects.map((proj) => (
                 <TableRow key={proj.id}>
-                  <TableCell className="font-medium">{proj.name}</TableCell>
+                  <TableCell className="font-medium text-primary">{proj.name}</TableCell>
                   <TableCell>{proj.grouper}</TableCell>
                   <TableCell>{proj.status}</TableCell>
                   <TableCell>{proj.createdBy}</TableCell>
                   <TableCell className="text-right space-x-2">
                     <Button variant="outline" size="sm" onClick={() => navigate(`/app/project/${proj.id}/specs`)}>
-                      View
+                      Open Explorer
                     </Button>
-                    <Button variant="ghost" size="sm">Edit</Button>
                   </TableCell>
                 </TableRow>
               ))}
             </TableBody>
           </Table>
-        </div>
-        
-        <div className="flex justify-between items-center mt-4">
-          <Button variant="outline">Previous</Button>
-          <span className="text-sm text-muted-foreground">Page 1 of 1</span>
-          <Button variant="outline">Next</Button>
         </div>
       </div>
     </div>

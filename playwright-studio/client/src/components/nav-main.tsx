@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom"
 import {
   Collapsible,
   CollapsibleContent,
@@ -12,6 +13,7 @@ import {
   SidebarMenuSub,
   SidebarMenuSubButton,
   SidebarMenuSubItem,
+  SidebarMenuAction,
 } from "@/components/ui/sidebar"
 import { ChevronRight } from "lucide-react"
 
@@ -45,29 +47,36 @@ export function NavMain({
             className="group/collapsible"
           >
             <SidebarMenuItem>
-              <CollapsibleTrigger asChild>
-                <SidebarMenuButton tooltip={item.title}>
+              <SidebarMenuButton tooltip={item.title} asChild>
+                <Link to={item.url}>
                   {item.icon}
                   <span>{item.title}</span>
-                  <ChevronRight className="ml-auto size-4 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
-                </SidebarMenuButton>
-              </CollapsibleTrigger>
+                </Link>
+              </SidebarMenuButton>
+              {item.items && item.items.length > 0 && (
+                <CollapsibleTrigger asChild>
+                  <SidebarMenuAction className="transition-transform duration-200 data-[state=open]:rotate-90">
+                    <ChevronRight className="size-4" />
+                    <span className="sr-only">Toggle</span>
+                  </SidebarMenuAction>
+                </CollapsibleTrigger>
+              )}
               <CollapsibleContent>
                 <SidebarMenuSub>
                   {item.items?.map((subItem) => (
                     <SidebarMenuSubItem key={subItem.title}>
                       <SidebarMenuSubButton asChild>
-                        <a href={subItem.url}>
+                        <Link to={subItem.url}>
                           <span>{subItem.title}</span>
-                        </a>
+                        </Link>
                       </SidebarMenuSubButton>
                       {subItem.items && subItem.items.length > 0 && (
                         <div className="flex flex-col gap-1 pl-3 mt-1 ml-2.5 border-l border-sidebar-border">
                           {subItem.items.map((nested) => (
                             <SidebarMenuSubButton asChild key={nested.title} className="h-7 text-xs">
-                              <a href={nested.url}>
+                              <Link to={nested.url}>
                                 <span className="text-muted-foreground">{nested.title}</span>
-                              </a>
+                              </Link>
                             </SidebarMenuSubButton>
                           ))}
                         </div>

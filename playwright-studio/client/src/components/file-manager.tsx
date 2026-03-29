@@ -11,13 +11,14 @@ import {
     UploadIcon,
     FolderPlus,
     ChevronDownIcon,
+    ChevronRightIcon,
     FileTextIcon,
     MoreHorizontalIcon,
     XIcon,
     Edit3Icon,
     FolderOpenIcon,
     Trash2Icon,
-    DownloadIcon
+    DownloadIcon,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -28,18 +29,23 @@ import {
     Breadcrumb,
     BreadcrumbItem,
     BreadcrumbList,
-    BreadcrumbSeparator
+    BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 import {
     DropdownMenu,
     DropdownMenuContent,
     DropdownMenuItem,
     DropdownMenuSeparator,
-    DropdownMenuTrigger
+    DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Separator } from "@/components/ui/separator";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import {
+    ResizableHandle,
+    ResizablePanel,
+    ResizablePanelGroup,
+} from "@/components/ui/resizable";
 import Editor, { DiffEditor } from "@monaco-editor/react";
 
 import FileManagerPagination from "./pagination";
@@ -47,74 +53,127 @@ import FileManagerPagination from "./pagination";
 export type FileItem = any;
 
 export interface FileManagerProps {
-    files: FileItem[];
     basePath?: string;
     title?: string;
     actions?: React.ReactNode;
+    /** Called when user requests to run tests for a specific file/folder path */
+    onRunFile?: (relativePath: string) => void;
 }
 
-function getFileIcon(iconType: string) {
+function getFileIcon(iconType: string, size: "sm" | "md" = "sm") {
+    const dim = size === "sm" ? "h-4 w-4" : "h-5 w-5";
     switch (iconType) {
         case "folder":
-            return <Folder className="h-5 w-5 text-yellow-600" />;
+            return <Folder className={cn(dim, "text-yellow-500")} />;
         case "figma":
-            return (
-                <div className="flex h-5 w-5 items-center justify-center rounded bg-purple-500 text-xs font-bold text-white">
-                    F
-                </div>
-            );
-        case "sketch":
-            return (
-                <div className="flex h-5 w-5 items-center justify-center rounded bg-yellow-500 text-xs font-bold text-white">
-                    S
-                </div>
-            );
-        case "word":
-            return (
-                <div className="flex h-5 w-5 items-center justify-center rounded bg-blue-600 text-xs font-bold text-white">
-                    W
-                </div>
-            );
-        case "illustrator":
-            return (
-                <div className="flex h-5 w-5 items-center justify-center rounded bg-orange-600 text-xs font-bold text-white">
-                    Ai
-                </div>
-            );
-        case "photoshop":
-            return (
-                <div className="flex h-5 w-5 items-center justify-center rounded bg-blue-800 text-xs font-bold text-white">
-                    Ps
-                </div>
-            );
+            return <div className={cn("flex items-center justify-center rounded bg-purple-500 text-white font-bold", size === "sm" ? "h-4 w-4 text-[10px]" : "h-5 w-5 text-xs")}>F</div>;
         case "pdf":
-            return (
-                <div className="flex h-5 w-5 items-center justify-center rounded bg-red-600 text-xs font-bold text-white">
-                    <FileTextIcon className="size-3" />
-                </div>
-            );
-        case "audio":
-            return (
-                <div className="flex h-5 w-5 items-center justify-center rounded bg-green-600 text-xs font-bold text-white">
-                    ♪
-                </div>
-            );
+            return <div className={cn("flex items-center justify-center rounded bg-red-600 text-white", size === "sm" ? "h-4 w-4" : "h-5 w-5")}><FileTextIcon className={size === "sm" ? "size-2.5" : "size-3"} /></div>;
         default:
-            return <File className="h-5 w-5 text-gray-500" />;
+            return <File className={cn(dim, "text-gray-400")} />;
     }
+}
+
+// ── Left-pane tree item (defined outside to avoid remount on each render) ──
+interface TreeItemProps {
+    item: FileItem;
+    depth: number;
+    pathSegments: string[];
+    BASE: string;
+    projectId: string;
+    navigate: (path: string) => void;
+    setSelectedFile: (f: FileItem) => void;
+}
+
+function LeftTreeItem({ item, depth, pathSegments, BASE, projectId, navigate, setSelectedFile }: TreeItemProps) {
+    const isFolder = item.type === "folder";
+    // A root folder is "expanded" when the first path segment matches it
+    const isExpanded = depth === 0 && pathSegments[0] === item.name;
+    // Highlight: root folder when it's the sole/deepest path segment, or child when matching
+    const isActive =
+        (depth === 0 && pathSegments[0] === item.name) ||
+        (depth === 1 && pathSegments[1] === item.name);
+
+    const [children, setChildren] = useState<FileItem[]>(item.children || []);
+    const [loading, setLoading] = useState(false);
+
+    useEffect(() => {
+        if (isFolder && isExpanded && children.length === 0 && !loading) {
+            setLoading(true);
+            // Fetch dynamically based on item ID (relative path)
+            fetch(`http://localhost:3000/api/projects/${projectId}/files?path=${encodeURIComponent(item.id || item.name)}`)
+                .then(res => res.json())
+                .then(data => setChildren(data))
+                .catch(err => console.error(err))
+                .finally(() => setLoading(false));
+        }
+    }, [isExpanded, projectId, item.id, item.name]);
+
+    const handleClick = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        if (isFolder) {
+            if (depth === 0) {
+                // Toggle: collapse if already expanded, otherwise expand
+                navigate(isExpanded ? BASE : `${BASE}/${item.name}`);
+            } else {
+                // Drill into child folder
+                navigate(`${BASE}/${pathSegments[0]}/${item.name}`);
+            }
+        } else {
+            setSelectedFile(item);
+        }
+    };
+
+    return (
+        <div>
+            <div
+                className={cn(
+                    "group flex items-center gap-1.5 py-1 cursor-pointer rounded-sm text-xs transition-colors select-none",
+                    "hover:bg-muted/60",
+                    isActive && "bg-accent text-accent-foreground font-medium"
+                )}
+                style={{ paddingLeft: `${8 + depth * 14}px`, paddingRight: "8px" }}
+                onClick={handleClick}
+            >
+                {isFolder ? (
+                    isExpanded
+                        ? <ChevronDownIcon className="h-3 w-3 shrink-0 text-muted-foreground" />
+                        : <ChevronRightIcon className="h-3 w-3 shrink-0 text-muted-foreground" />
+                ) : (
+                    <span className="w-3 shrink-0" />
+                )}
+                {loading ? <span className="animate-spin h-3 w-3 shrink-0 border-2 border-primary border-t-transparent rounded-full" /> : <span className="shrink-0">{getFileIcon(item.icon)}</span>}
+                <span className="truncate">{item.name}</span>
+            </div>
+            {/* Expand one level of children in left tree (max 2 levels) */}
+            {isFolder && isExpanded && depth === 0 &&
+                children.map((child: FileItem) => (
+                    <LeftTreeItem
+                        key={child.id}
+                        item={child}
+                        depth={1}
+                        pathSegments={pathSegments}
+                        BASE={BASE}
+                        projectId={projectId}
+                        navigate={navigate}
+                        setSelectedFile={setSelectedFile}
+                    />
+                ))
+            }
+        </div>
+    );
 }
 
 type SortOption = "name" | "date" | "size";
 type SortDirection = "asc" | "desc";
 
-export function FileManager({ files = [], basePath = "", title = "File Manager", actions }: FileManagerProps) {
+export function FileManager({ basePath = "", title = "File Manager", actions, onRunFile }: FileManagerProps) {
     const navigate = useNavigate();
     const params = useParams();
-    // '*' captures everything after the matched route, e.g. "login-flow/subfolder/file.ts"
     const splatPath: string = (params as any)["*"] || "";
-    const [searchQuery, setSearchQuery] = useState("");
-    const [selectedItem, setSelectedItem] = useState<FileItem | null>(null);
-    const [showMobileDetails, setShowMobileDetails] = useState(false);
+    const projectId = params.id || "1";
+
+    const [selectedFile, setSelectedFile] = useState<FileItem | null>(null);
     const [sortBy, setSortBy] = useState<SortOption>("name");
     const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
     const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
@@ -125,276 +184,208 @@ export function FileManager({ files = [], basePath = "", title = "File Manager",
     const [saveMessage, setSaveMessage] = useState("");
     const editorRef = useRef<any>(null);
 
-    const currentPath = splatPath;  // e.g. "login-flow" or "login-flow/subfolder"
+    const currentPath = splatPath;
     const pathSegments = currentPath ? currentPath.split("/").filter(Boolean) : [];
+    const BASE = basePath || `/app/project/${projectId}/specs`;
 
-    const handleEditorDidMount = (editor: any) => {
-        editorRef.current = editor;
-    };
-
-    const handleFormat = () => {
-        editorRef.current?.getAction('editor.action.formatDocument')?.run();
-    };
-
+    const handleEditorDidMount = (editor: any) => { editorRef.current = editor; };
+    const handleFormat = () => { editorRef.current?.getAction("editor.action.formatDocument")?.run(); };
     const isMobile = useIsMobile();
 
-    const parseFileSize = (sizeStr: string): number => {
-        const size = Number.parseFloat(sizeStr);
-        if (sizeStr.includes("GB")) return size * 1024 * 1024 * 1024;
-        if (sizeStr.includes("MB")) return size * 1024 * 1024;
-        if (sizeStr.includes("KB")) return size * 1024;
-        return size;
-    };
+    // ── API State ────────────────────────────────────────────────────────────
+    const [rootItems, setRootItems] = useState<FileItem[]>([]);
+    const [currentFolderItems, setCurrentFolderItems] = useState<FileItem[]>([]);
+    const [loadingRoot, setLoadingRoot] = useState(true);
+    const [loadingFolder, setLoadingFolder] = useState(false);
 
-    const parseDate = (dateStr: string): number => {
-        const [day, month, year] = dateStr.split(".");
-        return new Date(
-            2000 + Number.parseInt(year),
-            Number.parseInt(month) - 1,
-            Number.parseInt(day)
-        ).getTime();
-    };
-
-    const sortItems = (items: FileItem[]): FileItem[] => {
-        return [...items].sort((a, b) => {
-            let comparison = 0;
-
-            switch (sortBy) {
-                case "name":
-                    comparison = a.name.localeCompare(b.name);
-                    break;
-                case "date":
-                    comparison = parseDate(a.date) - parseDate(b.date);
-                    break;
-                case "size":
-                    comparison = parseFileSize(a.size) - parseFileSize(b.size);
-                    break;
-            }
-
-            return sortDirection === "asc" ? comparison : -comparison;
-        });
-    };
-
-    const getCurrentFolderItems = () => {
-        if (!currentPath) {
-            return files.filter((item: any) => !item.parentPath);
-        }
-
-        const parentFolder = files.find(
-            (item: any) => item.name === pathSegments[pathSegments.length - 1]
-        );
-        return parentFolder?.children || [];
-    };
-
-    const currentItems = getCurrentFolderItems();
-    const filteredItems = currentItems.filter((item: any) =>
-        item.name.toLowerCase().includes(searchQuery.toLowerCase())
-    );
-    const sortedAndFilteredItems = sortItems(filteredItems);
-
+    // Fetch root directory items
     useEffect(() => {
-        setSelectedItem(null);
-        setShowMobileDetails(false);
-        setIsEditing(false);
-    }, [currentPath]);
+        setLoadingRoot(true);
+        fetch(`http://localhost:3000/api/projects/${projectId}/files`)
+            .then(res => res.json())
+            .then(data => setRootItems(data))
+            .catch(err => console.error(err))
+            .finally(() => setLoadingRoot(false));
+    }, [projectId]);
 
-    const handleSortChange = (option: SortOption) => {
-        if (sortBy === option) {
-            setSortDirection(sortDirection === "asc" ? "desc" : "asc");
-        } else {
-            setSortBy(option);
-            setSortDirection("asc");
-        }
+    // Fetch dynamic path items for right pane
+    useEffect(() => {
+        setLoadingFolder(true);
+        const folderPath = pathSegments.join("/");
+        fetch(`http://localhost:3000/api/projects/${projectId}/files?path=${encodeURIComponent(folderPath)}`)
+            .then(res => res.json())
+            .then(data => setCurrentFolderItems(data))
+            .catch(err => console.error(err))
+            .finally(() => setLoadingFolder(false));
+
+        // Reset state on navigation
+        setSelectedFile(null);
+        setIsEditing(false);
+    }, [currentPath, projectId]);
+
+    // ── Helpers ──────────────────────────────────────────────────────────────
+    const parseFileSize = (s: string) => {
+        const n = Number.parseFloat(s);
+        if (s.includes("GB")) return n * 1073741824;
+        if (s.includes("MB")) return n * 1048576;
+        if (s.includes("KB")) return n * 1024;
+        return n;
     };
 
-    const getSortLabel = () => {
-        const directionIcon = sortDirection === "asc" ? "↑" : "↓";
-        switch (sortBy) {
-            case "name":
-                return `Name ${directionIcon}`;
-            case "date":
-                return `Date ${directionIcon}`;
-            case "size":
-                return `Size ${directionIcon}`;
-        }
+    const parseDate = (d: string) => {
+        const [day, month, year] = d.split(".");
+        return new Date(2000 + +year, +month - 1, +day).getTime();
+    };
+
+    const sortItems = (items: FileItem[]) =>
+        [...items].sort((a, b) => {
+            let cmp = 0;
+            if (sortBy === "name") cmp = a.name.localeCompare(b.name);
+            else if (sortBy === "date") cmp = parseDate(a.date) - parseDate(b.date);
+            else cmp = parseFileSize(a.size) - parseFileSize(b.size);
+            return sortDirection === "asc" ? cmp : -cmp;
+        });
+
+    const sortedCurrentItems = sortItems(currentFolderItems);
+
+    const handleSortChange = (opt: SortOption) => {
+        if (sortBy === opt) setSortDirection(sortDirection === "asc" ? "desc" : "asc");
+        else { setSortBy(opt); setSortDirection("asc"); }
     };
 
     const handleItemClick = (item: FileItem) => {
         if (item.type === "folder") {
             const newPath = currentPath ? `${currentPath}/${item.name}` : item.name;
-            navigate(`${basePath || "/app/project/1/specs"}/${newPath}`);
+            navigate(`${BASE}/${newPath}`);
         } else {
-            setSelectedItem(item);
-            setShowMobileDetails(true);
+            setSelectedFile(item);
         }
     };
 
     const handleBreadcrumbClick = (index: number) => {
-        if (index === -1) {
-            // go back to the base specs route
-            navigate(basePath || "/app/project/1/specs");
-        } else {
-            const newPath = pathSegments.slice(0, index + 1).join("/");
-            navigate(`${basePath || "/app/project/1/specs"}/${newPath}`);
-        }
+        if (index === -1) navigate(BASE);
+        else navigate(`${BASE}/${pathSegments.slice(0, index + 1).join("/")}`);
     };
 
     const toggleSelectAll = () => {
-        if (selectedItems.size === sortedAndFilteredItems.length) {
+        if (selectedItems.size === sortedCurrentItems.length && sortedCurrentItems.length > 0)
             setSelectedItems(new Set());
-        } else {
-            setSelectedItems(new Set(sortedAndFilteredItems.map((item) => item.id)));
-        }
+        else setSelectedItems(new Set(sortedCurrentItems.map((i) => i.id)));
     };
 
-    const toggleItemSelection = (itemId: string, event: React.MouseEvent) => {
-        event.stopPropagation();
-        const newSelectedItems = new Set(selectedItems);
-        if (newSelectedItems.has(itemId)) {
-            newSelectedItems.delete(itemId);
-        } else {
-            newSelectedItems.add(itemId);
-        }
-        setSelectedItems(newSelectedItems);
+    const toggleItemSelection = (id: string, e: React.MouseEvent) => {
+        e.stopPropagation();
+        const next = new Set(selectedItems);
+        next.has(id) ? next.delete(id) : next.add(id);
+        setSelectedItems(next);
     };
 
-    const FileDetailContent = ({ selectedItem }: { selectedItem: FileItem }) => {
-        return (
-            <div className="space-y-6 px-4">
-                <div className="flex flex-col items-center py-4">
-                    <div className="flex items-center mb-8 mt-2">
-                        <div className="scale-[3]">{getFileIcon(selectedItem.icon)}</div>
-                    </div>
-                    <h2 className="text-foreground text-center font-bold mb-4">{selectedItem.name}</h2>
+    const openEditor = (item: FileItem) => {
+        setSelectedFile(item);
+        const code = `// Editing ${item.name}\n\n`;
+        setOriginalContent(code);
+        setCurrentContent(code);
+        setIsReviewingDiff(false);
+        setSaveMessage("");
+        setIsEditing(true);
+    };
 
-                    <div className="flex items-center justify-center gap-2 w-full mb-2">
-                        {selectedItem.type !== "folder" ? (
-                            <Button size="sm" variant="default" className="flex-1" onClick={() => {
-                                const initialCode = `// Editing ${selectedItem.name}\n\n`;
-                                setOriginalContent(initialCode);
-                                setCurrentContent(initialCode);
-                                setIsReviewingDiff(false);
-                                setSaveMessage("");
-                                setIsEditing(true);
-                            }}>
-                                <Edit3Icon className="w-4 h-4 mr-2" /> Edit
+    // ── Detail panel content ─────────────────────────────────────────────────
+    const FileDetailPanel = ({ item }: { item: FileItem }) => (
+        <div className="flex flex-col h-full">
+            <div className="flex items-center justify-between px-4 py-3 border-b shrink-0">
+                <span className="text-sm font-semibold truncate pr-2">{item.name}</span>
+                <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" onClick={() => setSelectedFile(null)}>
+                    <XIcon className="h-3.5 w-3.5" />
+                </Button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto">
+                <div className="p-4 space-y-5">
+                    {/* Icon + actions */}
+                    <div className="flex flex-col items-center pt-2 pb-1 gap-4">
+                        <div className="scale-[2.5] mt-1">{getFileIcon(item.icon, "md")}</div>
+                        <div className="flex items-center gap-2 w-full mt-2">
+                            {item.type !== "folder" ? (
+                                <Button size="sm" className="flex-1" onClick={() => openEditor(item)}>
+                                    <Edit3Icon className="w-3.5 h-3.5 mr-1.5" /> Edit
+                                </Button>
+                            ) : (
+                                <Button size="sm" className="flex-1" onClick={() => handleItemClick(item)}>
+                                    <FolderOpenIcon className="w-3.5 h-3.5 mr-1.5" /> Open
+                                </Button>
+                            )}
+                            <Button size="sm" variant="outline" className="px-2.5">
+                                <DownloadIcon className="w-3.5 h-3.5" />
                             </Button>
-                        ) : (
-                            <Button size="sm" variant="default" className="flex-1" onClick={() => {
-                                const newPath = currentPath ? `${currentPath}/${selectedItem.name}` : selectedItem.name;
-                                navigate(`${basePath || "/app/project/1/specs"}/${newPath}`);
-                            }}>
-                                <FolderOpenIcon className="w-4 h-4 mr-2" /> Open
+                            <Button size="sm" variant="outline" className="px-2.5 text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40">
+                                <Trash2Icon className="w-3.5 h-3.5" />
                             </Button>
-                        )}
-                        <Button size="sm" variant="outline" className="px-3" title="Download">
-                            <DownloadIcon className="w-4 h-4" />
-                        </Button>
-                        <Button size="sm" variant="outline" className="px-3 text-red-600 hover:bg-red-50 dark:hover:bg-red-950 hover:text-red-700" title="Delete">
-                            <Trash2Icon className="w-4 h-4" />
-                        </Button>
-                    </div>
-                </div>
-
-                <div>
-                    <h3 className="text-foreground mb-4 font-semibold tracking-wider uppercase">
-                        Info
-                    </h3>
-                    <div className="space-y-3">
-                        <div className="flex justify-between">
-                            <span className="text-muted-foreground">Type</span>
-                            <span className="text-foreground capitalize">{selectedItem.type}</span>
-                        </div>
-                        <div className="flex justify-between">
-                            <span className="text-muted-foreground">Size</span>
-                            <span className="text-foreground">{selectedItem.size}</span>
-                        </div>
-                        <div className="flex justify-between">
-                            <span className="text-muted-foreground">Owner</span>
-                            <span className="text-foreground">ArtTemplate</span>
-                        </div>
-                        <div className="flex justify-between">
-                            <span className="text-muted-foreground">Location</span>
-                            <span>
-                                {currentPath ? `My Files/${currentPath}` : "My Files"}
-                            </span>
-                        </div>
-                        <div className="flex justify-between">
-                            <span className="text-muted-foreground">Modified</span>
-                            <span className="text-foreground">Sep 17, 2020 4:25</span>
-                        </div>
-                        <div className="flex justify-between">
-                            <span className="text-muted-foreground">Created</span>
-                            <span className="text-foreground">Sep 10, 2020 2:25</span>
                         </div>
                     </div>
-                </div>
 
-                <div>
-                    <h3 className="text-foreground mb-4 font-semibold tracking-wider uppercase">
-                        Settings
-                    </h3>
-                    <div className="space-y-4">
-                        <div className="flex items-center justify-between">
-                            <span className="text-foreground">File Sharing</span>
-                            <Switch checked={true} />
+                    <Separator />
+
+                    {/* Info section */}
+                    <div>
+                        <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground mb-3">Info</p>
+                        <div className="space-y-2.5 text-sm">
+                            {([
+                                ["Type", <span className="capitalize">{item.type}</span>],
+                                ["Size", item.size ?? "--"],
+                                ["Owner", item.owner?.name ?? "—"],
+                                ["Location", currentPath ? `/${currentPath}` : "/"],
+                                ["Modified", item.date ?? "—"],
+                            ] as [string, React.ReactNode][]).map(([label, val]) => (
+                                <div key={label} className="flex items-center justify-between gap-2">
+                                    <span className="text-muted-foreground shrink-0">{label}</span>
+                                    <span className="text-foreground text-right truncate text-xs">{val}</span>
+                                </div>
+                            ))}
                         </div>
-                        <div className="flex items-center justify-between">
-                            <span className="text-foreground">Backup</span>
-                            <Switch />
-                        </div>
-                        <div className="flex items-center justify-between">
-                            <span className="text-foreground">Sync</span>
-                            <Switch />
+                    </div>
+
+                    <Separator />
+
+                    {/* Settings section */}
+                    <div>
+                        <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground mb-3">Settings</p>
+                        <div className="space-y-3">
+                            {([["File Sharing", true], ["Backup", false], ["Sync", false]] as [string, boolean][]).map(
+                                ([label, def]) => (
+                                    <div key={label} className="flex items-center justify-between">
+                                        <span className="text-sm">{label}</span>
+                                        <Switch defaultChecked={def} />
+                                    </div>
+                                )
+                            )}
                         </div>
                     </div>
                 </div>
             </div>
-        );
-    };
+        </div>
+    );
 
-    if (isEditing && selectedItem) {
+    // ── Monaco Editor (full-screen edit mode) ────────────────────────────────
+    if (isEditing && selectedFile) {
         if (isReviewingDiff) {
             return (
                 <div className="flex flex-col h-[calc(100vh-14rem)] min-h-[500px] w-full bg-background rounded-lg border shadow-sm">
                     <div className="flex items-center justify-between border-b px-4 py-3 bg-muted/30">
                         <div className="flex items-center gap-3">
-                            <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => setIsReviewingDiff(false)}>
+                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setIsReviewingDiff(false)}>
                                 <XIcon className="h-4 w-4" />
                             </Button>
-                            <h2 className="text-sm font-semibold">Review Changes: {selectedItem.name}</h2>
+                            <h2 className="text-sm font-semibold">Review Changes: {selectedFile.name}</h2>
                         </div>
                         <div className="flex items-center gap-3">
-                            <Input
-                                value={saveMessage}
-                                onChange={(e) => setSaveMessage(e.target.value)}
-                                placeholder="Commit message (Optional)..."
-                                className="h-8 w-64 text-sm"
-                            />
-                            <Button size="sm" onClick={() => {
-                                setIsReviewingDiff(false);
-                                setIsEditing(false);
-                            }}>Cancel</Button>
-                            <Button size="sm" onClick={() => {
-                                setIsReviewingDiff(false);
-                                setIsEditing(false);
-                            }}>Confirm Save</Button>
+                            <Input value={saveMessage} onChange={(e) => setSaveMessage(e.target.value)} placeholder="Commit message (Optional)..." className="h-8 w-64 text-sm" />
+                            <Button size="sm" variant="ghost" onClick={() => { setIsReviewingDiff(false); setIsEditing(false); }}>Cancel</Button>
+                            <Button size="sm" onClick={() => { setIsReviewingDiff(false); setIsEditing(false); }}>Confirm Save</Button>
                         </div>
                     </div>
-                    <div className="flex-1 overflow-hidden bg-[#1e1e1e] relative">
-                        <DiffEditor
-                            height="100%"
-                            language={selectedItem.name.endsWith('.ts') ? 'typescript' : 'javascript'}
-                            original={originalContent}
-                            modified={currentContent}
-                            theme="vs-dark"
-                            options={{
-                                renderSideBySide: true,
-                                minimap: { enabled: false },
-                                fontSize: 14,
-                                padding: { top: 16 },
-                            }}
-                        />
+                    <div className="flex-1 overflow-hidden bg-[#1e1e1e]">
+                        <DiffEditor height="100%" language={selectedFile.name.endsWith(".ts") ? "typescript" : "javascript"} original={originalContent} modified={currentContent} theme="vs-dark" options={{ renderSideBySide: true, minimap: { enabled: false }, fontSize: 14, padding: { top: 16 } }} />
                     </div>
                 </div>
             );
@@ -404,12 +395,12 @@ export function FileManager({ files = [], basePath = "", title = "File Manager",
             <div className="flex flex-col h-[calc(100vh-14rem)] min-h-[500px] w-full bg-background rounded-lg border shadow-sm">
                 <div className="flex items-center justify-between border-b px-4 py-3 bg-muted/30">
                     <div className="flex items-center gap-3">
-                        <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => setIsEditing(false)}>
+                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setIsEditing(false)}>
                             <XIcon className="h-4 w-4" />
                         </Button>
                         <div className="flex flex-col min-w-0">
-                            <span className="text-sm font-semibold truncate">{selectedItem.name}</span>
-                            <span className="text-xs text-muted-foreground truncate">{currentPath ? `My Files/${currentPath}` : "My Files"}</span>
+                            <span className="text-sm font-semibold truncate">{selectedFile.name}</span>
+                            <span className="text-xs text-muted-foreground">{currentPath ? `/${currentPath}` : "/"}</span>
                         </div>
                     </div>
                     <div className="flex items-center gap-2">
@@ -418,181 +409,230 @@ export function FileManager({ files = [], basePath = "", title = "File Manager",
                         <Button size="sm" onClick={() => setIsReviewingDiff(true)}>Save</Button>
                     </div>
                 </div>
-                <div className="flex-1 overflow-hidden bg-[#1e1e1e] relative">
-                    <Editor
-                        height="100%"
-                        defaultLanguage={selectedItem.name.endsWith('.ts') ? 'typescript' : 'javascript'}
-                        value={currentContent}
-                        onChange={(val) => setCurrentContent(val || "")}
-                        onMount={handleEditorDidMount}
-                        theme="vs-dark"
-                        options={{
-                            minimap: { enabled: false },
-                            fontSize: 14,
-                            padding: { top: 16 },
-                        }}
-                    />
+                <div className="flex-1 overflow-hidden bg-[#1e1e1e]">
+                    <Editor height="100%" defaultLanguage={selectedFile.name.endsWith(".ts") ? "typescript" : "javascript"} value={currentContent} onChange={(val) => setCurrentContent(val || "")} onMount={handleEditorDidMount} theme="vs-dark" options={{ minimap: { enabled: false }, fontSize: 14, padding: { top: 16 } }} />
                 </div>
             </div>
         );
     }
 
+    // ── Main Explorer Layout ─────────────────────────────────────────────────
+    const sortLabel = (opt: SortOption) => {
+        if (sortBy !== opt) return opt === "name" ? "Name" : opt === "date" ? "Date" : "Size";
+        return `${opt === "name" ? "Name" : opt === "date" ? "Date" : "Size"} ${sortDirection === "asc" ? "↑" : "↓"}`;
+    };
+
     return (
-        <div className="flex p-4">
-            <div className="border-border min-w-0 flex-1 space-y-4">
-                {/* Breadcrumb Navigation */}
-                <div className="flex justify-between">
-                    <div className="flex items-center gap-4">
-                        <h1 className="font-bold tracking-tight">{title}</h1>
-                        {pathSegments.length > 0 && (
-                            <>
-                                <Separator
-                                    orientation="vertical"
-                                    className="mx-2 data-[orientation=vertical]:h-4"
-                                />
-                                <div className="border-border/50 bg-muted/20 flex items-center overflow-x-auto">
-                                    <Breadcrumb>
-                                        <BreadcrumbList>
-                                            <BreadcrumbItem
-                                                className="cursor-pointer"
-                                                onClick={() => handleBreadcrumbClick(-1)}>
-                                                <Home className="h-4 w-4" />
+        <div className="flex flex-col h-full border rounded-lg overflow-hidden bg-background">
+
+            {/* ── Header ── */}
+            <div className="flex items-center justify-between px-4 py-2.5 border-b bg-muted/20 shrink-0">
+                <div className="flex items-center gap-3 min-w-0">
+                    <h1 className="font-bold tracking-tight text-sm whitespace-nowrap">{title}</h1>
+                    {pathSegments.length > 0 && (
+                        <>
+                            <Separator orientation="vertical" className="h-4" />
+                            <Breadcrumb>
+                                <BreadcrumbList>
+                                    <BreadcrumbItem className="cursor-pointer" onClick={() => handleBreadcrumbClick(-1)}>
+                                        <Home className="h-3.5 w-3.5" />
+                                    </BreadcrumbItem>
+                                    <BreadcrumbSeparator />
+                                    {pathSegments.map((seg, i) => (
+                                        <span key={i} className="flex items-center gap-1">
+                                            <BreadcrumbItem className="cursor-pointer text-xs" onClick={() => handleBreadcrumbClick(i)}>
+                                                {seg}
                                             </BreadcrumbItem>
-                                            <BreadcrumbSeparator />
-                                            {pathSegments.map((segment, i) => (
-                                                <>
-                                                    <BreadcrumbItem
-                                                        className="cursor-pointer"
-                                                        key={i}
-                                                        onClick={() => handleBreadcrumbClick(i)}>
-                                                        {segment}
-                                                    </BreadcrumbItem>
-                                                    {i < pathSegments.length - 1 && <BreadcrumbSeparator />}
-                                                </>
-                                            ))}
-                                        </BreadcrumbList>
-                                    </Breadcrumb>
-                                </div>
-                            </>
-                        )}
-                    </div>
-
-                    <div className="border-border flex items-center justify-between gap-2">
-                        {actions}
-                    </div>
+                                            {i < pathSegments.length - 1 && <BreadcrumbSeparator />}
+                                        </span>
+                                    ))}
+                                </BreadcrumbList>
+                            </Breadcrumb>
+                        </>
+                    )}
                 </div>
-
-                <div className="flex border-t">
-                    {/* File List */}
-                    <div className="min-w-0 grow">
-                        {sortedAndFilteredItems.map((item) => (
-                            <div
-                                key={item.id}
-                                className={cn(
-                                    "hover:bg-muted flex cursor-pointer items-center justify-between border-b px-4 py-2.5 text-sm",
-                                    selectedItem?.id === item.id && "bg-muted"
-                                )}
-                                onClick={() => handleItemClick(item)}>
-                                <div className="flex min-w-0 items-center space-x-4">
-                                    <Checkbox
-                                        defaultChecked={selectedItem?.id === item.id}
-                                        checked={selectedItems.has(item.id)}
-                                        onClick={(e) => toggleItemSelection(item.id, e)}
-                                    />
-                                    <div className="shrink-0">{getFileIcon(item.icon)}</div>
-                                    <div className="min-w-0 truncate">{item.name}</div>
-                                </div>
-
-                                <div className="text-muted-foreground flex items-center space-x-4">
-                                    <span className="hidden w-16 text-right lg:inline">{item.date}</span>
-                                    <span className="hidden w-16 text-right lg:inline">{item.size}</span>
-                                    <Avatar className="h-6 w-6">
-                                        <AvatarImage src={item.owner.avatar || "/placeholder.svg"} />
-                                        <AvatarFallback className="text-xs">{item.owner.name.charAt(0)}</AvatarFallback>
-                                    </Avatar>
-                                    <DropdownMenu>
-                                        <DropdownMenuTrigger asChild>
-                                            <Button variant="ghost" size="icon">
-                                                <MoreHorizontalIcon />
-                                            </Button>
-                                        </DropdownMenuTrigger>
-                                        <DropdownMenuContent align="end">
-                                            <DropdownMenuItem onClick={() => {
-                                                setSelectedItem(item);
-                                                const initialCode = `// Editing ${item.name}\n\n`;
-                                                setOriginalContent(initialCode);
-                                                setCurrentContent(initialCode);
-                                                setIsReviewingDiff(false);
-                                                setSaveMessage("");
-                                                setIsEditing(true);
-                                            }}>
-                                                <span className="font-semibold text-primary">Edit File</span>
-                                            </DropdownMenuItem>
-                                            <DropdownMenuSeparator />
-                                            <DropdownMenuItem>Compress</DropdownMenuItem>
-                                            <DropdownMenuItem>Archive</DropdownMenuItem>
-                                            <DropdownMenuItem>Share</DropdownMenuItem>
-                                            <DropdownMenuSeparator />
-                                            <DropdownMenuItem>Move</DropdownMenuItem>
-                                            <DropdownMenuItem>Copy</DropdownMenuItem>
-                                            <DropdownMenuItem className="text-red-600!">Delete</DropdownMenuItem>
-                                        </DropdownMenuContent>
-                                    </DropdownMenu>
-                                </div>
-                            </div>
-                        ))}
-
-                        {sortedAndFilteredItems.length === 0 && searchQuery && (
-                            <div className="text-muted-foreground flex items-center justify-center p-8 text-center">
-                                No files or folders found matching &#34;{searchQuery}&#34;
-                            </div>
-                        )}
-
-                        {sortedAndFilteredItems.length === 0 && !searchQuery && currentPath && (
-                            <div className="flex h-[calc(100vh-var(--header-height)-3rem)] flex-col items-center justify-center">
-                                <div className="mx-auto max-w-md space-y-4 text-center">
-                                    <FolderPlus className="mx-auto size-14 opacity-50" />
-                                    <h2 className="text-muted-foreground">This folder is empty.</h2>
-                                    <div>
-                                        <Button>
-                                            <UploadIcon />
-                                            Upload
-                                        </Button>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-
-                        {pathSegments.length === 0 && (
-                            <div className="mt-4">
-                                <FileManagerPagination />
-                            </div>
-                        )}
-                    </div>
-
-                    {/* Desktop Right Panel - Details */}
-                    {selectedItem && !isMobile ? (
-                        <div className="relative w-80 border-s py-6">
-                            <Button
-                                onClick={() => setSelectedItem(null)}
-                                variant="ghost"
-                                size="icon"
-                                className="absolute top-2 right-0">
-                                <XIcon />
-                            </Button>
-                            <FileDetailContent selectedItem={selectedItem} />
-                        </div>
-                    ) : null}
-                </div>
+                <div className="flex items-center gap-2 shrink-0">{actions}</div>
             </div>
 
-            {selectedItem && isMobile && (
-                <Sheet open={showMobileDetails} onOpenChange={setShowMobileDetails}>
+            {/* ── Body ── */}
+            {/* @ts-ignore */}
+            <ResizablePanelGroup direction="horizontal" className="flex-1 overflow-hidden">
+
+                {/* ── LEFT TREE PANE ── */}
+                {!isMobile && (
+                    <ResizablePanel id="left-pane" defaultSize={20} minSize={10} className="flex flex-col bg-muted/5 min-w-0">
+                        <div className="px-3 py-2 border-b">
+                            <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground whitespace-nowrap">
+                                Explorer
+                            </span>
+                        </div>
+                        <div className="flex-1 overflow-y-auto py-1.5 px-1 min-w-0">
+                            {!loadingRoot && rootItems.map((item: FileItem) => (
+                                <LeftTreeItem
+                                    key={item.id}
+                                    item={item}
+                                    depth={0}
+                                    pathSegments={pathSegments}
+                                    BASE={BASE}
+                                    projectId={projectId}
+                                    navigate={navigate}
+                                    setSelectedFile={setSelectedFile}
+                                />
+                            ))}
+                            {loadingRoot && (
+                                <div className="p-4 flex flex-col items-center justify-center opacity-50 space-y-2">
+                                    <span className="w-4 h-4 rounded-full border-2 border-primary border-t-transparent animate-spin"/>
+                                    <span className="text-xs">Loading tree...</span>
+                                </div>
+                            )}
+                        </div>
+                    </ResizablePanel>
+                )}
+                
+                {!isMobile && <ResizableHandle withHandle id="pane-handle" />}
+
+                {/* ── RIGHT CONTENT PANE ── */}
+                <ResizablePanel id="right-pane" defaultSize={isMobile ? 100 : 80} minSize={10} className="flex flex-col relative overflow-hidden bg-background min-w-0">
+
+                    {/* Column header */}
+                    <div className="flex items-center justify-between border-b px-4 py-2 bg-muted/10 shrink-0 text-xs text-muted-foreground">
+                        <div className="flex items-center gap-3">
+                            <Checkbox
+                                checked={selectedItems.size === sortedCurrentItems.length && sortedCurrentItems.length > 0}
+                                onCheckedChange={toggleSelectAll}
+                                className="h-3.5 w-3.5"
+                            />
+                            <span
+                                className="cursor-pointer hover:text-foreground transition-colors"
+                                onClick={() => handleSortChange("name")}
+                            >
+                                {sortLabel("name")}
+                            </span>
+                        </div>
+                        <div className="hidden lg:flex items-center gap-4">
+                            <span className="cursor-pointer hover:text-foreground w-16 text-right" onClick={() => handleSortChange("date")}>{sortLabel("date")}</span>
+                            <span className="cursor-pointer hover:text-foreground w-14 text-right" onClick={() => handleSortChange("size")}>{sortLabel("size")}</span>
+                            <span className="w-6" /><span className="w-8" />
+                        </div>
+                    </div>
+
+                    {/* File list + overlay detail panel */}
+                    <div className="flex-1 overflow-hidden relative min-w-0">
+                        <div className={cn(
+                            "h-full overflow-y-auto transition-[margin] duration-200 min-w-0",
+                            selectedFile && !isMobile ? "mr-72" : ""
+                        )}>
+                            {loadingFolder && (
+                                <div className="flex flex-col items-center justify-center h-full gap-3 text-muted-foreground opacity-50">
+                                    <span className="w-8 h-8 rounded-full border-4 border-primary border-t-transparent animate-spin"/>
+                                    <p className="text-sm">Loading folder contents...</p>
+                                </div>
+                            )}
+
+                            {!loadingFolder && sortedCurrentItems.length === 0 && (
+                                <div className="flex flex-col items-center justify-center h-full gap-3 text-muted-foreground">
+                                    <FolderPlus className="size-10 opacity-30" />
+                                    <p className="text-sm">This folder is empty</p>
+                                    <Button size="sm" variant="outline">
+                                        <UploadIcon className="h-3.5 w-3.5 mr-1.5" /> Upload
+                                    </Button>
+                                </div>
+                            )}
+
+                            {!loadingFolder && sortedCurrentItems.map((item: FileItem) => (
+                                <div
+                                    key={item.id}
+                                    className={cn(
+                                        "flex cursor-pointer items-center justify-between border-b px-4 py-2.5 text-sm transition-colors",
+                                        "hover:bg-muted/50",
+                                        selectedFile?.id === item.id && "bg-accent/40"
+                                    )}
+                                    onClick={() => handleItemClick(item)}
+                                >
+                                    <div className="flex min-w-0 items-center gap-3">
+                                        <Checkbox
+                                            checked={selectedItems.has(item.id)}
+                                            onClick={(e) => toggleItemSelection(item.id, e as React.MouseEvent)}
+                                            className="h-3.5 w-3.5 shrink-0"
+                                        />
+                                        <span className="shrink-0">{getFileIcon(item.icon)}</span>
+                                        <span className="truncate">{item.name}</span>
+                                    </div>
+                                    <div className="flex items-center gap-4 text-muted-foreground">
+                                        <span className="hidden lg:block w-16 text-right text-xs">{item.date}</span>
+                                        <span className="hidden lg:block w-14 text-right text-xs">{item.size}</span>
+                                        <Avatar className="h-5 w-5">
+                                            <AvatarImage src={item.owner?.avatar || "/placeholder.svg"} />
+                                            <AvatarFallback className="text-[10px]">{item.owner?.name?.charAt(0)}</AvatarFallback>
+                                        </Avatar>
+                                        <DropdownMenu>
+                                            <DropdownMenuTrigger asChild>
+                                                <Button
+                                                    variant="ghost" size="icon" className="h-7 w-7"
+                                                    onClick={(e) => e.stopPropagation()}
+                                                >
+                                                    <MoreHorizontalIcon className="h-4 w-4" />
+                                                </Button>
+                                            </DropdownMenuTrigger>
+                                            <DropdownMenuContent align="end">
+                                                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); openEditor(item); }}>
+                                                    <span className="font-semibold text-primary">Edit File</span>
+                                                </DropdownMenuItem>
+                                                {onRunFile && item.type === 'file' && (
+                                                    <>
+                                                        <DropdownMenuSeparator />
+                                                        <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onRunFile(item.id); }}>
+                                                            <span className="text-green-500 font-medium">▶ Run Tests</span>
+                                                        </DropdownMenuItem>
+                                                    </>
+                                                )}
+                                                {onRunFile && item.type === 'folder' && (
+                                                    <>
+                                                        <DropdownMenuSeparator />
+                                                        <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onRunFile(item.id); }}>
+                                                            <span className="text-green-500 font-medium">▶ Run Folder Tests</span>
+                                                        </DropdownMenuItem>
+                                                    </>
+                                                )}
+                                                <DropdownMenuSeparator />
+                                                <DropdownMenuItem>Compress</DropdownMenuItem>
+                                                <DropdownMenuItem>Archive</DropdownMenuItem>
+                                                <DropdownMenuItem>Share</DropdownMenuItem>
+                                                <DropdownMenuSeparator />
+                                                <DropdownMenuItem>Move</DropdownMenuItem>
+                                                <DropdownMenuItem>Copy</DropdownMenuItem>
+                                                <DropdownMenuItem className="text-red-600!">Delete</DropdownMenuItem>
+                                            </DropdownMenuContent>
+                                        </DropdownMenu>
+                                    </div>
+                                </div>
+                            ))}
+
+                            {pathSegments.length === 0 && sortedCurrentItems.length > 0 && (
+                                <div className="mt-4 px-4">
+                                    <FileManagerPagination />
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Desktop detail panel — slides in from right */}
+                        {selectedFile && !isMobile && (
+                            <div className="absolute top-0 right-0 h-full w-72 border-l bg-background shadow-xl animate-in slide-in-from-right duration-200 overflow-hidden">
+                                <FileDetailPanel item={selectedFile} />
+                            </div>
+                        )}
+                    </div>
+                </ResizablePanel>
+            </ResizablePanelGroup>
+
+            {/* Mobile detail sheet */}
+            {selectedFile && isMobile && (
+                <Sheet open={!!selectedFile} onOpenChange={(open) => !open && setSelectedFile(null)}>
                     <SheetContent>
                         <SheetHeader>
-                            <SheetTitle>File Details</SheetTitle>
+                            <SheetTitle>Details</SheetTitle>
                         </SheetHeader>
-                        <FileDetailContent selectedItem={selectedItem} />
+                        <FileDetailPanel item={selectedFile} />
                     </SheetContent>
                 </Sheet>
             )}

@@ -12,6 +12,7 @@ export default function DashboardLayout() {
   // pathnames = ["app", "project", "1", "specs"]
   const getRouteTitle = (segment: string) => {
     if (!segment) return "Dashboard";
+    if (segment === "specs") return "User Journeys";
     return segment.charAt(0).toUpperCase() + segment.slice(1).replace('-', ' ');
   };
 
@@ -19,7 +20,7 @@ export default function DashboardLayout() {
   // If we are at /app/project/1/specs?path=scripts, location.search handles the query
   const searchParams = new URLSearchParams(location.search);
   const folderPath = searchParams.get("path");
-  
+
   let pageTitle = pathnames.length > 0 ? getRouteTitle(pathnames[pathnames.length - 1]) : "Dashboard";
   if (folderPath) {
     pageTitle = `${pageTitle} (${folderPath})`;
@@ -32,7 +33,7 @@ export default function DashboardLayout() {
         <main className="flex w-full flex-col">
           <header className="flex h-14 items-center gap-4 border-b bg-muted/40 px-6 lg:h-[60px]">
             <SidebarTrigger />
-            
+
             <Breadcrumb>
               <BreadcrumbList>
                 <BreadcrumbItem>
