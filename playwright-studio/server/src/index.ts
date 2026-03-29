@@ -317,9 +317,14 @@ app.get('/app/*', (req, res) => {
   res.sendFile(path.join(staticPath, 'index.html'));
 });
 
-// Root redirect to /app/
+// Redirect root '/' to '/app/projects'
 app.get('/', (req, res) => {
-  res.redirect('/app/');
+  res.redirect('/app/projects');
+});
+
+// Redirect '/app' specifically to '/app/projects'
+app.get('/app', (req, res) => {
+  res.redirect('/app/projects');
 });
 
 // WebSocket setup
