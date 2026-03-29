@@ -1,0 +1,122 @@
+[
+  {
+    "id": "home-page",
+    "name": "homepage-flow",
+    "type": "folder",
+    "size": "--",
+    "date": "22.03.26",
+    "icon": "folder",
+    "owner": {
+      "name": "Developer",
+      "avatar": ""
+    },
+    "children": [
+      {
+        "id": "sub-folder",
+        "name": "sub-flow",
+        "type": "folder",
+        "size": "--",
+        "date": "22.03.26",
+        "icon": "folder",
+        "owner": {
+          "name": "Developer",
+          "avatar": ""
+        },
+        "childern": [
+          {
+            "id": "sub-folder-2",
+            "name": "sub-flow-2",
+            "type": "folder",
+            "size": "--",
+            "date": "22.03.26",
+            "icon": "folder",
+            "owner": {
+              "name": "Developer",
+              "avatar": ""
+            },
+            "children": [
+              {
+                "id": "1-1",
+                "name": "auth.spec.ts",
+                "type": "file",
+                "size": "45 KB",
+                "date": "22.03.26",
+                "icon": "file",
+                "owner": {
+                  "name": "Developer",
+                  "avatar": ""
+                },
+                "parentPath": "login-flow"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "home-page-1-1",
+        "name": "user-flow.spec.ts",
+        "type": "file",
+        "size": "45 KB",
+        "date": "22.03.26",
+        "icon": "file",
+        "owner": {
+          "name": "Developer",
+          "avatar": ""
+        },
+        "parentPath": "home-page"
+      },
+      {
+        "id": "home-page-1-2",
+        "name": "admin-flow.spec.ts",
+        "type": "file",
+        "size": "45 KB",
+        "date": "22.03.26",
+        "icon": "file",
+        "owner": {
+          "name": "Developer",
+          "avatar": ""
+        },
+        "parentPath": "home-page"
+      }
+    ]
+  },
+  {
+    "id": "1",
+    "name": "login-flow",
+    "type": "folder",
+    "size": "--",
+    "date": "22.03.26",
+    "icon": "folder",
+    "owner": {
+      "name": "Developer",
+      "avatar": ""
+    },
+    "children": [
+      {
+        "id": "1-1",
+        "name": "auth.spec.ts",
+        "type": "file",
+        "size": "45 KB",
+        "date": "22.03.26",
+        "icon": "file",
+        "owner": {
+          "name": "Developer",
+          "avatar": ""
+        },
+        "parentPath": "login-flow"
+      }
+    ]
+  },
+  {
+    "id": "2",
+    "name": "checkout-cart.spec.ts",
+    "type": "file",
+    "size": "12 KB",
+    "date": "21.03.26",
+    "icon": "file",
+    "owner": {
+      "name": "Developer",
+      "avatar": ""
+    }
+  }
+]

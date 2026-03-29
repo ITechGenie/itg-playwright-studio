@@ -1,0 +1,122 @@
+import { defineConfig, devices } from '@playwright/test';
+import * as path from 'path';
+
+/**
+ * Centralized Playwright configuration for all test projects.
+ * This config is used by the server when executing tests from any project.
+ * 
+ * The server will run playwright from the project directory (D:\tmp\playwright-studio\projects\{projectId})
+ * with this config file, so all paths are relative to the project being tested.
+ * 
+ * Environment variables injected per run:
+ * - REPORT_DIR: Where to store HTML reports
+ * - RESULTS_DIR: Where to store test-results (screenshots, videos, traces)
+ * - HEADED: Whether to run in headed mode
+ * - TEST_ENV: Environment identifier (development, staging, production)
+ */
+export default defineConfig({
+  // Look for test files in the project directory (cwd will be the project path)
+  testDir: './',
+  
+  // Test file patterns - look for common test file naming conventions
+  testMatch: [
+    '**/*.spec.ts',
+    '**/*.spec.js', 
+    '**/*.test.ts',
+    '**/*.test.js',
+    '**/tests/**/*.ts',
+    '**/tests/**/*.js',
+    '**/test/**/*.ts',
+    '**/test/**/*.js',
+  ],
+  
+  // Timeout per test
+  timeout: parseInt(process.env.TIMEOUT || '30000'),
+  
+  // Expect timeout
+  expect: {
+    timeout: 5000,
+  },
+  
+  // Run tests in files in parallel
+  fullyParallel: true,
+  
+  // Fail the build on CI if you accidentally left test.only in the source code
+  forbidOnly: !!process.env.CI,
+  
+  // Retry on CI only
+  retries: process.env.CI ? 2 : 0,
+  
+  // Workers controlled via CLI args
+  workers: undefined, // Set via --workers flag
+  
+  // Reporter configuration
+  reporter: [
+    ['list'],
+    ['html', { 
+      outputFolder: process.env.REPORT_DIR || './playwright-report',
+      open: 'never' 
+    }],
+    ['json', { 
+      outputFile: process.env.REPORT_DIR 
+        ? `${process.env.REPORT_DIR}/results.json` 
+        : './test-results.json' 
+    }],
+  ],
+  
+  // Shared settings for all projects
+  use: {
+    // Base URL for navigation
+    baseURL: process.env.BASE_URL || 'http://localhost:3000',
+    
+    // Collect trace on failure
+    trace: 'retain-on-failure',
+    
+    // Screenshot on failure
+    screenshot: 'only-on-failure',
+    
+    // Video on failure
+    video: 'retain-on-failure',
+    
+    // Output directory for artifacts
+    ...(process.env.RESULTS_DIR && {
+      trace: 'retain-on-failure',
+      video: 'retain-on-failure',
+    }),
+  },
+  
+  // Output directory for test artifacts
+  outputDir: process.env.RESULTS_DIR || './test-results',
+  
+  // Configure projects for major browsers
+  projects: [
+    {
+      name: 'chromium',
+      use: { ...devices['Desktop Chrome'] },
+    },
+    {
+      name: 'firefox',
+      use: { ...devices['Desktop Firefox'] },
+    },
+    {
+      name: 'webkit',
+      use: { ...devices['Desktop Safari'] },
+    },
+    // Mobile viewports
+    {
+      name: 'Mobile Chrome',
+      use: { ...devices['Pixel 5'] },
+    },
+    {
+      name: 'Mobile Safari',
+      use: { ...devices['iPhone 12'] },
+    },
+  ],
+  
+  // Run your local dev server before starting the tests (optional)
+  // webServer: {
+  //   command: 'npm run start',
+  //   url: 'http://localhost:3000',
+  //   reuseExistingServer: !process.env.CI,
+  // },
+});
