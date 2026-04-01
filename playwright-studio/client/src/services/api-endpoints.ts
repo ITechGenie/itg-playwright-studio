@@ -14,6 +14,11 @@ export const ENDPOINTS = {
   RUN_DETAILS: (projectId: string, runId: string) => `${APIS_BASE}/project/${projectId}/run/${runId}`,
   PROJECT_CONFIG: (projectId: string) => `${APIS_BASE}/project/${projectId}/config`,
   
+  // Data Manager Routes
+  DATA_TEMPLATES: (projectId: string) => `${APIS_BASE}/project/${projectId}/data/templates`,
+  DATA_ENVIRONMENTS: (projectId: string) => `${APIS_BASE}/project/${projectId}/data/environments`,
+  DATA_DATASETS: (projectId: string, envId: string) => `${APIS_BASE}/project/${projectId}/data/environments/${envId}/datasets`,
+  
   // Auth Routes
   AUTH_ME: `${APIS_BASE}/auth/me`,
   AUTH_LOGOUT: `${APIS_BASE}/auth/logout`,

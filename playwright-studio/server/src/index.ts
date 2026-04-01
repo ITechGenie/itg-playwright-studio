@@ -7,6 +7,7 @@ import * as fs from 'fs/promises';
 import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
 import { createRunRouter } from './routes/run.js';
+import { createDataRouter } from './routes/data.js';
 import authRouter from './routes/auth.js';
 import { db, sqliteDb } from './db/index.js';
 import { projects, projectConfigs, roles } from './db/schema.js';
@@ -228,8 +229,9 @@ app.post('/apis/auth/projects', authMiddleware, requireProjectRole('user'), asyn
 // Auth routes: login/callback/me/pats
 app.use('/apis/auth', authRouter);
 
-// Mount run router under /apis/project with authentication and project role checks
+// Mount run router and data router under /apis/project with authentication and project role checks
 app.use('/apis/project', authMiddleware, requireProjectRole('user'), createRunRouter(wss));
+app.use('/apis/project', authMiddleware, requireProjectRole('user'), createDataRouter());
 
 // Project Specific Operations
 app.put('/apis/project/:projectId/config', authMiddleware, requireProjectRole('admin'), async (req, res) => {

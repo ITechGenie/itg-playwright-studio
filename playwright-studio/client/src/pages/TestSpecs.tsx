@@ -200,7 +200,7 @@ export default function TestSpecs() {
         dismissible={false}
         modal={false}
       >
-        <DrawerContent>
+        <DrawerContent className="w-[90vw] sm:max-w-none">
           <DrawerTitle className="sr-only">Test Runner</DrawerTitle>
           <DrawerDescription className="sr-only">
             Live output from the Playwright test execution.

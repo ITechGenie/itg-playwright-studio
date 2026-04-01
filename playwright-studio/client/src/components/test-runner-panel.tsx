@@ -10,6 +10,8 @@ import { XIcon, PlayIcon, RotateCcwIcon, ExternalLinkIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { apiClient } from "@/services/api-client";
 import { WS_ENDPOINT } from "@/services/api-endpoints";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuCheckboxItem, DropdownMenuLabel, DropdownMenuSeparator } from "@/components/ui/dropdown-menu"
 
 // Simple ANSI to HTML converter
 function ansiToHtml(text: string): string {
@@ -80,12 +82,30 @@ export function TestRunnerPanel({
   const [headless, setHeadless] = useState(true);
   const [workers, setWorkers] = useState("1");
   const [grep, setGrep] = useState("");
+  
+  // Data Manager States
+  const [environments, setEnvironments] = useState<any[]>([]);
+  const [selectedEnvId, setSelectedEnvId] = useState<string>("");
+  const [selectedDatasetIds, setSelectedDatasetIds] = useState<string[]>([]);
+
   const wsRef = useRef<WebSocket | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   const addLog = useCallback((type: LogLine["type"], text: string) => {
     setLogs(prev => [...prev, { id: _lineSeq++, type, text }]);
   }, []);
+
+  // ── Fetch Environments ───────────────────────────────────────────────────
+  useEffect(() => {
+    apiClient.getDataEnvironments(projectId)
+      .then(data => setEnvironments(data))
+      .catch(err => console.error("Failed to fetch environments", err));
+  }, [projectId]);
+
+  // Update datasets when environment changes
+  useEffect(() => {
+    setSelectedDatasetIds([]);
+  }, [selectedEnvId]);
 
   // ── Fetch existing logs if attaching to a run ────────────────────────────
   useEffect(() => {
@@ -180,6 +200,8 @@ export function TestRunnerPanel({
         video,
         screenshot,
         grep: grep || undefined,
+        envId: selectedEnvId || undefined,
+        dataSetIds: selectedDatasetIds.length > 0 ? selectedDatasetIds : undefined,
       };
 
       const data = await apiClient.runTests(projectId, options);
@@ -245,6 +267,63 @@ export function TestRunnerPanel({
             className="h-6 w-24 px-1.5 text-[10px] bg-zinc-950 border-zinc-800 text-zinc-300"
           />
         </div>
+        
+        {/* Data Manager Environments Selection */}
+        {environments.length > 0 && (
+          <div className="flex items-center gap-1.5 border-l border-zinc-800 pl-3">
+            <Label className="text-zinc-500 text-[10px] uppercase font-bold tracking-tight">Env</Label>
+            <Select value={selectedEnvId} onValueChange={setSelectedEnvId} disabled={running}>
+              <SelectTrigger className="h-6 w-[120px] text-[10px] bg-zinc-950 border-zinc-800 text-zinc-300">
+                <SelectValue placeholder="Base Env" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">None</SelectItem>
+                {environments.map(env => (
+                  <SelectItem key={env.id} value={env.id}>{env.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            
+            {/* Multi-Select Datasets Dropdown */}
+            {selectedEnvId && selectedEnvId !== "none" && (
+              <>
+                <Label className="text-zinc-500 text-[10px] uppercase font-bold tracking-tight ml-2">Datasets</Label>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild disabled={running}>
+                    <Button variant="outline" className="h-6 px-2 text-[10px] bg-zinc-950 border-zinc-800 text-zinc-300 min-w-[100px] justify-start text-left font-normal truncate">
+                      {selectedDatasetIds.length > 0 ? `${selectedDatasetIds.length} scenario${selectedDatasetIds.length > 1 ? 's' : ''}` : "Add test scenarios..."}
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent className="w-56" align="start">
+                    <DropdownMenuLabel className="text-xs">Data Set Scenarios</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    {environments.find(e => e.id === selectedEnvId)?.datasets?.length ? (
+                       environments.find(e => e.id === selectedEnvId)?.datasets.map((ds: any) => (
+                         <DropdownMenuCheckboxItem
+                            key={ds.id}
+                            className="text-xs"
+                            checked={selectedDatasetIds.includes(ds.id)}
+                            onCheckedChange={(checked) => {
+                              setSelectedDatasetIds(prev => 
+                                checked 
+                                  ? [...prev, ds.id] 
+                                  : prev.filter(id => id !== ds.id)
+                              )
+                            }}
+                         >
+                           {ds.name}
+                         </DropdownMenuCheckboxItem>
+                       ))
+                    ) : (
+                      <div className="p-2 text-xs text-muted-foreground">No datasets defined.</div>
+                    )}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </>
+            )}
+          </div>
+        )}
+
         <div className="flex-1" />
         {showNewTab && runId && (
           <Button
