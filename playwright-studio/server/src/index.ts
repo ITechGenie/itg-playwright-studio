@@ -308,6 +308,59 @@ app.get('/apis/project/:projectId/files', async (req, res) => {
   }
 });
 
+app.get('/apis/project/:projectId/files/content', authMiddleware, requireProjectRole('user'), async (req, res) => {
+  try {
+    const { projectId } = req.params;
+    const requestedSubPath = (req.query.path as string);
+    if (!requestedSubPath) return res.status(400).json({ error: 'Path required' });
+
+    const [project] = await db.select().from(projects).where(eq(projects.id, projectId));
+    if (!project) return res.status(404).json({ error: 'Project not found' });
+
+    const folderName = project.name;
+    const basePath = process.env.PROJECTS_BASE_PATH || path.join(process.cwd(), 'projects');
+    const projectRoot = path.resolve(basePath, folderName);
+    const targetPath = path.resolve(projectRoot, requestedSubPath);
+
+    if (!targetPath.startsWith(projectRoot)) return res.status(403).json({ error: 'Forbidden' });
+
+    const content = await fs.readFile(targetPath, 'utf8');
+    res.json({ content });
+  } catch (err) {
+    console.error('API Error:', err);
+    res.status(500).json({ error: 'Failed to read file content' });
+  }
+});
+
+app.put('/apis/project/:projectId/files/content', authMiddleware, requireProjectRole('user'), async (req, res) => {
+  try {
+    const { projectId } = req.params;
+    const requestedSubPath = (req.query.path as string);
+    const { content } = req.body;
+    
+    if (!requestedSubPath) return res.status(400).json({ error: 'Path required' });
+
+    const [project] = await db.select().from(projects).where(eq(projects.id, projectId));
+    if (!project) return res.status(404).json({ error: 'Project not found' });
+
+    const folderName = project.name;
+    const basePath = process.env.PROJECTS_BASE_PATH || path.join(process.cwd(), 'projects');
+    const projectRoot = path.resolve(basePath, folderName);
+    const targetPath = path.resolve(projectRoot, requestedSubPath);
+
+    if (!targetPath.startsWith(projectRoot)) return res.status(403).json({ error: 'Forbidden' });
+
+    // ensure parent dir exists
+    await fs.mkdir(path.dirname(targetPath), { recursive: true });
+    await fs.writeFile(targetPath, content, 'utf8');
+    
+    res.json({ success: true });
+  } catch (err) {
+    console.error('API Error:', err);
+    res.status(500).json({ error: 'Failed to write file content' });
+  }
+});
+
 // ── Static Assets & SPA Fallback ──
 const staticPath = path.join(process.cwd(), 'static');
 

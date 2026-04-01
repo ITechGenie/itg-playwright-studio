@@ -118,6 +118,26 @@ export const apiClient = {
     return res.json();
   },
 
+  async getFileContent(projectId: string, path: string) {
+    const url = new URL(window.location.origin + ENDPOINTS.PROJECT_FILES(projectId) + '/content');
+    url.searchParams.set('path', path);
+    const res = await fetch(url.toString(), { headers: authHeaders() });
+    if (!res.ok) throw new Error('Failed to fetch file content');
+    return res.json();
+  },
+
+  async updateFileContent(projectId: string, path: string, content: string) {
+    const url = new URL(window.location.origin + ENDPOINTS.PROJECT_FILES(projectId) + '/content');
+    url.searchParams.set('path', path);
+    const res = await fetch(url.toString(), { 
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', ...authHeaders() },
+        body: JSON.stringify({ content })
+    });
+    if (!res.ok) throw new Error('Failed to save file content');
+    return res.json();
+  },
+
   getReportUrl(projectId: string, runId: string, type: 'html' | 'monocart' | 'json') {
      if (type === 'json') return `${ENDPOINTS.REPORTS}/${projectId}/runs/${runId}/results.json`;
      return `${ENDPOINTS.REPORTS}/${projectId}/runs/${runId}/report/${type}/index.html`;
