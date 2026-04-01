@@ -391,8 +391,13 @@ export function TestRunnerPanel({
           {isRunning ? "Running Sandbox…" : "Run Tests"}
         </Button>
         {onClose && (
-          <Button size="sm" variant="ghost" onClick={onClose} className="h-7 w-7 p-0 text-zinc-600 hover:text-white hover:bg-red-500/20 ml-2">
-            <XIcon className="h-4 w-4" />
+          <Button 
+            size="sm" 
+            onClick={onClose} 
+            className="h-7 text-xs gap-1.5 font-bold px-4 bg-red-900/80 hover:bg-red-700 text-red-100 ml-2"
+          >
+            <XIcon className="h-3.5 w-3.5" />
+            Close
           </Button>
         )}
       </div>
@@ -457,30 +462,30 @@ export function TestRunnerPanel({
                         <XCircleIcon className="size-5 text-red-500 animate-in zoom-in" />
                       )}
                       <span className={cn(
-                        "text-xs font-bold uppercase tracking-wider", 
+                        "text-xs font-bold uppercase tracking-wider",
                         r.status === "running" ? "text-blue-500" :
-                        r.exitCode === 0 ? "text-green-500" : "text-red-500"
+                          r.exitCode === 0 ? "text-green-500" : "text-red-500"
                       )}>
-                        {r.status === "running" ? "Executing..." : 
-                         r.exitCode === 0 ? "Execution Successful" : "Execution Failed"}
+                        {r.status === "running" ? "Executing..." :
+                          r.exitCode === 0 ? "Execution Successful" : "Execution Failed"}
                       </span>
                     </div>
                     <div className="flex items-center gap-3">
-                      <Button 
-                        variant="outline" size="sm" 
+                      <Button
+                        variant="outline" size="sm"
                         disabled={r.status === "running"}
-                        className="h-7 text-[10px] bg-zinc-900 border-zinc-700 text-zinc-300 hover:text-white hover:bg-zinc-800 uppercase font-bold tracking-wider" 
+                        className="h-7 text-[10px] bg-zinc-900 border-zinc-700 text-zinc-300 hover:text-white hover:bg-zinc-800 uppercase font-bold tracking-wider"
                         onClick={() => window.open(apiClient.getReportUrl(projectId, r.runId, 'html'), '_blank')}
                       >
-                         <ExternalLinkIcon className="h-3 w-3 mr-1.5 opacity-70" /> HTML Report
+                        <ExternalLinkIcon className="h-3 w-3 mr-1.5 opacity-70" /> HTML Report
                       </Button>
-                      <Button 
-                        variant="outline" size="sm" 
+                      <Button
+                        variant="outline" size="sm"
                         disabled={r.status === "running"}
-                        className="h-7 text-[10px] bg-blue-900/40 border-blue-800/50 text-blue-300 hover:text-white hover:bg-blue-800/80 uppercase font-bold tracking-wider" 
+                        className="h-7 text-[10px] bg-blue-900/40 border-blue-800/50 text-blue-300 hover:text-white hover:bg-blue-800/80 uppercase font-bold tracking-wider"
                         onClick={() => window.open(apiClient.getReportUrl(projectId, r.runId, 'monocart'), '_blank')}
                       >
-                         <ExternalLinkIcon className="h-3 w-3 mr-1.5 opacity-70" /> Monocart Report
+                        <ExternalLinkIcon className="h-3 w-3 mr-1.5 opacity-70" /> Monocart Report
                       </Button>
                     </div>
                   </div>

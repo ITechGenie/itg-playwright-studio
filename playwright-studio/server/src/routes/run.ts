@@ -43,17 +43,18 @@ export function createRunRouter(wss: WebSocketServer) {
     const projectRoot = path.resolve(basePath, folderName);
 
     // Validate paths
-    const finalPaths: string[] = [];
+    const finalAbsPaths: string[] = [];
     if (requestedPaths.length > 0) {
       for (const p of requestedPaths) {
         const fullPath = path.resolve(projectRoot, p);
         if (!fullPath.startsWith(projectRoot)) return res.status(403).json({ error: `Forbidden: path traversal: ${p}` });
-        finalPaths.push(p);
+        finalAbsPaths.push(fullPath);
       }
     } else {
-      const fullPath = path.resolve(projectRoot, requestedSubPath);
+      const relPath = requestedSubPath || '';
+      const fullPath = path.resolve(projectRoot, relPath);
       if (!fullPath.startsWith(projectRoot)) return res.status(403).json({ error: 'Forbidden: path traversal detected' });
-      finalPaths.push(requestedSubPath || (process.env.DEFAULT_TEST_DIR || 'tests'));
+      finalAbsPaths.push(fullPath);
     }
 
     // 2. Prepare OPTIONS
@@ -62,9 +63,14 @@ export function createRunRouter(wss: WebSocketServer) {
       ...req.body,
     };
 
-    const args: string[] = ['test', ...finalPaths];
+    const args: string[] = ['test'];
+    for (const abs of finalAbsPaths) {
+       // Wrap in quotes securely for shell: true
+       args.push(`"${abs}"`);
+    }
+
     const serverConfigPath = path.join(process.cwd(), 'playwright.config.cjs');
-    args.push('--config', serverConfigPath);
+    args.push('--config', `"${serverConfigPath}"`);
     
     if (!opts.headless)   args.push('--headed');
     if (opts.workers)     args.push('--workers', String(opts.workers));
