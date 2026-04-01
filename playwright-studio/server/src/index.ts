@@ -64,11 +64,11 @@ async function syncProjects() {
 }
 
 async function ensureColumn(table: string, column: string, definition: string) {
-  const result = sqliteDb.prepare(`PRAGMA table_info(${table});`).all();
-  const hasColumn = result.some((row: any) => row.name === column);
+  const result = await sqliteDb.execute(`PRAGMA table_info(${table});`);
+  const hasColumn = result.rows.some((row: any) => row.name === column);
   if (!hasColumn) {
     console.log(`[Migration] adding missing column ${table}.${column}`);
-    sqliteDb.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition};`);
+    await sqliteDb.execute(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition};`);
   }
 }
 
@@ -88,7 +88,7 @@ async function applyMigrations() {
     for (const file of sqlFiles) {
       const filePath = path.join(migrationsDir, file);
       const sql = await fs.readFile(filePath, 'utf8');
-      
+
       // Handle both standard semicolon and Drizzle's custom breakpoint
       const statements = sql
         .split(/-->\s*statement-breakpoint|;\s*\n/)
@@ -97,11 +97,11 @@ async function applyMigrations() {
 
       for (const statement of statements) {
         try {
-          sqliteDb.exec(statement);
+          await sqliteDb.execute(statement);
         } catch (err: any) {
           // Ignore if statement already exists or minor failures
           if (!err.message?.includes('already exists')) {
-             console.warn(`[Migration] statement error in ${file} (continuing):`, err?.message || err);
+            console.warn(`[Migration] statement error in ${file} (continuing):`, err?.message || err);
           }
         }
       }
@@ -125,8 +125,9 @@ async function applyMigrations() {
     await ensureColumn('users', 'provider_token_expires_at', 'INTEGER');
 
     // Backfill existing mandatory role with safe fallback
-    const result = sqliteDb.prepare("SELECT COUNT(*) as cnt FROM roles WHERE name='user' AND scope='global'").get() as { cnt: number } | undefined;
-    if (result && result.cnt === 0) {
+    const result = await sqliteDb.execute("SELECT COUNT(*) as cnt FROM roles WHERE name='user' AND scope='global'");
+    const count = Number(result.rows[0]?.cnt ?? 0);
+    if (count === 0) {
       const roleId = generateId();
       await db.insert(roles).values({ id: roleId, name: 'user', scope: 'global' });
       console.log('[Migration] seeded default global user role');
