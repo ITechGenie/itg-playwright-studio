@@ -13,7 +13,7 @@ import { WS_ENDPOINT } from "@/services/api-endpoints";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuCheckboxItem, DropdownMenuLabel, DropdownMenuSeparator } from "@/components/ui/dropdown-menu"
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
-import { Loader2Icon, CheckCircleIcon, XCircleIcon } from "lucide-react"
+import { Loader2Icon, CheckCircleIcon, XCircleIcon, ExternalLinkIcon } from "lucide-react"
 
 // Simple ANSI to HTML converter
 function ansiToHtml(text: string): string {
@@ -437,7 +437,7 @@ export function TestRunnerPanel({
               {activeRunsList.map(r => (
                 <TabsContent key={r.runId} value={r.runId} className="h-full m-0 data-[state=inactive]:hidden outline-none flex flex-col">
                   {/* The actual terminal logs */}
-                  <div className="flex-1 overflow-y-auto p-4 space-y-0.5 custom-scrollbar pb-16">
+                  <div className="flex-1 overflow-y-auto p-4 space-y-0.5 custom-scrollbar pb-8">
                     {r.logs.map(line => (
                       <div
                         key={line.id}
@@ -446,6 +446,43 @@ export function TestRunnerPanel({
                       />
                     ))}
                     <div ref={bottomRef} className="h-2" />
+                  </div>
+                  <div className="shrink-0 bg-[#161616] border-t border-zinc-800 py-2.5 px-4 flex items-center justify-between shadow-[0_-10px_15px_-3px_rgba(0,0,0,0.5)] z-10 transition-all">
+                    <div className="flex items-center gap-2">
+                      {r.status === "running" ? (
+                        <Loader2Icon className="size-5 text-blue-500 animate-spin" />
+                      ) : r.exitCode === 0 ? (
+                        <CheckCircleIcon className="size-5 text-green-500 animate-in zoom-in" />
+                      ) : (
+                        <XCircleIcon className="size-5 text-red-500 animate-in zoom-in" />
+                      )}
+                      <span className={cn(
+                        "text-xs font-bold uppercase tracking-wider", 
+                        r.status === "running" ? "text-blue-500" :
+                        r.exitCode === 0 ? "text-green-500" : "text-red-500"
+                      )}>
+                        {r.status === "running" ? "Executing..." : 
+                         r.exitCode === 0 ? "Execution Successful" : "Execution Failed"}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <Button 
+                        variant="outline" size="sm" 
+                        disabled={r.status === "running"}
+                        className="h-7 text-[10px] bg-zinc-900 border-zinc-700 text-zinc-300 hover:text-white hover:bg-zinc-800 uppercase font-bold tracking-wider" 
+                        onClick={() => window.open(apiClient.getReportUrl(projectId, r.runId, 'html'), '_blank')}
+                      >
+                         <ExternalLinkIcon className="h-3 w-3 mr-1.5 opacity-70" /> HTML Report
+                      </Button>
+                      <Button 
+                        variant="outline" size="sm" 
+                        disabled={r.status === "running"}
+                        className="h-7 text-[10px] bg-blue-900/40 border-blue-800/50 text-blue-300 hover:text-white hover:bg-blue-800/80 uppercase font-bold tracking-wider" 
+                        onClick={() => window.open(apiClient.getReportUrl(projectId, r.runId, 'monocart'), '_blank')}
+                      >
+                         <ExternalLinkIcon className="h-3 w-3 mr-1.5 opacity-70" /> Monocart Report
+                      </Button>
+                    </div>
                   </div>
                 </TabsContent>
               ))}
