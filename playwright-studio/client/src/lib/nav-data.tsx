@@ -1,4 +1,4 @@
-import { FileText, Play, Settings, Command } from "lucide-react"
+import { FileText, Play, Settings, Command, Database } from "lucide-react"
 
 export const getNavData = (projectId: string) => ({
   user: {
@@ -39,15 +39,16 @@ export const getNavData = (projectId: string) => ({
           title: "Runs",
           url: `/app/project/${projectId}/executions/runs`
         },
-        {
-          title: "Data manager",
-          url: `/app/project/${projectId}/executions/data-manager`,
-          items: [
-            { title: "Data templates", url: `/app/project/${projectId}/executions/data-templates` },
-            { title: "Environments", url: `/app/project/${projectId}/executions/environments` }
-          ]
-        }
       ],
+    },
+    {
+      title: "Data Manager",
+      url: `/app/project/${projectId}/data`,
+      icon: <Database className="size-4" />,
+      items: [
+        { title: "Templates", url: `/app/project/${projectId}/data/templates` },
+        { title: "Environments & Sets", url: `/app/project/${projectId}/data/environments` },
+      ]
     },
     {
       title: "Settings",

@@ -118,8 +118,71 @@ export const apiClient = {
     return res.json();
   },
 
+  async getFileContent(projectId: string, path: string) {
+    const url = new URL(window.location.origin + ENDPOINTS.PROJECT_FILES(projectId) + '/content');
+    url.searchParams.set('path', path);
+    const res = await fetch(url.toString(), { headers: authHeaders() });
+    if (!res.ok) throw new Error('Failed to fetch file content');
+    return res.json();
+  },
+
+  async updateFileContent(projectId: string, path: string, content: string) {
+    const url = new URL(window.location.origin + ENDPOINTS.PROJECT_FILES(projectId) + '/content');
+    url.searchParams.set('path', path);
+    const res = await fetch(url.toString(), { 
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', ...authHeaders() },
+        body: JSON.stringify({ content })
+    });
+    if (!res.ok) throw new Error('Failed to save file content');
+    return res.json();
+  },
+
   getReportUrl(projectId: string, runId: string, type: 'html' | 'monocart' | 'json') {
      if (type === 'json') return `${ENDPOINTS.REPORTS}/${projectId}/runs/${runId}/results.json`;
      return `${ENDPOINTS.REPORTS}/${projectId}/runs/${runId}/report/${type}/index.html`;
+  },
+
+  // --- Data Manager ---
+  async getDataTemplates(projectId: string) {
+    const res = await fetch(ENDPOINTS.DATA_TEMPLATES(projectId), { headers: authHeaders() });
+    if (!res.ok) throw new Error('Failed to fetch data templates');
+    return res.json();
+  },
+
+  async createDataTemplate(projectId: string, payload: any) {
+    const res = await fetch(ENDPOINTS.DATA_TEMPLATES(projectId), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...authHeaders() },
+      body: JSON.stringify(payload)
+    });
+    if (!res.ok) throw new Error('Failed to create data template');
+    return res.json();
+  },
+
+  async getDataEnvironments(projectId: string) {
+    const res = await fetch(ENDPOINTS.DATA_ENVIRONMENTS(projectId), { headers: authHeaders() });
+    if (!res.ok) throw new Error('Failed to fetch data environments');
+    return res.json();
+  },
+
+  async createDataEnvironment(projectId: string, payload: any) {
+    const res = await fetch(ENDPOINTS.DATA_ENVIRONMENTS(projectId), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...authHeaders() },
+      body: JSON.stringify(payload)
+    });
+    if (!res.ok) throw new Error('Failed to create data environment');
+    return res.json();
+  },
+
+  async createDataSet(projectId: string, envId: string, payload: any) {
+    const res = await fetch(ENDPOINTS.DATA_DATASETS(projectId, envId), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...authHeaders() },
+      body: JSON.stringify(payload)
+    });
+    if (!res.ok) throw new Error('Failed to create data set');
+    return res.json();
   },
 };

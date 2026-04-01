@@ -2,7 +2,7 @@ import { useParams, useNavigate } from "react-router-dom"
 import { getNavData } from "@/lib/nav-data"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 
-export default function MenuOverview({ section }: { section: "Test Specs" | "Executions" | "Settings" }) {
+export default function MenuOverview({ section }: { section: "Test Specs" | "Executions" | "Data Manager" | "Settings" }) {
   const { id } = useParams()
   const navigate = useNavigate()
 

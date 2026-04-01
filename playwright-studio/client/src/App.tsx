@@ -14,6 +14,8 @@ const NotFound = lazy(() => import("./pages/NotFound"))
 const RunLogPage = lazy(() => import("./pages/RunLogPage"))
 const ExecutionsRuns = lazy(() => import("./pages/ExecutionsRuns"))
 const NewProject = lazy(() => import("./pages/NewProject"))
+const DataTemplates = lazy(() => import("./pages/DataTemplates"))
+const DataEnvironments = lazy(() => import("./pages/DataEnvironments"))
 
 export default function App() {
   return (
@@ -24,31 +26,35 @@ export default function App() {
             <AuthProvider>
               <Routes>
                 <Route path="/" element={<Navigate to="/app/login" replace />} />
-              <Route path="/app/login" element={<Login />} />
-              <Route path="/app/projects" element={<Projects />} />
-              <Route path="/app/projects/new" element={<NewProject />} />
+                <Route path="/app/login" element={<Login />} />
+                <Route path="/app/projects" element={<Projects />} />
+                <Route path="/app/projects/new" element={<NewProject />} />
 
-              <Route path="/app/project/:id" element={<DashboardLayout />}>
-                {/* Menu Overviews */}
-                <Route path="test-specs" element={<MenuOverview section="Test Specs" />} />
-                <Route path="executions" element={<MenuOverview section="Executions" />} />
-                <Route path="settings" element={<MenuOverview section="Settings" />} />
+                <Route path="/app/project/:id" element={<DashboardLayout />}>
+                  {/* Menu Overviews */}
+                  <Route path="test-specs" element={<MenuOverview section="Test Specs" />} />
+                  <Route path="executions" element={<MenuOverview section="Executions" />} />
+                  <Route path="settings" element={<MenuOverview section="Settings" />} />
 
-                <Route path="specs" element={<TestSpecs />} />
-                <Route path="specs/*" element={<TestSpecs />} />
-                <Route path="run/:runId" element={<RunLogPage />} />
-                <Route path="executions/runs" element={<ExecutionsRuns />} />
-                {/* Other nested routes go here */}
-              </Route>
+                  <Route path="specs" element={<TestSpecs />} />
+                  <Route path="specs/*" element={<TestSpecs />} />
+                  <Route path="run/:runId" element={<RunLogPage />} />
+                  <Route path="executions/runs" element={<ExecutionsRuns />} />
+                  {/* Data Manager */}
+                  <Route path="data" element={<MenuOverview section="Data Manager" />} />
+                  <Route path="data/templates" element={<DataTemplates />} />
+                  <Route path="data/environments" element={<DataEnvironments />} />
+                  {/* Other nested routes go here */}
+                </Route>
 
-              {/* 404 catch-all */}
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </AuthProvider>
-        </Suspense>
-      </BrowserRouter>
-    </TooltipProvider>
-  </ThemeProvider>
-)
+                {/* 404 catch-all */}
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </AuthProvider>
+          </Suspense>
+        </BrowserRouter>
+      </TooltipProvider>
+    </ThemeProvider>
+  )
 }
 

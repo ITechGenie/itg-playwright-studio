@@ -12,7 +12,7 @@ export const users = sqliteTable('users', {
   providerToken: text('provider_token'),
   providerTokenExpiresAt: integer('provider_token_expires_at', { mode: 'timestamp' }),
 
-  createdAt: integer('created_at', { mode: 'timestamp' }).notNull().default(new Date()),
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
 });
 
 export const roles = sqliteTable('roles', {
@@ -26,7 +26,7 @@ export const memberships = sqliteTable('memberships', {
   userId: text('user_id').notNull().references(() => users.id),
   roleId: text('role_id').notNull().references(() => roles.id),
   projectId: text('project_id').references(() => projects.id),
-  createdAt: integer('created_at', { mode: 'timestamp' }).notNull().default(new Date()),
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
 });
 
 export const accessTokens = sqliteTable('access_tokens', {
@@ -36,7 +36,7 @@ export const accessTokens = sqliteTable('access_tokens', {
   tokenHash: text('token_hash').notNull(),
   expiresAt: integer('expires_at', { mode: 'timestamp' }),
   revoked: integer('revoked').notNull().default(0),
-  createdAt: integer('created_at', { mode: 'timestamp' }).notNull().default(new Date()),
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
   lastUsedAt: integer('last_used_at', { mode: 'timestamp' }),
 });
 
@@ -72,4 +72,37 @@ export const executions = sqliteTable('executions', {
   duration: integer('duration'), // ms
   exitCode: integer('exit_code'),
   targetPaths: text('target_paths'), // JSON array of paths for multi-select
+});
+
+export const dataTemplates = sqliteTable('data_templates', {
+  id: text('id').primaryKey(),
+  projectId: text('project_id').notNull().references(() => projects.id),
+  name: text('name').notNull(),
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
+});
+
+export const templateAttributes = sqliteTable('template_attributes', {
+  id: text('id').primaryKey(),
+  templateId: text('template_id').notNull().references(() => dataTemplates.id),
+  key: text('key').notNull(),
+  type: text('type').notNull(), // 'text', 'number', 'boolean', 'secret'
+  scope: text('scope').notNull(), // 'environment', 'dataset'
+  description: text('description'),
+});
+
+export const environments = sqliteTable('environments', {
+  id: text('id').primaryKey(),
+  projectId: text('project_id').notNull().references(() => projects.id),
+  templateId: text('template_id').notNull().references(() => dataTemplates.id),
+  name: text('name').notNull(),
+  variables: text('variables'), // JSON string of environment-scoped values
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
+});
+
+export const dataSets = sqliteTable('data_sets', {
+  id: text('id').primaryKey(),
+  environmentId: text('environment_id').notNull().references(() => environments.id),
+  name: text('name').notNull(),
+  variables: text('variables'), // JSON string of dataset-scoped values
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
 });

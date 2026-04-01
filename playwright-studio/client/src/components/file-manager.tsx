@@ -18,7 +18,8 @@ import {
     Edit3Icon,
     FolderOpenIcon,
     Trash2Icon,
-    DownloadIcon
+    DownloadIcon,
+    EyeIcon
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -181,6 +182,7 @@ export function FileManager({ basePath = "", title = "File Manager", actions, on
         }
     }, [selectedItems, onSelectionChange]);
     const [isEditing, setIsEditing] = useState(false);
+    const [isViewingMode, setIsViewingMode] = useState(false);
     const [isReviewingDiff, setIsReviewingDiff] = useState(false);
     const [originalContent, setOriginalContent] = useState("");
     const [currentContent, setCurrentContent] = useState("");
@@ -282,14 +284,48 @@ export function FileManager({ basePath = "", title = "File Manager", actions, on
         setSelectedItems(next);
     };
 
-    const openEditor = (item: FileItem) => {
+    const [isLoadingEditor, setIsLoadingEditor] = useState(false);
+
+    const openEditor = async (item: FileItem) => {
         setSelectedFile(item);
-        const code = `// Editing ${item.name}\n\n`;
-        setOriginalContent(code);
-        setCurrentContent(code);
+        setIsEditing(true);
+        setIsViewingMode(false);
+        setIsLoadingEditor(true);
+        
+        try {
+            const data = await apiClient.getFileContent(projectId, item.id);
+            setOriginalContent(data.content);
+            setCurrentContent(data.content);
+        } catch (e) {
+            console.error("Failed to load file content", e);
+            setOriginalContent("// Failed to load content");
+            setCurrentContent("// Failed to load content");
+        }
+        
         setIsReviewingDiff(false);
         setSaveMessage("");
+        setIsLoadingEditor(false);
+    };
+
+    const openViewer = async (item: FileItem) => {
+        setSelectedFile(item);
         setIsEditing(true);
+        setIsViewingMode(true);
+        setIsLoadingEditor(true);
+        
+        try {
+            const data = await apiClient.getFileContent(projectId, item.id);
+            setOriginalContent(data.content);
+            setCurrentContent(data.content);
+        } catch (e) {
+            console.error("Failed to load file content", e);
+            setOriginalContent("// Failed to load content");
+            setCurrentContent("// Failed to load content");
+        }
+        
+        setIsReviewingDiff(false);
+        setSaveMessage("");
+        setIsLoadingEditor(false);
     };
 
     const FileDetailPanel = ({ item }: { item: FileItem }) => (
@@ -307,9 +343,14 @@ export function FileManager({ basePath = "", title = "File Manager", actions, on
                         <div className="scale-[2.5] mt-1">{getFileIcon(item.icon, "md")}</div>
                         <div className="flex items-center gap-2 w-full mt-2">
                             {item.type !== "folder" ? (
-                                <Button size="sm" className="flex-1" onClick={() => openEditor(item)}>
-                                    <Edit3Icon className="w-3.5 h-3.5 mr-1.5" /> Edit
-                                </Button>
+                                <>
+                                    <Button size="sm" className="flex-1" variant="outline" onClick={() => openViewer(item)}>
+                                        <EyeIcon className="w-3.5 h-3.5 mr-1.5" /> View
+                                    </Button>
+                                    <Button size="sm" className="flex-1" onClick={() => openEditor(item)}>
+                                        <Edit3Icon className="w-3.5 h-3.5 mr-1.5" /> Edit
+                                    </Button>
+                                </>
                             ) : (
                                 <Button size="sm" className="flex-1" onClick={() => handleItemClick(item)}>
                                     <FolderOpenIcon className="w-3.5 h-3.5 mr-1.5" /> Open
@@ -318,9 +359,11 @@ export function FileManager({ basePath = "", title = "File Manager", actions, on
                             <Button size="sm" variant="outline" className="px-2.5">
                                 <DownloadIcon className="w-3.5 h-3.5" />
                             </Button>
+                            {/* Hidden for now
                             <Button size="sm" variant="outline" className="px-2.5 text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40">
                                 <Trash2Icon className="w-3.5 h-3.5" />
                             </Button>
+                            */}
                         </div>
                     </div>
 
@@ -346,7 +389,8 @@ export function FileManager({ basePath = "", title = "File Manager", actions, on
 
                     <Separator />
 
-                    <div>
+                    {/* Settings section hidden for now */}
+                    {/* <div>
                         <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground mb-3">Settings</p>
                         <div className="space-y-3">
                             {([["File Sharing", true], ["Backup", false], ["Sync", false]] as [string, boolean][]).map(
@@ -358,7 +402,7 @@ export function FileManager({ basePath = "", title = "File Manager", actions, on
                                 )
                             )}
                         </div>
-                    </div>
+                    </div> */}
                 </div>
             </div>
         </div>
@@ -378,7 +422,17 @@ export function FileManager({ basePath = "", title = "File Manager", actions, on
                         <div className="flex items-center gap-3">
                             <Input value={saveMessage} onChange={(e) => setSaveMessage(e.target.value)} placeholder="Commit message (Optional)..." className="h-8 w-64 text-sm" />
                             <Button size="sm" variant="ghost" onClick={() => { setIsReviewingDiff(false); setIsEditing(false); }}>Cancel</Button>
-                            <Button size="sm" onClick={() => { setIsReviewingDiff(false); setIsEditing(false); }}>Confirm Save</Button>
+                            <Button size="sm" onClick={async () => {
+                                try {
+                                    await apiClient.updateFileContent(projectId, selectedFile.id, currentContent);
+                                    setOriginalContent(currentContent);
+                                    setIsReviewingDiff(false);
+                                    setIsEditing(false);
+                                } catch (e) {
+                                    console.error("Failed to save", e);
+                                    alert("Failed to save file");
+                                }
+                            }}>Confirm Save</Button>
                         </div>
                     </div>
                     <div className="flex-1 overflow-hidden bg-[#1e1e1e]">
@@ -396,18 +450,26 @@ export function FileManager({ basePath = "", title = "File Manager", actions, on
                             <XIcon className="h-4 w-4" />
                         </Button>
                         <div className="flex flex-col min-w-0">
-                            <span className="text-sm font-semibold truncate">{selectedFile.name}</span>
+                            <span className="text-sm font-semibold truncate">
+                                {isViewingMode ? "Viewing: " : "Editing: "}{selectedFile.name}
+                            </span>
                             <span className="text-xs text-muted-foreground">{currentPath ? `/${currentPath}` : "/"}</span>
                         </div>
                     </div>
                     <div className="flex items-center gap-2">
                         <Button variant="outline" size="sm" onClick={handleFormat}>Format</Button>
                         <Button variant="ghost" size="sm" onClick={() => setIsEditing(false)}>Close</Button>
-                        <Button size="sm" onClick={() => setIsReviewingDiff(true)}>Save</Button>
+                        {!isViewingMode && (
+                            <Button size="sm" onClick={() => setIsReviewingDiff(true)}>Save</Button>
+                        )}
                     </div>
                 </div>
                 <div className="flex-1 overflow-hidden bg-[#1e1e1e]">
-                    <Editor height="100%" defaultLanguage={selectedFile.name.endsWith(".ts") ? "typescript" : "javascript"} value={currentContent} onChange={(val) => setCurrentContent(val || "")} onMount={handleEditorDidMount} theme="vs-dark" options={{ minimap: { enabled: false }, fontSize: 14, padding: { top: 16 } }} />
+                    {isLoadingEditor ? (
+                        <div className="flex items-center justify-center h-full text-zinc-500">Loading editor...</div>
+                    ) : (
+                        <Editor height="100%" defaultLanguage={selectedFile.name.endsWith(".ts") ? "typescript" : "javascript"} value={currentContent} onChange={(val) => setCurrentContent(val || "")} onMount={handleEditorDidMount} theme="vs-dark" options={{ minimap: { enabled: false }, fontSize: 14, padding: { top: 16 }, readOnly: isViewingMode }} />
+                    )}
                 </div>
             </div>
         );
@@ -445,7 +507,23 @@ export function FileManager({ basePath = "", title = "File Manager", actions, on
                         </>
                     )}
                 </div>
-                <div className="flex items-center gap-2 shrink-0">{actions}</div>
+                <div className="flex items-center gap-2 shrink-0">
+                    {selectedItems.size === 1 && (
+                        <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="h-8 text-xs font-semibold" 
+                            onClick={() => {
+                                const id = Array.from(selectedItems)[0];
+                                const item = sortedCurrentItems.find(i => i.id === id) || rootItems.find(i => i.id === id);
+                                if (item && item.type === 'file') openViewer(item);
+                            }}
+                        >
+                            <EyeIcon className="mr-2 h-3.5 w-3.5" /> View Spec
+                        </Button>
+                    )}
+                    {actions}
+                </div>
             </div>
 
             <ResizablePanelGroup direction="horizontal" className="flex-1 overflow-hidden">
@@ -519,9 +597,11 @@ export function FileManager({ basePath = "", title = "File Manager", actions, on
                                 <div className="flex flex-col items-center justify-center h-full gap-3 text-muted-foreground">
                                     <FolderPlus className="size-10 opacity-30" />
                                     <p className="text-sm">This folder is empty</p>
+                                    {/* Upload hidden for now
                                     <Button size="sm" variant="outline">
                                         <UploadIcon className="h-3.5 w-3.5 mr-1.5" /> Upload
                                     </Button>
+                                    */}
                                 </div>
                             )}
 

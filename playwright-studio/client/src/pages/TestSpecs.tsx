@@ -7,7 +7,7 @@ import { Drawer, DrawerContent, DrawerTitle, DrawerDescription } from "@/compone
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { UploadIcon, PlayIcon, Settings2Icon, SaveIcon } from "lucide-react"
+import { Wand2Icon, PlayIcon, Settings2Icon, SaveIcon } from "lucide-react"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { apiClient } from "@/services/api-client"
 
@@ -17,7 +17,7 @@ export default function TestSpecs() {
   // runnerTarget: undefined = panel closed, "" = run all, "path/to/file" = specific target
   const [runnerTarget, setRunnerTarget] = useState<string | undefined>(undefined);
   const [selectedPaths, setSelectedPaths] = useState<string[]>([]);
-  
+
   // Test configuration (loaded from DB)
   const [browser, setBrowser] = useState<string>("chromium");
   const [width, setWidth] = useState<string>("1280");
@@ -29,7 +29,7 @@ export default function TestSpecs() {
 
   useEffect(() => {
     if (!projectId) return;
-    
+
     // Fetch project to get its config
     apiClient.getProjects().then((projects: any[]) => {
       const proj = projects.find(p => p.id === projectId);
@@ -75,12 +75,23 @@ export default function TestSpecs() {
           onSelectionChange={setSelectedPaths}
           actions={
             <>
-              <Button variant="outline" size="sm" className="h-8 text-xs">
-                <UploadIcon className="mr-2 h-3.5 w-3.5" />
-                Upload
+              <Button
+                variant="outline" size="sm" className="h-8 text-xs font-semibold"
+                onClick={async () => {
+                  const filename = window.prompt("Enter new spec file name:", "example.spec.ts");
+                  if (!filename) return;
+                  try {
+                    await apiClient.updateFileContent(projectId!, filename, "import { test, expect } from '@playwright/test';\n\ntest('New test', async ({ page }) => {\n  \n});\n");
+                    // Quick pragmatic reload to show the new file
+                    window.location.reload();
+                  } catch (e) {
+                    alert("Failed to create spec");
+                  }
+                }}
+              >
+                + Add Spec
               </Button>
-              <Button variant="outline" size="sm" className="h-8 text-xs">Add Spec</Button>
-              
+
               <Popover>
                 <PopoverTrigger asChild>
                   <Button variant="outline" size="sm" className="h-8 text-xs">
@@ -91,7 +102,7 @@ export default function TestSpecs() {
                 <PopoverContent className="w-80" align="end">
                   <div className="space-y-4">
                     <h4 className="font-medium text-sm">Test Configuration</h4>
-                    
+
                     <div className="space-y-2">
                       <Label htmlFor="browser" className="text-[10px] uppercase font-bold text-zinc-500">Browser</Label>
                       <Select value={browser} onValueChange={setBrowser}>
@@ -107,42 +118,42 @@ export default function TestSpecs() {
                         </SelectContent>
                       </Select>
                     </div>
-                    
+
                     <div className="grid grid-cols-2 gap-2">
                       <div className="space-y-2">
                         <Label htmlFor="width" className="text-[10px] uppercase font-bold text-zinc-500">Width</Label>
-                        <Input 
+                        <Input
                           id="width"
-                          type="number" 
-                          value={width} 
+                          type="number"
+                          value={width}
                           onChange={(e) => setWidth(e.target.value)}
                           className="h-8 text-xs"
                         />
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="height" className="text-[10px] uppercase font-bold text-zinc-500">Height</Label>
-                        <Input 
+                        <Input
                           id="height"
-                          type="number" 
-                          value={height} 
+                          type="number"
+                          value={height}
                           onChange={(e) => setHeight(e.target.value)}
                           className="h-8 text-xs"
                         />
                       </div>
                     </div>
-                    
+
                     <div className="space-y-2">
                       <Label htmlFor="baseURL" className="text-[10px] uppercase font-bold text-zinc-500">Base URL</Label>
-                      <Input 
+                      <Input
                         id="baseURL"
-                        type="url" 
-                        value={baseURL} 
+                        type="url"
+                        value={baseURL}
                         onChange={(e) => setBaseURL(e.target.value)}
                         className="h-8 text-xs"
                         placeholder="http://localhost:5173"
                       />
                     </div>
-                    
+
                     <div className="space-y-2">
                       <Label htmlFor="video" className="text-[10px] uppercase font-bold text-zinc-500">Video Recording</Label>
                       <Select value={video} onValueChange={setVideo}>
@@ -157,7 +168,7 @@ export default function TestSpecs() {
                         </SelectContent>
                       </Select>
                     </div>
-                    
+
                     <div className="space-y-2">
                       <Label htmlFor="screenshot" className="text-[10px] uppercase font-bold text-zinc-500">Screenshots</Label>
                       <Select value={screenshot} onValueChange={setScreenshot}>
@@ -173,34 +184,34 @@ export default function TestSpecs() {
                     </div>
 
                     <Button className="w-full h-8 text-xs" onClick={handleSaveConfig} disabled={isUpdating}>
-                       {isUpdating ? "Saving..." : "Save Persistence"}
-                       {!isUpdating && <SaveIcon className="ml-2 h-3.5 w-3.5" />}
+                      {isUpdating ? "Saving..." : "Save Persistence"}
+                      {!isUpdating && <SaveIcon className="ml-2 h-3.5 w-3.5" />}
                     </Button>
                   </div>
                 </PopoverContent>
               </Popover>
-              
+
               <Button
                 size="sm"
                 className="h-8 text-xs gap-1.5 bg-green-700 hover:bg-green-600 text-white font-bold"
                 onClick={() => openRunner(selectedPaths.length > 0 ? "SELECTED" : "")}
               >
-                <PlayIcon className="h-3.5 w-3.5" />
-                {selectedPaths.length > 0 ? `Run Selected (${selectedPaths.length})` : "Run All"}
+                <Wand2Icon className="h-3.5 w-3.5" />
+                {selectedPaths.length > 0 ? `Prepare Tests (${selectedPaths.length})` : "Prepare Tests"}
               </Button>
             </>
           }
         />
       </div>
 
-      <Drawer 
-        open={runnerTarget !== undefined} 
+      <Drawer
+        open={runnerTarget !== undefined}
         onOpenChange={(open) => !open && closeRunner()}
         direction="right"
         dismissible={false}
         modal={false}
       >
-        <DrawerContent>
+        <DrawerContent className="w-[95vw] sm:max-w-none">
           <DrawerTitle className="sr-only">Test Runner</DrawerTitle>
           <DrawerDescription className="sr-only">
             Live output from the Playwright test execution.

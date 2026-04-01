@@ -257,3 +257,17 @@ Zod schema validation tests for payloads between components.
 Manual Verification
 Auth Flow Walkthrough: Log in via GitLab OIDC -> Generate API Token in settings -> Authenticate Extension with token.
 End-to-End Execution Flow: Record a simple flow via Extension -> Save to Studio. Start Local Agent with Token -> Trigger execution from Studio UI -> Watch local Playwright spin up and stream results back via WebSockets.
+
+
+For testing 
+
+SauceDemo (Swag Labs) → https://www.saucedemo.com/
+The Internet (Herokuapp) → https://the-internet.herokuapp.com/
+DemoQA → https://demoqa.com/
+Automation Practice (My Store) → http://automationpractice.com/
+OrangeHRM Demo → https://opensource-demo.orangehrmlive.com/
+Parabank → https://parabank.parasoft.com/
+UI Testing Playground → https://uitestingplayground.com/
+jQuery UI Demos → https://jqueryui.com/
+Expand Testing Practice → https://practice.expandtesting.com/
+Playwright A11y Demo → https://playwright-fyi.github.io/playwright-a11y-demo/

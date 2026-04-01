@@ -6,10 +6,14 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { XIcon, PlayIcon, RotateCcwIcon, ExternalLinkIcon } from "lucide-react";
+import { XIcon, PlayIcon, RotateCcwIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { apiClient } from "@/services/api-client";
 import { WS_ENDPOINT } from "@/services/api-endpoints";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuCheckboxItem, DropdownMenuLabel, DropdownMenuSeparator } from "@/components/ui/dropdown-menu"
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
+import { Loader2Icon, CheckCircleIcon, XCircleIcon, ExternalLinkIcon } from "lucide-react"
 
 // Simple ANSI to HTML converter
 function ansiToHtml(text: string): string {
@@ -57,13 +61,22 @@ interface LogLine {
   text: string;
 }
 
+interface ActiveRun {
+  runId: string;
+  command: string;
+  datasetName: string;
+  status: "running" | "done" | "error";
+  exitCode: number | null;
+  logs: LogLine[];
+}
+
 let _lineSeq = 0;
 
-export function TestRunnerPanel({ 
-  projectId, 
-  targetPath = "", 
+export function TestRunnerPanel({
+  projectId,
+  targetPath = "",
   targetPaths,
-  initialRunId, 
+  initialRunId,
   onClose,
   showNewTab = true,
   browser = "chromium",
@@ -73,19 +86,36 @@ export function TestRunnerPanel({
   video = "retain-on-failure",
   screenshot = "only-on-failure",
 }: TestRunnerPanelProps) {
-  const [logs, setLogs] = useState<LogLine[]>([]);
-  const [running, setRunning] = useState(false);
-  const [exitCode, setExitCode] = useState<number | null>(null);
-  const [runId, setRunId] = useState<string | null>(initialRunId || null);
+  // Runner States
+  const [runsMap, setRunsMap] = useState<Record<string, ActiveRun>>({});
+  const [activeTabId, setActiveTabId] = useState<string | null>(initialRunId || null);
+
   const [headless, setHeadless] = useState(true);
   const [workers, setWorkers] = useState("1");
   const [grep, setGrep] = useState("");
+
+  // Data Manager States
+  const [environments, setEnvironments] = useState<any[]>([]);
+  const [selectedEnvId, setSelectedEnvId] = useState<string>("");
+  const [selectedDatasetIds, setSelectedDatasetIds] = useState<string[]>([]);
+
   const wsRef = useRef<WebSocket | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
 
-  const addLog = useCallback((type: LogLine["type"], text: string) => {
-    setLogs(prev => [...prev, { id: _lineSeq++, type, text }]);
-  }, []);
+  const activeRunsList = Object.values(runsMap);
+  const isRunning = activeRunsList.some(r => r.status === "running");
+
+  // ── Fetch Environments ───────────────────────────────────────────────────
+  useEffect(() => {
+    apiClient.getDataEnvironments(projectId)
+      .then(data => setEnvironments(data))
+      .catch(err => console.error("Failed to fetch environments", err));
+  }, [projectId]);
+
+  // Update datasets when environment changes
+  useEffect(() => {
+    setSelectedDatasetIds([]);
+  }, [selectedEnvId]);
 
   // ── Fetch existing logs if attaching to a run ────────────────────────────
   useEffect(() => {
@@ -98,23 +128,27 @@ export function TestRunnerPanel({
               type: l.type,
               text: l.data
             }));
-            setLogs(history);
-            if (data.status !== 'running') {
-              setRunning(false);
-              setExitCode(data.exitCode ?? 0);
-            } else {
-              setRunning(true);
-            }
+            setRunsMap({
+              [initialRunId]: {
+                runId: initialRunId,
+                command: data.command || "",
+                datasetName: "",
+                status: data.status,
+                exitCode: data.exitCode,
+                logs: history
+              }
+            });
+            setActiveTabId(initialRunId);
           }
         })
         .catch(err => console.error("Failed to fetch run history", err));
     }
   }, [initialRunId, projectId]);
 
-  // Auto-scroll
+  // Auto-scroll inside current active tab
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [logs]);
+  }, [runsMap, activeTabId]);
 
   // ── WebSocket connection ─────────────────────────────────────────────────
   useEffect(() => {
@@ -127,46 +161,60 @@ export function TestRunnerPanel({
       try {
         const msg = JSON.parse(event.data as string);
         if (!msg.runId) return;
-        if (msg.runId !== runId && runId !== null) return;
 
-        switch (msg.type) {
-          case "run:start":
-            if (!runId) setRunId(msg.runId);
-            setRunning(true);
-            addLog("info", `▶ Starting: ${msg.command}`);
-            break;
-          case "run:stdout":
-            msg.data.split("\n").forEach((line: string) => {
-              if (line.trim()) addLog("stdout", line);
-            });
-            break;
-          case "run:stderr":
-            msg.data.split("\n").forEach((line: string) => {
-              if (line.trim()) addLog("stderr", line);
-            });
-            break;
-          case "run:done":
-            setRunning(false);
-            setExitCode(msg.exitCode ?? -1);
-            addLog("done", msg.exitCode === 0 ? "✅ All tests passed!" : `❌ Tests failed (exit ${msg.exitCode})`);
-            break;
-          case "run:error":
-            setRunning(false);
-            addLog("error", `🚨 Error: ${msg.error}`);
-            break;
-        }
+        setRunsMap(prev => {
+          // Find or create run entry
+          const r = prev[msg.runId] || {
+            runId: msg.runId,
+            command: msg.command || "Unknown command",
+            datasetName: msg.datasetName || " [Default]",
+            status: "running",
+            exitCode: null,
+            logs: []
+          };
+
+          const newLogs = [...r.logs];
+          let newStatus = r.status;
+          let newExitCode = r.exitCode;
+
+          switch (msg.type) {
+            case "run:start":
+              newStatus = "running";
+              if (msg.datasetName) r.datasetName = msg.datasetName;
+              if (msg.command) r.command = msg.command;
+              newLogs.push({ id: _lineSeq++, type: "info", text: `▶ Starting: ${r.command}` });
+              break;
+            case "run:stdout":
+              msg.data.split("\n").forEach((line: string) => {
+                if (line.trim()) newLogs.push({ id: _lineSeq++, type: "stdout", text: line });
+              });
+              break;
+            case "run:stderr":
+              msg.data.split("\n").forEach((line: string) => {
+                if (line.trim()) newLogs.push({ id: _lineSeq++, type: "stderr", text: line });
+              });
+              break;
+            case "run:done":
+              newStatus = "done";
+              newExitCode = msg.exitCode ?? -1;
+              newLogs.push({ id: _lineSeq++, type: "done", text: newExitCode === 0 ? "✅ All tests passed!" : `❌ Tests failed (exit ${newExitCode})` });
+              break;
+            case "run:error":
+              newStatus = "error";
+              newLogs.push({ id: _lineSeq++, type: "error", text: `🚨 Server Error: ${msg.error}` });
+              break;
+          }
+
+          return { ...prev, [msg.runId]: { ...r, logs: newLogs, status: newStatus, exitCode: newExitCode } };
+        });
       } catch { /* ignore */ }
     };
 
     return () => ws.close();
-  }, [runId]);
+  }, []);
 
   // ── Trigger a run ────────────────────────────────────────────────────────
   const handleRun = async () => {
-    setLogs([]);
-    setExitCode(null);
-    setRunning(true);
-
     try {
       const options = {
         path: targetPath,
@@ -180,32 +228,53 @@ export function TestRunnerPanel({
         video,
         screenshot,
         grep: grep || undefined,
+        envId: selectedEnvId !== "none" ? selectedEnvId : undefined,
+        dataSetIds: selectedDatasetIds.length > 0 ? selectedDatasetIds : undefined,
       };
 
       const data = await apiClient.runTests(projectId, options);
-      setRunId(data.runId);
-      addLog("info", `🆔 Run ID: ${data.runId}`);
+      const newlySpawned = Array.isArray(data.runs) ? data.runs : [data];
+
+      const newMap: Record<string, ActiveRun> = {};
+      newlySpawned.forEach((r: any) => {
+        newMap[r.runId] = {
+          runId: r.runId,
+          command: r.command,
+          datasetName: r.datasetName || " [Default]",
+          status: "running",
+          exitCode: null,
+          logs: [{ id: _lineSeq++, type: 'info', text: `🆔 Queuting Run ID: ${r.runId}` }]
+        };
+      });
+
+      setRunsMap(newMap);
+      if (newlySpawned.length > 0) setActiveTabId(newlySpawned[0].runId);
+
     } catch (e: any) {
-      addLog("error", `Network error: ${e.message}`);
-      setRunning(false);
+      console.error(e)
     }
   };
 
   const statusBadge = () => {
-    if (running) return <Badge variant="secondary" className="animate-pulse">Running…</Badge>;
-    if (exitCode === null) return null;
-    return exitCode === 0
-      ? <Badge className="bg-green-600 text-white font-bold">Passed</Badge>
-      : <Badge variant="destructive" className="font-bold">Failed (exit {exitCode})</Badge>;
+    if (activeRunsList.length === 0) return null;
+
+    if (isRunning) return <Badge variant="secondary" className="animate-pulse">Building Executions…</Badge>;
+
+    const failedRuns = activeRunsList.filter(r => r.exitCode !== 0 && r.status === "done");
+    if (failedRuns.length > 0) {
+      return <Badge variant="destructive" className="font-bold">{failedRuns.length} Failed</Badge>;
+    }
+
+    return <Badge className="bg-green-600 text-white font-bold">All Passed</Badge>;
   };
 
-  const lineColor = (type: LogLine["type"]) => {
+  const lineColor = (type: LogLine["type"], exitCode: number | null) => {
     switch (type) {
       case "stderr": return "text-red-400";
-      case "info":   return "text-blue-300";
-      case "done":   return exitCode === 0 ? "text-green-400" : "text-red-400";
-      case "error":  return "text-red-500 font-bold";
-      default:       return "text-zinc-400";
+      case "info": return "text-blue-300";
+      case "done": return exitCode === 0 ? "text-green-400" : "text-red-400";
+      case "error": return "text-red-500 font-bold";
+      default: return "text-zinc-400";
     }
   };
 
@@ -221,7 +290,7 @@ export function TestRunnerPanel({
             id="headless-toggle"
             checked={headless}
             onCheckedChange={setHeadless}
-            disabled={running}
+            disabled={isRunning}
             className="scale-75 data-[state=checked]:bg-blue-600"
           />
           <Label htmlFor="headless-toggle" className="text-zinc-500 text-[10px] uppercase font-bold tracking-tight">Headless</Label>
@@ -231,7 +300,7 @@ export function TestRunnerPanel({
           <Input
             value={workers}
             onChange={e => setWorkers(e.target.value)}
-            disabled={running}
+            disabled={isRunning}
             className="h-6 w-10 px-1.5 text-[10px] bg-zinc-950 border-zinc-800 text-zinc-300"
           />
         </div>
@@ -241,65 +310,191 @@ export function TestRunnerPanel({
             value={grep}
             onChange={e => setGrep(e.target.value)}
             placeholder="regex…"
-            disabled={running}
+            disabled={isRunning}
             className="h-6 w-24 px-1.5 text-[10px] bg-zinc-950 border-zinc-800 text-zinc-300"
           />
         </div>
-        <div className="flex-1" />
-        {showNewTab && runId && (
-          <Button
-            size="sm" variant="ghost"
-            onClick={() => window.open(`/app/project/${projectId}/run/${runId}`, '_blank')}
-            className="h-7 text-[10px] text-zinc-500 hover:text-white gap-1 hover:bg-zinc-800"
-            title="Open in new tab"
-          >
-            <ExternalLinkIcon className="h-3 w-3" />
-            <span className="hidden sm:inline">New Tab</span>
-          </Button>
+
+        {/* Data Manager Environments Selection */}
+        {environments.length > 0 && (
+          <div className="flex items-center gap-1.5 border-l border-zinc-800 pl-3">
+            <Label className="text-zinc-500 text-[10px] uppercase font-bold tracking-tight">Env</Label>
+            <Select value={selectedEnvId} onValueChange={setSelectedEnvId} disabled={isRunning}>
+              <SelectTrigger className="h-6 w-[120px] text-[10px] bg-zinc-950 border-zinc-800 text-zinc-300">
+                <SelectValue placeholder="Base Env" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">None</SelectItem>
+                {environments.map(env => (
+                  <SelectItem key={env.id} value={env.id}>{env.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            {/* Multi-Select Datasets Dropdown */}
+            {selectedEnvId && selectedEnvId !== "none" && (
+              <>
+                <Label className="text-zinc-500 text-[10px] uppercase font-bold tracking-tight ml-2">Datasets</Label>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild disabled={isRunning}>
+                    <Button variant="outline" className="h-6 px-2 text-[10px] bg-zinc-950 border-zinc-800 text-zinc-300 min-w-[100px] justify-start text-left font-normal truncate hover:text-white hover:bg-zinc-800">
+                      {selectedDatasetIds.length > 0 ? `${selectedDatasetIds.length} scenario${selectedDatasetIds.length > 1 ? 's' : ''}` : "Select variants..."}
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent className="w-56 bg-zinc-900 border-zinc-800 text-zinc-300" align="start">
+                    <DropdownMenuLabel className="text-xs text-white">Data Scenarios</DropdownMenuLabel>
+                    <DropdownMenuSeparator className="bg-zinc-800" />
+                    {environments.find(e => e.id === selectedEnvId)?.datasets?.length ? (
+                      environments.find(e => e.id === selectedEnvId)?.datasets.map((ds: any) => (
+                        <DropdownMenuCheckboxItem
+                          key={ds.id}
+                          className="text-xs focus:bg-blue-600 focus:text-white"
+                          checked={selectedDatasetIds.includes(ds.id)}
+                          onCheckedChange={(checked) => {
+                            setSelectedDatasetIds(prev =>
+                              checked
+                                ? [...prev, ds.id]
+                                : prev.filter(id => id !== ds.id)
+                            )
+                          }}
+                        >
+                          {ds.name}
+                        </DropdownMenuCheckboxItem>
+                      ))
+                    ) : (
+                      <div className="p-2 text-xs text-zinc-500">No configs created.</div>
+                    )}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </>
+            )}
+          </div>
         )}
+
+        <div className="flex-1" />
         <Button
           size="sm" variant="ghost"
-          onClick={() => setLogs([])}
-          disabled={running}
+          onClick={() => setRunsMap({})}
+          disabled={isRunning}
           className="h-7 text-[10px] text-zinc-500 hover:text-white hover:bg-zinc-800"
-          title="Clear output"
+          title="Clear Terminal outputs"
         >
           <RotateCcwIcon className="h-3 w-3" />
         </Button>
         <Button
           size="sm"
           onClick={handleRun}
-          disabled={running}
-          className={cn("h-7 text-xs gap-1.5 font-bold px-4", running ? "bg-zinc-800 text-zinc-500" : "bg-blue-700 hover:bg-blue-600 text-white")}
+          disabled={isRunning}
+          className={cn("h-7 text-xs gap-1.5 font-bold px-4", isRunning ? "bg-zinc-800 text-zinc-500" : "bg-blue-700 hover:bg-blue-600 text-white")}
         >
           <PlayIcon className="h-3.5 w-3.5" />
-          {running ? "Running…" : "Run"}
+          {isRunning ? "Running Sandbox…" : "Run Tests"}
         </Button>
         {onClose && (
-          <Button size="sm" variant="ghost" onClick={onClose} className="h-7 w-7 p-0 text-zinc-600 hover:text-white hover:bg-red-500/20">
-            <XIcon className="h-4 w-4" />
+          <Button 
+            size="sm" 
+            onClick={onClose} 
+            className="h-7 text-xs gap-1.5 font-bold px-4 bg-red-900/80 hover:bg-red-700 text-red-100 ml-2"
+          >
+            <XIcon className="h-3.5 w-3.5" />
+            Close
           </Button>
         )}
       </div>
 
-      {/* ── Terminal Output ── */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-0.5 selection:bg-blue-500/30">
-        {logs.length === 0 && !running && (
-          <div className="flex flex-col items-center justify-center h-full text-zinc-700">
-             <PlayIcon className="h-8 w-8 mb-2 opacity-20" />
-             <p className="text-[10px] uppercase font-bold tracking-widest">
-               READY TO EXECUTE {targetPaths ? `(${targetPaths.length} files)` : (targetPath ? `"${targetPath}"` : "WORKSPACE")}
-             </p>
+      {/* ── Terminal Output (Tabs multiplexer) ── */}
+      <div className="flex-1 flex flex-col min-h-0 bg-black overflow-hidden relative selection:bg-blue-500/30">
+
+        {activeRunsList.length === 0 && !isRunning && (
+          <div className="flex flex-col items-center justify-center h-full text-zinc-800">
+            <PlayIcon className="h-10 w-10 mb-4 opacity-10" />
+            <p className="text-[11px] uppercase font-bold tracking-[0.2em]">
+              TERMINAL READY - {targetPaths ? `(${targetPaths.length} TARGETS)` : (targetPath ? targetPath : "WORKSPACE ROOT")}
+            </p>
           </div>
         )}
-        {logs.map(line => (
-          <div 
-            key={line.id} 
-            className={cn("whitespace-pre-wrap break-all leading-relaxed font-mono text-[11px]", lineColor(line.type))}
-            dangerouslySetInnerHTML={{ __html: ansiToHtml(line.text) }}
-          />
-        ))}
-        <div ref={bottomRef} className="h-4" />
+
+        {activeRunsList.length > 0 && (
+          <Tabs value={activeTabId || undefined} onValueChange={setActiveTabId} className="flex-1 flex flex-col min-h-0 w-full">
+
+            {/* Context Multi-scenario Terminal Tabs (Only show if >1 or data driven) */}
+            {activeRunsList.length > 1 && (
+              <div className="w-full bg-[#1e1e1e] border-b border-zinc-800 px-2 py-1.5 overflow-x-auto shrink-0 custom-scrollbar hide-scroll-arrows">
+                <TabsList className="h-8 bg-transparent p-0 gap-1.5 flex justify-start items-center">
+                  {activeRunsList.map(r => (
+                    <TabsTrigger
+                      key={r.runId}
+                      value={r.runId}
+                      className="px-3 py-1.5 h-full text-[11px] shadow-none data-[state=active]:bg-[#2d2d2d] data-[state=active]:text-white text-zinc-400 hover:text-zinc-200 border border-transparent data-[state=active]:border-zinc-700 transition-colors flex items-center mx-1 rounded-sm min-w-max"
+                    >
+                      {r.status === "running" && <Loader2Icon className="animate-spin size-3 mr-2 text-blue-400" />}
+                      {r.status === "done" && r.exitCode === 0 && <CheckCircleIcon className="size-3 mr-2 text-green-500" />}
+                      {r.status === "done" && r.exitCode !== 0 && <XCircleIcon className="size-3 mr-2 text-red-500" />}
+                      {r.status === "error" && <XCircleIcon className="size-3 mr-2 text-red-500" />}
+                      <span className="font-mono tracking-tight">{r.datasetName ? r.datasetName.replace(/[\[\]\s]/g, '') : "Default"}</span>
+                    </TabsTrigger>
+                  ))}
+                </TabsList>
+              </div>
+            )}
+
+            <div className="flex-1 overflow-hidden relative">
+              {activeRunsList.map(r => (
+                <TabsContent key={r.runId} value={r.runId} className="h-full m-0 data-[state=inactive]:hidden outline-none flex flex-col">
+                  {/* The actual terminal logs */}
+                  <div className="flex-1 overflow-y-auto p-4 space-y-0.5 custom-scrollbar pb-8">
+                    {r.logs.map(line => (
+                      <div
+                        key={line.id}
+                        className={cn("whitespace-pre-wrap break-all leading-[1.6] font-mono text-[11px]", lineColor(line.type, r.exitCode))}
+                        dangerouslySetInnerHTML={{ __html: ansiToHtml(line.text) }}
+                      />
+                    ))}
+                    <div ref={bottomRef} className="h-2" />
+                  </div>
+                  <div className="shrink-0 bg-[#161616] border-t border-zinc-800 py-2.5 px-4 flex items-center justify-between shadow-[0_-10px_15px_-3px_rgba(0,0,0,0.5)] z-10 transition-all">
+                    <div className="flex items-center gap-2">
+                      {r.status === "running" ? (
+                        <Loader2Icon className="size-5 text-blue-500 animate-spin" />
+                      ) : r.exitCode === 0 ? (
+                        <CheckCircleIcon className="size-5 text-green-500 animate-in zoom-in" />
+                      ) : (
+                        <XCircleIcon className="size-5 text-red-500 animate-in zoom-in" />
+                      )}
+                      <span className={cn(
+                        "text-xs font-bold uppercase tracking-wider",
+                        r.status === "running" ? "text-blue-500" :
+                          r.exitCode === 0 ? "text-green-500" : "text-red-500"
+                      )}>
+                        {r.status === "running" ? "Executing..." :
+                          r.exitCode === 0 ? "Execution Successful" : "Execution Failed"}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <Button
+                        variant="outline" size="sm"
+                        disabled={r.status === "running"}
+                        className="h-7 text-[10px] bg-zinc-900 border-zinc-700 text-zinc-300 hover:text-white hover:bg-zinc-800 uppercase font-bold tracking-wider"
+                        onClick={() => window.open(apiClient.getReportUrl(projectId, r.runId, 'html'), '_blank')}
+                      >
+                        <ExternalLinkIcon className="h-3 w-3 mr-1.5 opacity-70" /> HTML Report
+                      </Button>
+                      <Button
+                        variant="outline" size="sm"
+                        disabled={r.status === "running"}
+                        className="h-7 text-[10px] bg-blue-900/40 border-blue-800/50 text-blue-300 hover:text-white hover:bg-blue-800/80 uppercase font-bold tracking-wider"
+                        onClick={() => window.open(apiClient.getReportUrl(projectId, r.runId, 'monocart'), '_blank')}
+                      >
+                        <ExternalLinkIcon className="h-3 w-3 mr-1.5 opacity-70" /> Monocart Report
+                      </Button>
+                    </div>
+                  </div>
+                </TabsContent>
+              ))}
+            </div>
+
+          </Tabs>
+        )}
       </div>
     </div>
   );
