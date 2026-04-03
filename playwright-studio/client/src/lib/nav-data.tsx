@@ -25,8 +25,8 @@ export const getNavData = (projectId: string) => ({
           url: `/app/project/${projectId}/specs`
         },
         {
-          title: "Scripts",
-          url: `/app/project/${projectId}/specs/scripts`
+          title: "Schedules",
+          url: `/app/project/${projectId}/schedules`
         }
       ],
     },

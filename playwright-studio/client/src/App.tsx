@@ -39,6 +39,10 @@ export default function App() {
 
                   <Route path="specs" element={<TestSpecs />} />
                   <Route path="specs/*" element={<TestSpecs />} />
+
+                  <Route path="schedules" element={<TestSpecs />} />
+                  <Route path="schedules/*" element={<TestSpecs />} />
+
                   <Route path="run/:runId" element={<RunLogPage />} />
                   <Route path="executions/runs" element={<ExecutionsRuns />} />
                   {/* Data Manager */}

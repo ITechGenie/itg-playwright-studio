@@ -13,7 +13,8 @@ import { WS_ENDPOINT } from "@/services/api-endpoints";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuCheckboxItem, DropdownMenuLabel, DropdownMenuSeparator } from "@/components/ui/dropdown-menu"
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
-import { Loader2Icon, CheckCircleIcon, XCircleIcon, ExternalLinkIcon } from "lucide-react"
+import { Loader2Icon, CheckCircleIcon, XCircleIcon, ExternalLinkIcon, PlusIcon } from "lucide-react"
+import { PLAYWRIGHT_CLI_OPTIONS } from "@/lib/playwright-options"
 
 // Simple ANSI to HTML converter
 function ansiToHtml(text: string): string {
@@ -472,17 +473,72 @@ export function TestRunnerPanel({
               />
             </div>
           </div>
-          <div className="space-y-1.5">
-            <Label className="text-[10px] uppercase font-bold text-zinc-500">Extra Args</Label>
-            <div className="flex flex-wrap gap-1">
-              {localConfig.extraArgs.length > 0 ? (
-                localConfig.extraArgs.map((a, idx) => (
-                  <Badge key={idx} variant="outline" className="text-[9px] px-1 py-0 border-zinc-800 bg-zinc-950 text-zinc-400">
-                    {a.flag}{a.value ? `: ${a.value}` : ''}
-                  </Badge>
-                ))
-              ) : (
-                <span className="text-[10px] text-zinc-700 italic">None</span>
+          <div className="space-y-1.5 col-span-1">
+            <div className="flex items-center justify-between mb-0.5">
+              <Label className="text-[10px] uppercase font-bold text-zinc-500">Extra Args</Label>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-4 w-4 text-zinc-500 hover:text-blue-400 p-0"
+                onClick={() => {
+                  setLocalConfig({
+                    ...localConfig,
+                    extraArgs: [...localConfig.extraArgs, { flag: "", value: "" }]
+                  });
+                }}
+              >
+                <PlusIcon className="h-3 w-3" />
+              </Button>
+            </div>
+            <div className="space-y-1.5 max-h-[120px] overflow-y-auto pr-1 custom-scrollbar">
+              {localConfig.extraArgs.map((arg, idx) => (
+                <div key={idx} className="flex gap-1 items-center animate-in fade-in slide-in-from-top-1 duration-200">
+                  <Select 
+                    value={arg.flag} 
+                    onValueChange={(val) => {
+                      const next = [...localConfig.extraArgs];
+                      next[idx] = { ...next[idx], flag: val };
+                      setLocalConfig({ ...localConfig, extraArgs: next });
+                    }}
+                  >
+                    <SelectTrigger className="h-6 flex-1 bg-zinc-950 border-zinc-800 text-[10px] px-1.5">
+                      <SelectValue placeholder="Flag" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-zinc-900 border-zinc-800 text-white min-w-[180px]">
+                      {PLAYWRIGHT_CLI_OPTIONS.map(opt => (
+                        <SelectItem key={opt.flag} value={opt.flag} className="text-[10px] py-1">
+                          {opt.flag}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Input
+                    placeholder="Val"
+                    value={arg.value}
+                    onChange={(e) => {
+                      const next = [...localConfig.extraArgs];
+                      next[idx] = { ...next[idx], value: e.target.value };
+                      setLocalConfig({ ...localConfig, extraArgs: next });
+                    }}
+                    className="h-6 w-16 px-1.5 text-[10px] bg-zinc-950 border-zinc-800 text-zinc-300"
+                  />
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-5 w-5 text-zinc-600 hover:text-red-400 p-0"
+                    onClick={() => {
+                      setLocalConfig({
+                        ...localConfig,
+                        extraArgs: localConfig.extraArgs.filter((_, i) => i !== idx)
+                      });
+                    }}
+                  >
+                    <XIcon className="h-3 w-3" />
+                  </Button>
+                </div>
+              ))}
+              {localConfig.extraArgs.length === 0 && (
+                <span className="text-[10px] text-zinc-700 italic block py-1">None active</span>
               )}
             </div>
           </div>
