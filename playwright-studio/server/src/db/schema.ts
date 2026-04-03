@@ -58,6 +58,10 @@ export const projectConfigs = sqliteTable('project_configs', {
   video: text('video').default('retain-on-failure').notNull(),
   screenshot: text('screenshot').default('only-on-failure').notNull(),
   timeout: integer('timeout').default(30000).notNull(),
+  headless: integer('headless').default(1).notNull(),
+  workers: integer('workers').default(1).notNull(),
+  browsers: text('browsers').default('["chromium"]').notNull(),            // JSON array of browser names
+  extraArgs: text('extra_args').default('[]').notNull(),                   // JSON array of {flag, value}
 });
 
 export const executions = sqliteTable('executions', {

@@ -1,205 +1,130 @@
 import { useState, useEffect } from "react"
-import { useParams } from "react-router-dom"
+import { useParams, useNavigate } from "react-router-dom"
 import { Button } from "@/components/ui/button"
 import { FileManager } from "@/components/file-manager"
 import { TestRunnerPanel } from "@/components/test-runner-panel"
 import { Drawer, DrawerContent, DrawerTitle, DrawerDescription } from "@/components/ui/drawer"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Wand2Icon, PlayIcon, Settings2Icon, SaveIcon } from "lucide-react"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Wand2Icon, Settings2Icon, PlusIcon } from "lucide-react"
 import { apiClient } from "@/services/api-client"
+import { PageHeader } from "@/components/page-header"
+
+export interface RunConfig {
+  browsers: string[];
+  headless: boolean;
+  workers: number;
+  width: number;
+  height: number;
+  baseURL: string;
+  video: string;
+  screenshot: string;
+  timeout: number;
+  extraArgs: { flag: string; value: string }[];
+}
+
+const DEFAULT_CONFIG: RunConfig = {
+  browsers: ["chromium"],
+  headless: true,
+  workers: 1,
+  width: 1280,
+  height: 720,
+  baseURL: "http://localhost:5173",
+  video: "retain-on-failure",
+  screenshot: "only-on-failure",
+  timeout: 30000,
+  extraArgs: [],
+}
 
 export default function TestSpecs() {
-  const { id: projectId } = useParams<{ id: string }>();
+  const { id: projectId } = useParams<{ id: string }>()
+  const navigate = useNavigate()
 
-  // runnerTarget: undefined = panel closed, "" = run all, "path/to/file" = specific target
-  const [runnerTarget, setRunnerTarget] = useState<string | undefined>(undefined);
-  const [selectedPaths, setSelectedPaths] = useState<string[]>([]);
-
-  // Test configuration (loaded from DB)
-  const [browser, setBrowser] = useState<string>("chromium");
-  const [width, setWidth] = useState<string>("1280");
-  const [height, setHeight] = useState<string>("720");
-  const [baseURL, setBaseURL] = useState<string>("http://localhost:5173");
-  const [video, setVideo] = useState<string>("retain-on-failure");
-  const [screenshot, setScreenshot] = useState<string>("only-on-failure");
-  const [isUpdating, setIsUpdating] = useState(false);
+  const [runnerTarget, setRunnerTarget] = useState<string | undefined>(undefined)
+  const [selectedPaths, setSelectedPaths] = useState<string[]>([])
+  const [runConfig, setRunConfig] = useState<RunConfig>(DEFAULT_CONFIG)
 
   useEffect(() => {
-    if (!projectId) return;
-
-    // Fetch project to get its config
+    if (!projectId) return
     apiClient.getProjects().then((projects: any[]) => {
-      const proj = projects.find(p => p.id === projectId);
-      if (proj && proj.config) {
-        setBrowser(proj.config.browser || "chromium");
-        setWidth(String(proj.config.viewportWidth || "1280"));
-        setHeight(String(proj.config.viewportHeight || "720"));
-        setBaseURL(proj.config.baseUrl || "http://localhost:5173");
-        setVideo(proj.config.video || "retain-on-failure");
-        setScreenshot(proj.config.screenshot || "only-on-failure");
+      const proj = projects.find(p => p.id === projectId)
+      if (proj?.config) {
+        const c = proj.config
+        setRunConfig({
+          browsers: c.browsers
+            ? (typeof c.browsers === 'string' ? JSON.parse(c.browsers) : c.browsers)
+            : [c.browser || "chromium"],
+          headless: c.headless !== undefined ? !!c.headless : true,
+          workers: c.workers || 1,
+          width: c.viewportWidth || 1280,
+          height: c.viewportHeight || 720,
+          baseURL: c.baseUrl || "http://localhost:5173",
+          video: c.video || "retain-on-failure",
+          screenshot: c.screenshot || "only-on-failure",
+          timeout: c.timeout || 30000,
+          extraArgs: c.extraArgs
+            ? (typeof c.extraArgs === 'string' ? JSON.parse(c.extraArgs) : c.extraArgs)
+            : [],
+        })
       }
-    });
-  }, [projectId]);
+    })
+  }, [projectId])
 
-  const handleSaveConfig = async () => {
-    if (!projectId) return;
-    setIsUpdating(true);
+  const openRunner = (target: string) => setRunnerTarget(target)
+  const closeRunner = () => setRunnerTarget(undefined)
+
+  const handleAddSpec = async () => {
+    const filename = window.prompt("Enter new spec file name:", "example.spec.ts")
+    if (!filename) return
     try {
-      await apiClient.updateProjectConfig(projectId, {
-        browser,
-        viewportWidth: parseInt(width),
-        viewportHeight: parseInt(height),
-        baseUrl: baseURL,
-        video,
-        screenshot
-      });
-    } catch (err) {
-      console.error("Failed to save config", err);
-    } finally {
-      setIsUpdating(false);
+      await apiClient.updateFileContent(projectId!, filename, "import { test, expect } from '@playwright/test';\n\ntest('New test', async ({ page }) => {\n  \n});\n")
+      window.location.reload()
+    } catch (e) {
+      alert("Failed to create spec")
     }
-  };
-
-  const openRunner = (target: string) => setRunnerTarget(target);
-  const closeRunner = () => setRunnerTarget(undefined);
+  }
 
   return (
-    <div className="flex flex-col h-full bg-background">
-      <div className="flex-1 overflow-hidden">
+    <div className="flex flex-col h-full bg-background overflow-hidden">
+      <PageHeader
+        title="User Journeys"
+        description="Explore and execute your Playwright test specifications. Select multiple files to run them in bulk."
+        action={
+          <div className="flex items-center gap-3">
+            <Button
+              variant="outline" 
+              size="lg" 
+              className="h-11 border-zinc-800 bg-zinc-900 text-zinc-400 font-bold px-4 hover:text-white"
+              onClick={() => navigate(`/app/project/${projectId}/settings/run`)}
+              title="Go to Run Configuration settings"
+            >
+              <Settings2Icon className="mr-2 h-4 w-4" />
+              Config
+            </Button>
+
+            <Button
+              size="lg"
+              className="h-11 gap-2 bg-green-700 hover:bg-green-600 text-white font-bold px-8 shadow-lg shadow-green-900/20"
+              onClick={() => openRunner(selectedPaths.length > 0 ? "SELECTED" : "")}
+            >
+              <Wand2Icon className="h-5 w-5" />
+              {selectedPaths.length > 0 ? `Prepare Tests (${selectedPaths.length})` : "Prepare Tests"}
+            </Button>
+          </div>
+        }
+      />
+      <div className="flex-1 overflow-hidden p-6 pt-2">
         <FileManager
           title="Scripts explorer"
           onRunFile={openRunner}
           onSelectionChange={setSelectedPaths}
           actions={
-            <>
-              <Button
-                variant="outline" size="sm" className="h-8 text-xs font-semibold"
-                onClick={async () => {
-                  const filename = window.prompt("Enter new spec file name:", "example.spec.ts");
-                  if (!filename) return;
-                  try {
-                    await apiClient.updateFileContent(projectId!, filename, "import { test, expect } from '@playwright/test';\n\ntest('New test', async ({ page }) => {\n  \n});\n");
-                    // Quick pragmatic reload to show the new file
-                    window.location.reload();
-                  } catch (e) {
-                    alert("Failed to create spec");
-                  }
-                }}
-              >
-                + Add Spec
-              </Button>
-
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button variant="outline" size="sm" className="h-8 text-xs">
-                    <Settings2Icon className="mr-2 h-3.5 w-3.5" />
-                    Config
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-80" align="end">
-                  <div className="space-y-4">
-                    <h4 className="font-medium text-sm">Test Configuration</h4>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="browser" className="text-[10px] uppercase font-bold text-zinc-500">Browser</Label>
-                      <Select value={browser} onValueChange={setBrowser}>
-                        <SelectTrigger id="browser" className="h-8 text-xs">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="chromium">Chromium</SelectItem>
-                          <SelectItem value="chrome">Chrome</SelectItem>
-                          <SelectItem value="firefox">Firefox</SelectItem>
-                          <SelectItem value="webkit">WebKit</SelectItem>
-                          <SelectItem value="edge">Edge</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-2">
-                      <div className="space-y-2">
-                        <Label htmlFor="width" className="text-[10px] uppercase font-bold text-zinc-500">Width</Label>
-                        <Input
-                          id="width"
-                          type="number"
-                          value={width}
-                          onChange={(e) => setWidth(e.target.value)}
-                          className="h-8 text-xs"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="height" className="text-[10px] uppercase font-bold text-zinc-500">Height</Label>
-                        <Input
-                          id="height"
-                          type="number"
-                          value={height}
-                          onChange={(e) => setHeight(e.target.value)}
-                          className="h-8 text-xs"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="baseURL" className="text-[10px] uppercase font-bold text-zinc-500">Base URL</Label>
-                      <Input
-                        id="baseURL"
-                        type="url"
-                        value={baseURL}
-                        onChange={(e) => setBaseURL(e.target.value)}
-                        className="h-8 text-xs"
-                        placeholder="http://localhost:5173"
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="video" className="text-[10px] uppercase font-bold text-zinc-500">Video Recording</Label>
-                      <Select value={video} onValueChange={setVideo}>
-                        <SelectTrigger id="video" className="h-8 text-xs">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="off">Off</SelectItem>
-                          <SelectItem value="on">On</SelectItem>
-                          <SelectItem value="retain-on-failure">On Failure</SelectItem>
-                          <SelectItem value="on-first-retry">On Retry</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="screenshot" className="text-[10px] uppercase font-bold text-zinc-500">Screenshots</Label>
-                      <Select value={screenshot} onValueChange={setScreenshot}>
-                        <SelectTrigger id="screenshot" className="h-8 text-xs">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="off">Off</SelectItem>
-                          <SelectItem value="on">On</SelectItem>
-                          <SelectItem value="only-on-failure">On Failure</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <Button className="w-full h-8 text-xs" onClick={handleSaveConfig} disabled={isUpdating}>
-                      {isUpdating ? "Saving..." : "Save Persistence"}
-                      {!isUpdating && <SaveIcon className="ml-2 h-3.5 w-3.5" />}
-                    </Button>
-                  </div>
-                </PopoverContent>
-              </Popover>
-
-              <Button
-                size="sm"
-                className="h-8 text-xs gap-1.5 bg-green-700 hover:bg-green-600 text-white font-bold"
-                onClick={() => openRunner(selectedPaths.length > 0 ? "SELECTED" : "")}
-              >
-                <Wand2Icon className="h-3.5 w-3.5" />
-                {selectedPaths.length > 0 ? `Prepare Tests (${selectedPaths.length})` : "Prepare Tests"}
-              </Button>
-            </>
+            <Button
+              variant="outline" 
+              size="sm" 
+              className="h-8 text-xs font-semibold border-zinc-800 bg-zinc-900/50 hover:bg-zinc-800"
+              onClick={handleAddSpec}
+            >
+              <PlusIcon className="size-3.5 mr-1.5" /> Add Spec
+            </Button>
           }
         />
       </div>
@@ -223,12 +148,7 @@ export default function TestSpecs() {
                 targetPath={runnerTarget === "SELECTED" ? undefined : runnerTarget}
                 targetPaths={runnerTarget === "SELECTED" ? selectedPaths : undefined}
                 onClose={closeRunner}
-                browser={browser}
-                width={parseInt(width)}
-                height={parseInt(height)}
-                baseURL={baseURL}
-                video={video}
-                screenshot={screenshot}
+                runConfig={runConfig}
               />
             )}
           </div>

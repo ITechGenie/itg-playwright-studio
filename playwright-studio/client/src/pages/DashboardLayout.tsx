@@ -1,7 +1,7 @@
-import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
+import { SidebarProvider } from "@/components/ui/sidebar"
 import { AppSidebar } from "@/components/app-sidebar"
 import { Outlet, useLocation } from "react-router-dom"
-import { Breadcrumb, BreadcrumbItem, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator, BreadcrumbLink } from "@/components/ui/breadcrumb"
+
 
 
 export default function DashboardLayout() {
@@ -30,29 +30,8 @@ export default function DashboardLayout() {
     <SidebarProvider>
       <div className="flex h-screen w-full font-sans bg-background text-foreground">
         <AppSidebar />
-        <main className="flex w-full flex-col">
-          <header className="flex h-14 items-center gap-4 border-b bg-muted/40 px-6 lg:h-[60px]">
-            <SidebarTrigger />
-
-            <Breadcrumb>
-              <BreadcrumbList>
-                <BreadcrumbItem>
-                  <BreadcrumbLink href="/app/projects">Playwright Studio</BreadcrumbLink>
-                </BreadcrumbItem>
-                {pathnames.length > 3 && (
-                  <>
-                    <BreadcrumbSeparator />
-                    <BreadcrumbItem>
-                      <BreadcrumbPage>{getRouteTitle(pathnames[3])}</BreadcrumbPage>
-                    </BreadcrumbItem>
-                  </>
-                )}
-              </BreadcrumbList>
-            </Breadcrumb>
-          </header>
-
-          <div className="flex flex-col flex-1 overflow-auto p-6 space-y-4">
-            <h1 className="text-3xl font-bold tracking-tight">{pageTitle}</h1>
+        <main className="flex w-full flex-col overflow-hidden">
+          <div className="flex-1 overflow-auto flex flex-col">
             <Outlet />
           </div>
         </main>

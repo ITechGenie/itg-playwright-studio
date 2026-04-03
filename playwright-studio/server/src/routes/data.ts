@@ -40,16 +40,28 @@ export function createDataRouter() {
       const { projectId } = req.params;
       const templates = await db.select().from(dataTemplates).where(eq(dataTemplates.projectId, projectId));
       
-      const results = [];
-      for (const t of templates) {
-        const attrs = await db.select().from(templateAttributes).where(eq(templateAttributes.templateId, t.id));
-        results.push({ ...t, attributes: attrs });
-      }
-      
-      res.json(results);
+      // Do not fetch attributes here for performance. Just return the base templates.
+      res.json(templates.map(t => ({ ...t, attributes: [] }))); // Maintain type compatibility
     } catch (err) {
       console.error(err);
       res.status(500).json({ error: 'Failed to fetch templates' });
+    }
+  });
+
+  router.get('/:projectId/data/templates/:templateId', async (req, res) => {
+    try {
+      const { projectId, templateId } = req.params;
+      const [template] = await db.select().from(dataTemplates).where(eq(dataTemplates.id, templateId));
+      
+      if (!template) {
+        return res.status(404).json({ error: 'Template not found' });
+      }
+
+      const attrs = await db.select().from(templateAttributes).where(eq(templateAttributes.templateId, template.id));
+      res.json({ ...template, attributes: attrs });
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ error: 'Failed to fetch template details' });
     }
   });
 
@@ -92,17 +104,58 @@ export function createDataRouter() {
       const { projectId } = req.params;
       const envs = await db.select().from(environments).where(eq(environments.projectId, projectId));
       
-      const results = [];
-      for (const env of envs) {
-        // Find existing datasets
-        const sets = await db.select().from(dataSets).where(eq(dataSets.environmentId, env.id));
-        // Mask secrets locally? Not needed, we just don't return them if not necessary, but here we'll just not decrypt them for listing.
-        results.push({ ...env, datasets: sets.map(s => ({ id: s.id, name: s.name })) });
-      }
-      res.json(results);
+      // Do not eagerly fetch datasets or variables here for performance
+      res.json(envs.map(env => ({ ...env, datasets: [], variables: '{}' })));
     } catch (err) {
       console.error(err);
       res.status(500).json({ error: 'Failed to fetch environments' });
+    }
+  });
+
+  router.get('/:projectId/data/environments/:environmentId', async (req, res) => {
+    try {
+      const { projectId, environmentId } = req.params;
+      const [env] = await db.select().from(environments).where(eq(environments.id, environmentId));
+      
+      if (!env) {
+        return res.status(404).json({ error: 'Environment not found' });
+      }
+
+      const sets = await db.select({
+        id: dataSets.id,
+        environmentId: dataSets.environmentId,
+        name: dataSets.name,
+        createdAt: dataSets.createdAt
+      }).from(dataSets).where(eq(dataSets.environmentId, env.id));
+      
+      res.json({ ...env, datasets: sets });
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ error: 'Failed to fetch environment details' });
+    }
+  });
+
+  router.get('/:projectId/data/environments/:environmentId/datasets/:datasetId', async (req, res) => {
+    try {
+      const { datasetId } = req.params;
+      const [dataset] = await db.select().from(dataSets).where(eq(dataSets.id, datasetId));
+      
+      if (!dataset) {
+        return res.status(404).json({ error: 'Data set not found' });
+      }
+
+      // Decrypt variables for UI display
+      const vars = JSON.parse(dataset.variables || '{}');
+      for (const [key, val] of Object.entries(vars)) {
+        if (typeof val === 'string' && val.includes(':')) {
+           vars[key] = decrypt(val);
+        }
+      }
+
+      res.json({ ...dataset, variables: JSON.stringify(vars) });
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ error: 'Failed to fetch data set details' });
     }
   });
 

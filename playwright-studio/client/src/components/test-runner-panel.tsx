@@ -1,19 +1,20 @@
 "use client";
 
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { XIcon, PlayIcon, RotateCcwIcon } from "lucide-react";
+import { XIcon, PlayIcon, RotateCcwIcon, SettingsIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { apiClient } from "@/services/api-client";
 import { WS_ENDPOINT } from "@/services/api-endpoints";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuCheckboxItem, DropdownMenuLabel, DropdownMenuSeparator } from "@/components/ui/dropdown-menu"
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
-import { Loader2Icon, CheckCircleIcon, XCircleIcon, ExternalLinkIcon } from "lucide-react"
+import { Loader2Icon, CheckCircleIcon, XCircleIcon, ExternalLinkIcon, PlusIcon } from "lucide-react"
+import { PLAYWRIGHT_CLI_OPTIONS } from "@/lib/playwright-options"
 
 // Simple ANSI to HTML converter
 function ansiToHtml(text: string): string {
@@ -47,12 +48,18 @@ export interface TestRunnerPanelProps {
   initialRunId?: string;
   onClose?: () => void;
   showNewTab?: boolean;
-  browser?: string;
-  width?: number;
-  height?: number;
-  baseURL?: string;
-  video?: string;
-  screenshot?: string;
+  runConfig: {
+    browsers: string[];
+    headless: boolean;
+    workers: number;
+    width: number;
+    height: number;
+    baseURL: string;
+    video: string;
+    screenshot: string;
+    timeout: number;
+    extraArgs: { flag: string; value: string }[];
+  };
 }
 
 interface LogLine {
@@ -78,20 +85,15 @@ export function TestRunnerPanel({
   targetPaths,
   initialRunId,
   onClose,
-  showNewTab = true,
-  browser = "chromium",
-  width = 1280,
-  height = 720,
-  baseURL = "http://localhost:5173",
-  video = "retain-on-failure",
-  screenshot = "only-on-failure",
+  runConfig,
 }: TestRunnerPanelProps) {
   // Runner States
   const [runsMap, setRunsMap] = useState<Record<string, ActiveRun>>({});
   const [activeTabId, setActiveTabId] = useState<string | null>(initialRunId || null);
 
-  const [headless, setHeadless] = useState(true);
-  const [workers, setWorkers] = useState("1");
+  // Local overrides (initialized from runConfig)
+  const [localConfig, setLocalConfig] = useState(runConfig);
+  const [isConfigExpanded, setIsConfigExpanded] = useState(false);
   const [grep, setGrep] = useState("");
 
   // Data Manager States
@@ -115,7 +117,15 @@ export function TestRunnerPanel({
   // Update datasets when environment changes
   useEffect(() => {
     setSelectedDatasetIds([]);
-  }, [selectedEnvId]);
+    
+    if (selectedEnvId && selectedEnvId !== "none") {
+      apiClient.getDataEnvironment(projectId, selectedEnvId)
+        .then(fullEnv => {
+          setEnvironments(prev => prev.map(e => e.id === fullEnv.id ? fullEnv : e));
+        })
+        .catch(err => console.error("Failed to fetch env details in runner", err));
+    }
+  }, [selectedEnvId, projectId]);
 
   // ── Fetch existing logs if attaching to a run ────────────────────────────
   useEffect(() => {
@@ -219,14 +229,16 @@ export function TestRunnerPanel({
       const options = {
         path: targetPath,
         paths: targetPaths,
-        headless,
-        workers: parseInt(workers) || 1,
-        browser,
-        width,
-        height,
-        baseURL,
-        video,
-        screenshot,
+        headless: localConfig.headless,
+        workers: localConfig.workers,
+        browsers: localConfig.browsers,
+        width: localConfig.width,
+        height: localConfig.height,
+        baseURL: localConfig.baseURL,
+        video: localConfig.video,
+        screenshot: localConfig.screenshot,
+        timeout: localConfig.timeout,
+        extraArgs: localConfig.extraArgs,
         grep: grep || undefined,
         envId: selectedEnvId !== "none" ? selectedEnvId : undefined,
         dataSetIds: selectedDatasetIds.length > 0 ? selectedDatasetIds : undefined,
@@ -279,33 +291,30 @@ export function TestRunnerPanel({
   };
 
   return (
-    <div className="flex flex-col h-full bg-zinc-950 text-sm font-mono rounded-t-lg border border-zinc-800 overflow-hidden shadow-2xl">
+    <div className="flex flex-col h-full bg-zinc-950 text-sm rounded-t-lg border border-zinc-800 overflow-hidden shadow-2xl">
       {/* ── Toolbar ── */}
       <div className="flex items-center gap-3 px-3 py-2 bg-zinc-900 border-b border-zinc-800 shrink-0 flex-wrap gap-y-2">
         <span className="text-zinc-300 font-semibold truncate max-w-[200px]">
           {targetPaths ? `${targetPaths.length} files` : (targetPath || "All tests")} {statusBadge()}
         </span>
-        <div className="flex items-center gap-1.5 ml-2">
-          <Switch
-            id="headless-toggle"
-            checked={headless}
-            onCheckedChange={setHeadless}
-            disabled={isRunning}
-            className="scale-75 data-[state=checked]:bg-blue-600"
-          />
-          <Label htmlFor="headless-toggle" className="text-zinc-500 text-[10px] uppercase font-bold tracking-tight">Headless</Label>
-        </div>
+
+        <Button
+          variant="outline"
+          size="sm"
+          className={cn(
+            "h-6 px-2 text-[10px] bg-zinc-950 border-zinc-800 text-zinc-400 hover:text-white transition-all",
+            isConfigExpanded && "bg-zinc-800 text-white border-zinc-600"
+          )}
+          onClick={() => setIsConfigExpanded(!isConfigExpanded)}
+        >
+          <SettingsIcon className="h-3 w-3 mr-1.5 opacity-70" />
+          Config {isConfigExpanded ? "▲" : "▼"}
+        </Button>
+
+        <div className="h-4 w-px bg-zinc-800 mx-1" />
+
         <div className="flex items-center gap-1.5">
-          <Label className="text-zinc-500 text-[10px] uppercase font-bold tracking-tight">Workers</Label>
-          <Input
-            value={workers}
-            onChange={e => setWorkers(e.target.value)}
-            disabled={isRunning}
-            className="h-6 w-10 px-1.5 text-[10px] bg-zinc-950 border-zinc-800 text-zinc-300"
-          />
-        </div>
-        <div className="flex items-center gap-1.5">
-          <Label className="text-zinc-500 text-[10px] uppercase font-bold tracking-tight">Filter</Label>
+          <Label className="text-zinc-500 text-[10px] uppercase font-bold">Filter</Label>
           <Input
             value={grep}
             onChange={e => setGrep(e.target.value)}
@@ -318,7 +327,7 @@ export function TestRunnerPanel({
         {/* Data Manager Environments Selection */}
         {environments.length > 0 && (
           <div className="flex items-center gap-1.5 border-l border-zinc-800 pl-3">
-            <Label className="text-zinc-500 text-[10px] uppercase font-bold tracking-tight">Env</Label>
+            <Label className="text-zinc-500 text-[10px] uppercase font-bold">Env</Label>
             <Select value={selectedEnvId} onValueChange={setSelectedEnvId} disabled={isRunning}>
               <SelectTrigger className="h-6 w-[120px] text-[10px] bg-zinc-950 border-zinc-800 text-zinc-300">
                 <SelectValue placeholder="Base Env" />
@@ -334,7 +343,7 @@ export function TestRunnerPanel({
             {/* Multi-Select Datasets Dropdown */}
             {selectedEnvId && selectedEnvId !== "none" && (
               <>
-                <Label className="text-zinc-500 text-[10px] uppercase font-bold tracking-tight ml-2">Datasets</Label>
+                <Label className="text-zinc-500 text-[10px] uppercase font-bold ml-2">Datasets</Label>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild disabled={isRunning}>
                     <Button variant="outline" className="h-6 px-2 text-[10px] bg-zinc-950 border-zinc-800 text-zinc-300 min-w-[100px] justify-start text-left font-normal truncate hover:text-white hover:bg-zinc-800">
@@ -401,6 +410,140 @@ export function TestRunnerPanel({
           </Button>
         )}
       </div>
+
+      {/* ── Collapsible Config Override Section ── */}
+      {isConfigExpanded && (
+        <div className="bg-zinc-900 border-b border-zinc-800 p-3 grid grid-cols-4 gap-4 animate-in slide-in-from-top duration-200">
+          <div className="space-y-1.5">
+            <Label className="text-[10px] uppercase font-bold text-zinc-500">Browsers</Label>
+            <div className="flex flex-wrap gap-1">
+              {['chromium', 'firefox', 'webkit', 'chrome', 'msedge'].map(b => (
+                <Badge
+                  key={b}
+                  variant="outline"
+                  className={cn(
+                    "cursor-pointer text-[9px] px-1.5 py-0 capitalize border-zinc-700 text-zinc-500",
+                    localConfig.browsers.includes(b) && "bg-blue-900/30 text-blue-300 border-blue-700"
+                  )}
+                  onClick={() => {
+                    const next = localConfig.browsers.includes(b)
+                      ? localConfig.browsers.filter(x => x !== b)
+                      : [...localConfig.browsers, b];
+                    if (next.length > 0) setLocalConfig({ ...localConfig, browsers: next });
+                  }}
+                >
+                  {b}
+                </Badge>
+              ))}
+            </div>
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-[10px] uppercase font-bold text-zinc-500">Parallelism</Label>
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-1">
+                <Switch
+                  checked={localConfig.headless}
+                  onCheckedChange={(v) => setLocalConfig({ ...localConfig, headless: v })}
+                  className="scale-75 data-[state=checked]:bg-blue-600"
+                />
+                <span className="text-[10px] text-zinc-400">Headless</span>
+              </div>
+              <Input
+                type="number"
+                value={localConfig.workers}
+                onChange={(e) => setLocalConfig({ ...localConfig, workers: parseInt(e.target.value) || 1 })}
+                className="h-6 w-10 px-1 text-[10px] bg-zinc-950 border-zinc-800 text-zinc-300"
+              />
+              <span className="text-[10px] text-zinc-500">Workers</span>
+            </div>
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-[10px] uppercase font-bold text-zinc-500">Viewport</Label>
+            <div className="flex items-center gap-1">
+              <Input
+                value={localConfig.width}
+                onChange={(e) => setLocalConfig({ ...localConfig, width: parseInt(e.target.value) || 1280 })}
+                className="h-6 w-12 px-1 text-[10px] bg-zinc-950 border-zinc-800 text-zinc-300"
+              />
+              <span className="text-[10px] text-zinc-600">×</span>
+              <Input
+                value={localConfig.height}
+                onChange={(e) => setLocalConfig({ ...localConfig, height: parseInt(e.target.value) || 720 })}
+                className="h-6 w-12 px-1 text-[10px] bg-zinc-950 border-zinc-800 text-zinc-300"
+              />
+            </div>
+          </div>
+          <div className="space-y-1.5 col-span-1">
+            <div className="flex items-center justify-between mb-0.5">
+              <Label className="text-[10px] uppercase font-bold text-zinc-500">Extra Args</Label>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-4 w-4 text-zinc-500 hover:text-blue-400 p-0"
+                onClick={() => {
+                  setLocalConfig({
+                    ...localConfig,
+                    extraArgs: [...localConfig.extraArgs, { flag: "", value: "" }]
+                  });
+                }}
+              >
+                <PlusIcon className="h-3 w-3" />
+              </Button>
+            </div>
+            <div className="space-y-1.5 max-h-[120px] overflow-y-auto pr-1 custom-scrollbar">
+              {localConfig.extraArgs.map((arg, idx) => (
+                <div key={idx} className="flex gap-1 items-center animate-in fade-in slide-in-from-top-1 duration-200">
+                  <Select 
+                    value={arg.flag} 
+                    onValueChange={(val) => {
+                      const next = [...localConfig.extraArgs];
+                      next[idx] = { ...next[idx], flag: val };
+                      setLocalConfig({ ...localConfig, extraArgs: next });
+                    }}
+                  >
+                    <SelectTrigger className="h-6 flex-1 bg-zinc-950 border-zinc-800 text-[10px] px-1.5">
+                      <SelectValue placeholder="Flag" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-zinc-900 border-zinc-800 text-white min-w-[180px]">
+                      {PLAYWRIGHT_CLI_OPTIONS.map(opt => (
+                        <SelectItem key={opt.flag} value={opt.flag} className="text-[10px] py-1">
+                          {opt.flag}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Input
+                    placeholder="Val"
+                    value={arg.value}
+                    onChange={(e) => {
+                      const next = [...localConfig.extraArgs];
+                      next[idx] = { ...next[idx], value: e.target.value };
+                      setLocalConfig({ ...localConfig, extraArgs: next });
+                    }}
+                    className="h-6 w-16 px-1.5 text-[10px] bg-zinc-950 border-zinc-800 text-zinc-300"
+                  />
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-5 w-5 text-zinc-600 hover:text-red-400 p-0"
+                    onClick={() => {
+                      setLocalConfig({
+                        ...localConfig,
+                        extraArgs: localConfig.extraArgs.filter((_, i) => i !== idx)
+                      });
+                    }}
+                  >
+                    <XIcon className="h-3 w-3" />
+                  </Button>
+                </div>
+              ))}
+              {localConfig.extraArgs.length === 0 && (
+                <span className="text-[10px] text-zinc-700 italic block py-1">None active</span>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── Terminal Output (Tabs multiplexer) ── */}
       <div className="flex-1 flex flex-col min-h-0 bg-black overflow-hidden relative selection:bg-blue-500/30">

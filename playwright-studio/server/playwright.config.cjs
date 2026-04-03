@@ -63,6 +63,105 @@ const getBrowserConfig = (browserName) => {
   return browserConfigs[safeBrowser];
 };
 
+/**
+ * Extracts PW_STUDIO_ARG_* environment variables and maps them to Playwright use options.
+ */
+/**
+ * Extracts PW_STUDIO_ARG_* environment variables and maps them to Playwright use options.
+ */
+const getExtraUseOptions = () => {
+  /** @type {any} */
+  const options = {};
+  
+  if (process.env.PW_STUDIO_ARG_SAVE_HAR) {
+    const val = process.env.PW_STUDIO_ARG_SAVE_HAR || 'true';
+    options.har = {
+      path: val === 'true' ? path.join(resultsDir, 'network.har') : val,
+      urlFilter: process.env.PW_STUDIO_ARG_SAVE_HAR_GLOB || undefined,
+      content: 'attach', // Attach actual content to HAR for better inspection
+    };
+  }
+  
+  if (process.env.PW_STUDIO_ARG_DEVICE) {
+    const devName = process.env.PW_STUDIO_ARG_DEVICE;
+    // Fuzzy matching for device names (e.g. "iphone" -> "iPhone 12")
+    const match = Object.keys(devices).find(k => k.toLowerCase().includes(devName.toLowerCase())); 
+    if (match) {
+       Object.assign(options, devices[match]);
+    }
+  }
+
+  if (process.env.PW_STUDIO_ARG_VIEWPORT_SIZE) {
+    const v = process.env.PW_STUDIO_ARG_VIEWPORT_SIZE;
+    const [w, h] = v.split(/[,x]/).map(x => parseInt(x.trim()));
+    if (!isNaN(w) && !isNaN(h)) options.viewport = { width: w, height: h };
+  }
+
+  if (process.env.PW_STUDIO_ARG_IS_MOBILE) {
+    options.isMobile = process.env.PW_STUDIO_ARG_IS_MOBILE === 'true';
+  }
+
+  if (process.env.PW_STUDIO_ARG_HAS_TOUCH) {
+    options.hasTouch = process.env.PW_STUDIO_ARG_HAS_TOUCH === 'true';
+  }
+  
+  if (process.env.PW_STUDIO_ARG_IGNORE_HTTPS_ERRORS) {
+    options.ignoreHTTPSErrors = process.env.PW_STUDIO_ARG_IGNORE_HTTPS_ERRORS === 'true';
+  }
+  
+  if (process.env.PW_STUDIO_ARG_BLOCK_SERVICE_WORKERS) {
+    options.serviceWorkers = process.env.PW_STUDIO_ARG_BLOCK_SERVICE_WORKERS === 'true' ? 'block' : 'allow';
+  }
+  
+  if (process.env.PW_STUDIO_ARG_LOAD_STORAGE) {
+    options.storageState = process.env.PW_STUDIO_ARG_LOAD_STORAGE;
+  }
+  
+  if (process.env.PW_STUDIO_ARG_COLOR_SCHEME) {
+    options.colorScheme = process.env.PW_STUDIO_ARG_COLOR_SCHEME;
+  }
+  
+  if (process.env.PW_STUDIO_ARG_CHANNEL) {
+    options.channel = process.env.PW_STUDIO_ARG_CHANNEL;
+  }
+
+  if (process.env.PW_STUDIO_ARG_USER_AGENT) {
+    options.userAgent = process.env.PW_STUDIO_ARG_USER_AGENT;
+  }
+  
+  if (process.env.PW_STUDIO_ARG_LANG) {
+    options.locale = process.env.PW_STUDIO_ARG_LANG;
+  }
+  
+  if (process.env.PW_STUDIO_ARG_TIMEZONE) {
+    options.timezoneId = process.env.PW_STUDIO_ARG_TIMEZONE;
+  }
+  
+  if (process.env.PW_STUDIO_ARG_GEOLOCATION) {
+    try {
+      options.geolocation = JSON.parse(process.env.PW_STUDIO_ARG_GEOLOCATION);
+      options.permissions = [...(options.permissions || []), 'geolocation'];
+    } catch {
+      // ignore invalid json
+    }
+  }
+  
+  if (process.env.PW_STUDIO_ARG_PROXY_SERVER) {
+    options.proxy = {
+      server: process.env.PW_STUDIO_ARG_PROXY_SERVER,
+      bypass: process.env.PW_STUDIO_ARG_PROXY_BYPASS || undefined
+    };
+  }
+
+  return options;
+};
+
+// Log the extra options derived from Environment for debugging
+const extraOptions = getExtraUseOptions();
+if (Object.keys(extraOptions).length > 0) {
+  console.log(`[Config] Running with extra options: ${JSON.stringify(Object.keys(extraOptions))}`);
+}
+
 module.exports = defineConfig({
   // Test directory set via environment variable (absolute path)
   testDir: process.env.TEST_PROJECT_DIR || './',
@@ -131,19 +230,61 @@ module.exports = defineConfig({
     video: /** @type {any} */ (video),
     // Dynamic viewport from environment
     viewport: { width, height },
+    ...getExtraUseOptions(),
   },
   
   // Output directory for test artifacts
   outputDir: resultsDir,
-  
-  // Dynamic browser configuration based on environment variable
+
+  // Define projects for all supported browsers
   projects: [
     {
-      name: browser,
+      name: 'chromium',
       use: { 
-        ...getBrowserConfig(browser),
-        // Override viewport with custom dimensions
+        ...devices['Desktop Chrome'], 
         viewport: { width, height },
+        ...getExtraUseOptions(),
+      },
+    },
+    {
+      name: 'firefox',
+      use: { 
+        ...devices['Desktop Firefox'], 
+        viewport: { width, height },
+        // Only apply compatible extra options (omit chrome-only things like channel/har)
+        ...(() => {
+          const { channel, har, ...rest } = getExtraUseOptions();
+          return rest;
+        })()
+      },
+    },
+    {
+      name: 'webkit',
+      use: { 
+        ...devices['Desktop Safari'], 
+        viewport: { width, height },
+        ...(() => {
+          const { channel, har, ...rest } = getExtraUseOptions();
+          return rest;
+        })()
+      },
+    },
+    {
+      name: 'chrome',
+      use: { 
+        ...devices['Desktop Chrome'], 
+        channel: 'chrome', 
+        viewport: { width, height },
+        ...getExtraUseOptions(),
+      },
+    },
+    {
+      name: 'msedge',
+      use: { 
+        ...devices['Desktop Edge'], 
+        channel: 'msedge', 
+        viewport: { width, height },
+        ...getExtraUseOptions(),
       },
     },
   ],
