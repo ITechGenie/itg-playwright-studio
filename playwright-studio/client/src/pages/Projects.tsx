@@ -4,25 +4,13 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { useNavigate } from "react-router-dom"
 import { useState, useEffect } from "react"
 import { apiClient } from "@/services/api-client"
-import { Settings2Icon, ExternalLinkIcon, SaveIcon, PlusIcon, RefreshCwIcon } from "lucide-react"
+import { Settings2Icon, ExternalLinkIcon, PlusIcon, RefreshCwIcon } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogHeader, 
-  DialogTitle, 
-  DialogTrigger,
-  DialogFooter
-} from "@/components/ui/dialog"
-import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 export default function Projects() {
   const navigate = useNavigate();
   const [projects, setProjects] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [editingProject, setEditingProject] = useState<any>(null);
-  const [isUpdating, setIsUpdating] = useState(false);
 
   const fetchProjects = async () => {
     setLoading(true);
@@ -54,20 +42,6 @@ export default function Projects() {
 
     fetchProjects();
   }, []);
-
-  const handleUpdateConfig = async () => {
-    if (!editingProject) return;
-    setIsUpdating(true);
-    try {
-      await apiClient.updateProjectConfig(editingProject.id, editingProject.config);
-      await fetchProjects();
-      setEditingProject(null);
-    } catch (err) {
-      console.error("Failed to update config", err);
-    } finally {
-      setIsUpdating(false);
-    }
-  };
 
   return (
     <div className="min-h-screen bg-background flex flex-col items-center">
@@ -147,79 +121,15 @@ export default function Projects() {
                     </span>
                   </TableCell>
                   <TableCell className="text-right space-x-2">
-                    <Dialog open={editingProject?.id === proj.id} onOpenChange={(open) => !open && setEditingProject(null)}>
-                      <DialogTrigger asChild>
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
-                          className="h-8 w-8 p-0 text-zinc-400 hover:text-white"
-                          onClick={() => setEditingProject(proj)}
-                        >
-                          <Settings2Icon className="h-4 w-4" />
-                        </Button>
-                      </DialogTrigger>
-                      <DialogContent className="sm:max-w-[425px]">
-                        <DialogHeader>
-                          <DialogTitle>Project Settings</DialogTitle>
-                        </DialogHeader>
-                        {editingProject && (
-                          <div className="grid gap-4 py-4">
-                            <div className="grid grid-cols-4 items-center gap-4">
-                              <Label htmlFor="browser" className="text-right text-xs">Browser</Label>
-                              <Select 
-                                value={editingProject.config.browser} 
-                                onValueChange={(val) => setEditingProject({...editingProject, config: {...editingProject.config, browser: val}})}
-                              >
-                                <SelectTrigger id="browser" className="col-span-3 h-8 text-xs">
-                                  <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="chromium">Chromium</SelectItem>
-                                  <SelectItem value="chrome">Chrome</SelectItem>
-                                  <SelectItem value="firefox">Firefox</SelectItem>
-                                  <SelectItem value="webkit">WebKit</SelectItem>
-                                </SelectContent>
-                              </Select>
-                            </div>
-                            <div className="grid grid-cols-4 items-center gap-4">
-                              <Label htmlFor="baseUrl" className="text-right text-xs">Base URL</Label>
-                              <Input 
-                                id="baseUrl" 
-                                value={editingProject.config.baseUrl} 
-                                onChange={(e) => setEditingProject({...editingProject, config: {...editingProject.config, baseUrl: e.target.value}})}
-                                className="col-span-3 h-8 text-xs" 
-                              />
-                            </div>
-                            <div className="grid grid-cols-4 items-center gap-4">
-                              <Label className="text-right text-xs">Viewport</Label>
-                              <div className="col-span-3 flex items-center gap-2">
-                                <Input 
-                                  type="number" 
-                                  value={editingProject.config.viewportWidth} 
-                                  onChange={(e) => setEditingProject({...editingProject, config: {...editingProject.config, viewportWidth: e.target.value}})}
-                                  className="h-8 text-xs" 
-                                  placeholder="Width"
-                                />
-                                <span className="text-zinc-500">×</span>
-                                <Input 
-                                  type="number" 
-                                  value={editingProject.config.viewportHeight} 
-                                  onChange={(e) => setEditingProject({...editingProject, config: {...editingProject.config, viewportHeight: e.target.value}})}
-                                  className="h-8 text-xs" 
-                                  placeholder="Height"
-                                />
-                              </div>
-                            </div>
-                          </div>
-                        )}
-                        <DialogFooter>
-                          <Button type="submit" size="sm" onClick={handleUpdateConfig} disabled={isUpdating}>
-                            {isUpdating ? "Saving..." : "Save changes"}
-                            {!isUpdating && <SaveIcon className="ml-2 h-3.5 w-3.5" />}
-                          </Button>
-                        </DialogFooter>
-                      </DialogContent>
-                    </Dialog>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="h-8 w-8 p-0 text-zinc-400 hover:text-white"
+                      onClick={() => navigate(`/app/project/${proj.id}/settings/run`)}
+                      title="Run Configuration"
+                    >
+                      <Settings2Icon className="h-4 w-4" />
+                    </Button>
 
                     <Button variant="outline" size="sm" className="h-8 gap-1.5" onClick={() => navigate(`/app/project/${proj.id}/specs`)}>
                       Open Explorer

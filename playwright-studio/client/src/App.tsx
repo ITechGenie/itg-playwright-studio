@@ -16,6 +16,7 @@ const ExecutionsRuns = lazy(() => import("./pages/ExecutionsRuns"))
 const NewProject = lazy(() => import("./pages/NewProject"))
 const DataTemplates = lazy(() => import("./pages/DataTemplates"))
 const DataEnvironments = lazy(() => import("./pages/DataEnvironments"))
+const ProjectSettings = lazy(() => import("./pages/ProjectSettings"))
 
 export default function App() {
   return (
@@ -44,6 +45,8 @@ export default function App() {
                   <Route path="data" element={<MenuOverview section="Data Manager" />} />
                   <Route path="data/templates" element={<DataTemplates />} />
                   <Route path="data/environments" element={<DataEnvironments />} />
+                  {/* Settings */}
+                  <Route path="settings/run" element={<ProjectSettings />} />
                   {/* Other nested routes go here */}
                 </Route>
 

@@ -1,12 +1,12 @@
 "use client";
 
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { XIcon, PlayIcon, RotateCcwIcon } from "lucide-react";
+import { XIcon, PlayIcon, RotateCcwIcon, SettingsIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { apiClient } from "@/services/api-client";
 import { WS_ENDPOINT } from "@/services/api-endpoints";
@@ -47,12 +47,18 @@ export interface TestRunnerPanelProps {
   initialRunId?: string;
   onClose?: () => void;
   showNewTab?: boolean;
-  browser?: string;
-  width?: number;
-  height?: number;
-  baseURL?: string;
-  video?: string;
-  screenshot?: string;
+  runConfig: {
+    browsers: string[];
+    headless: boolean;
+    workers: number;
+    width: number;
+    height: number;
+    baseURL: string;
+    video: string;
+    screenshot: string;
+    timeout: number;
+    extraArgs: { flag: string; value: string }[];
+  };
 }
 
 interface LogLine {
@@ -78,20 +84,15 @@ export function TestRunnerPanel({
   targetPaths,
   initialRunId,
   onClose,
-  showNewTab = true,
-  browser = "chromium",
-  width = 1280,
-  height = 720,
-  baseURL = "http://localhost:5173",
-  video = "retain-on-failure",
-  screenshot = "only-on-failure",
+  runConfig,
 }: TestRunnerPanelProps) {
   // Runner States
   const [runsMap, setRunsMap] = useState<Record<string, ActiveRun>>({});
   const [activeTabId, setActiveTabId] = useState<string | null>(initialRunId || null);
 
-  const [headless, setHeadless] = useState(true);
-  const [workers, setWorkers] = useState("1");
+  // Local overrides (initialized from runConfig)
+  const [localConfig, setLocalConfig] = useState(runConfig);
+  const [isConfigExpanded, setIsConfigExpanded] = useState(false);
   const [grep, setGrep] = useState("");
 
   // Data Manager States
@@ -219,14 +220,16 @@ export function TestRunnerPanel({
       const options = {
         path: targetPath,
         paths: targetPaths,
-        headless,
-        workers: parseInt(workers) || 1,
-        browser,
-        width,
-        height,
-        baseURL,
-        video,
-        screenshot,
+        headless: localConfig.headless,
+        workers: localConfig.workers,
+        browsers: localConfig.browsers,
+        width: localConfig.width,
+        height: localConfig.height,
+        baseURL: localConfig.baseURL,
+        video: localConfig.video,
+        screenshot: localConfig.screenshot,
+        timeout: localConfig.timeout,
+        extraArgs: localConfig.extraArgs,
         grep: grep || undefined,
         envId: selectedEnvId !== "none" ? selectedEnvId : undefined,
         dataSetIds: selectedDatasetIds.length > 0 ? selectedDatasetIds : undefined,
@@ -285,25 +288,22 @@ export function TestRunnerPanel({
         <span className="text-zinc-300 font-semibold truncate max-w-[200px]">
           {targetPaths ? `${targetPaths.length} files` : (targetPath || "All tests")} {statusBadge()}
         </span>
-        <div className="flex items-center gap-1.5 ml-2">
-          <Switch
-            id="headless-toggle"
-            checked={headless}
-            onCheckedChange={setHeadless}
-            disabled={isRunning}
-            className="scale-75 data-[state=checked]:bg-blue-600"
-          />
-          <Label htmlFor="headless-toggle" className="text-zinc-500 text-[10px] uppercase font-bold tracking-tight">Headless</Label>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <Label className="text-zinc-500 text-[10px] uppercase font-bold tracking-tight">Workers</Label>
-          <Input
-            value={workers}
-            onChange={e => setWorkers(e.target.value)}
-            disabled={isRunning}
-            className="h-6 w-10 px-1.5 text-[10px] bg-zinc-950 border-zinc-800 text-zinc-300"
-          />
-        </div>
+
+        <Button
+          variant="outline"
+          size="sm"
+          className={cn(
+            "h-6 px-2 text-[10px] bg-zinc-950 border-zinc-800 text-zinc-400 hover:text-white transition-all",
+            isConfigExpanded && "bg-zinc-800 text-white border-zinc-600"
+          )}
+          onClick={() => setIsConfigExpanded(!isConfigExpanded)}
+        >
+          <SettingsIcon className="h-3 w-3 mr-1.5 opacity-70" />
+          Config {isConfigExpanded ? "▲" : "▼"}
+        </Button>
+
+        <div className="h-4 w-px bg-zinc-800 mx-1" />
+
         <div className="flex items-center gap-1.5">
           <Label className="text-zinc-500 text-[10px] uppercase font-bold tracking-tight">Filter</Label>
           <Input
@@ -401,6 +401,85 @@ export function TestRunnerPanel({
           </Button>
         )}
       </div>
+
+      {/* ── Collapsible Config Override Section ── */}
+      {isConfigExpanded && (
+        <div className="bg-zinc-900 border-b border-zinc-800 p-3 grid grid-cols-4 gap-4 animate-in slide-in-from-top duration-200">
+          <div className="space-y-1.5">
+            <Label className="text-[10px] uppercase font-bold text-zinc-500 tracking-wider">Browsers</Label>
+            <div className="flex flex-wrap gap-1">
+              {['chromium', 'firefox', 'webkit'].map(b => (
+                <Badge
+                  key={b}
+                  variant="outline"
+                  className={cn(
+                    "cursor-pointer text-[9px] px-1.5 py-0 capitalize border-zinc-700 text-zinc-500",
+                    localConfig.browsers.includes(b) && "bg-blue-900/30 text-blue-300 border-blue-700"
+                  )}
+                  onClick={() => {
+                    const next = localConfig.browsers.includes(b)
+                      ? localConfig.browsers.filter(x => x !== b)
+                      : [...localConfig.browsers, b];
+                    if (next.length > 0) setLocalConfig({ ...localConfig, browsers: next });
+                  }}
+                >
+                  {b}
+                </Badge>
+              ))}
+            </div>
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-[10px] uppercase font-bold text-zinc-500 tracking-wider">Parallelism</Label>
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-1">
+                <Switch
+                  checked={localConfig.headless}
+                  onCheckedChange={(v) => setLocalConfig({ ...localConfig, headless: v })}
+                  className="scale-75 data-[state=checked]:bg-blue-600"
+                />
+                <span className="text-[10px] text-zinc-400">Headless</span>
+              </div>
+              <Input
+                type="number"
+                value={localConfig.workers}
+                onChange={(e) => setLocalConfig({ ...localConfig, workers: parseInt(e.target.value) || 1 })}
+                className="h-6 w-10 px-1 text-[10px] bg-zinc-950 border-zinc-800 text-zinc-300"
+              />
+              <span className="text-[10px] text-zinc-500">Workers</span>
+            </div>
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-[10px] uppercase font-bold text-zinc-500 tracking-wider">Viewport</Label>
+            <div className="flex items-center gap-1">
+              <Input
+                value={localConfig.width}
+                onChange={(e) => setLocalConfig({ ...localConfig, width: parseInt(e.target.value) || 1280 })}
+                className="h-6 w-12 px-1 text-[10px] bg-zinc-950 border-zinc-800 text-zinc-300"
+              />
+              <span className="text-[10px] text-zinc-600">×</span>
+              <Input
+                value={localConfig.height}
+                onChange={(e) => setLocalConfig({ ...localConfig, height: parseInt(e.target.value) || 720 })}
+                className="h-6 w-12 px-1 text-[10px] bg-zinc-950 border-zinc-800 text-zinc-300"
+              />
+            </div>
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-[10px] uppercase font-bold text-zinc-500 tracking-wider">Extra Args</Label>
+            <div className="flex flex-wrap gap-1">
+              {localConfig.extraArgs.length > 0 ? (
+                localConfig.extraArgs.map((a, idx) => (
+                  <Badge key={idx} variant="outline" className="text-[9px] px-1 py-0 border-zinc-800 bg-zinc-950 text-zinc-400">
+                    {a.flag}{a.value ? `: ${a.value}` : ''}
+                  </Badge>
+                ))
+              ) : (
+                <span className="text-[10px] text-zinc-700 italic">None</span>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── Terminal Output (Tabs multiplexer) ── */}
       <div className="flex-1 flex flex-col min-h-0 bg-black overflow-hidden relative selection:bg-blue-500/30">

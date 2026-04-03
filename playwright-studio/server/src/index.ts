@@ -125,6 +125,12 @@ async function applyMigrations() {
     await ensureColumn('users', 'provider_token', 'TEXT');
     await ensureColumn('users', 'provider_token_expires_at', 'INTEGER');
 
+    // Run configuration columns
+    await ensureColumn('project_configs', 'headless', 'INTEGER DEFAULT 1 NOT NULL');
+    await ensureColumn('project_configs', 'workers', 'INTEGER DEFAULT 1 NOT NULL');
+    await ensureColumn('project_configs', 'browsers', 'TEXT DEFAULT \'["chromium"]\' NOT NULL');
+    await ensureColumn('project_configs', 'extra_args', 'TEXT DEFAULT \'[]\' NOT NULL');
+
     // Backfill existing mandatory role with safe fallback
     const result = await sqliteDb.execute("SELECT COUNT(*) as cnt FROM roles WHERE name='user' AND scope='global'");
     const count = Number(result.rows[0]?.cnt ?? 0);
@@ -167,6 +173,10 @@ app.get('/apis/auth/projects', authMiddleware, requireProjectRole('user'), async
         baseUrl: projectConfigs.baseUrl,
         video: projectConfigs.video,
         screenshot: projectConfigs.screenshot,
+        headless: projectConfigs.headless,
+        workers: projectConfigs.workers,
+        browsers: projectConfigs.browsers,
+        extraArgs: projectConfigs.extraArgs,
       }
     })
       .from(projects)
@@ -242,12 +252,21 @@ app.put('/apis/project/:projectId/config', authMiddleware, requireProjectRole('a
     const [config] = await db.select().from(projectConfigs).where(eq(projectConfigs.projectId, projectId));
     if (!config) return res.status(404).json({ error: 'Project configuration not found' });
 
+    const safeUpdate: Record<string, any> = {};
+    if (configUpdate.browser !== undefined) safeUpdate.browser = configUpdate.browser;
+    if (configUpdate.viewportWidth !== undefined) safeUpdate.viewportWidth = parseInt(configUpdate.viewportWidth);
+    if (configUpdate.viewportHeight !== undefined) safeUpdate.viewportHeight = parseInt(configUpdate.viewportHeight);
+    if (configUpdate.baseUrl !== undefined) safeUpdate.baseUrl = configUpdate.baseUrl;
+    if (configUpdate.video !== undefined) safeUpdate.video = configUpdate.video;
+    if (configUpdate.screenshot !== undefined) safeUpdate.screenshot = configUpdate.screenshot;
+    if (configUpdate.timeout !== undefined) safeUpdate.timeout = parseInt(configUpdate.timeout);
+    if (configUpdate.headless !== undefined) safeUpdate.headless = configUpdate.headless ? 1 : 0;
+    if (configUpdate.workers !== undefined) safeUpdate.workers = parseInt(configUpdate.workers);
+    if (configUpdate.browsers !== undefined) safeUpdate.browsers = JSON.stringify(configUpdate.browsers);
+    if (configUpdate.extraArgs !== undefined) safeUpdate.extraArgs = JSON.stringify(configUpdate.extraArgs);
+
     await db.update(projectConfigs)
-      .set({
-        ...configUpdate,
-        viewportWidth: configUpdate.viewportWidth ? parseInt(configUpdate.viewportWidth) : undefined,
-        viewportHeight: configUpdate.viewportHeight ? parseInt(configUpdate.viewportHeight) : undefined,
-      })
+      .set(safeUpdate)
       .where(eq(projectConfigs.projectId, projectId));
 
     await db.update(projects).set({ updatedAt: new Date() }).where(eq(projects.id, projectId));

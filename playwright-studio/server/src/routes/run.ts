@@ -11,6 +11,29 @@ import { projects, environments, dataSets } from '../db/schema.js';
 import { eq } from 'drizzle-orm';
 import { decrypt } from './data.js';
 
+// ── Whitelist of allowed Playwright CLI flags ──────────────────────────────────
+// Only these flags can be passed via extraArgs. Anything else is rejected.
+export const ALLOWED_PLAYWRIGHT_FLAGS = new Set([
+  '--block-service-workers',
+  '--channel',
+  '--color-scheme',
+  '--device',
+  '--geolocation',
+  '--ignore-https-errors',
+  '--lang',
+  '--proxy-server',
+  '--proxy-bypass',
+  '--timezone',
+  '--timeout',
+  '--user-agent',
+  '--user-data-dir',
+  '--viewport-size',
+  '--save-har',
+  '--save-har-glob',
+  '--save-storage',
+  '--load-storage',
+]);
+
 export function createRunRouter(wss: WebSocketServer) {
   const router = Router();
 
@@ -65,7 +88,6 @@ export function createRunRouter(wss: WebSocketServer) {
 
     const args: string[] = ['test'];
     for (const abs of finalAbsPaths) {
-       // Wrap in quotes securely for shell: true
        args.push(`"${abs}"`);
     }
 
@@ -76,8 +98,23 @@ export function createRunRouter(wss: WebSocketServer) {
     if (opts.workers)     args.push('--workers', String(opts.workers));
     if (opts.timeout)     args.push('--timeout', String(opts.timeout));
     if (opts.retries)     args.push('--retries', String(opts.retries));
-    if (opts.project)     args.push('--project', opts.project);
     if (opts.grep)        args.push('--grep', opts.grep);
+
+    // Multi-browser support: native Playwright --project flags
+    const browsers: string[] = req.body.browsers || (req.body.browser ? [req.body.browser] : ['chromium']);
+    for (const b of browsers) {
+      args.push('--project', b);
+    }
+
+    // Extra CLI args (validated against whitelist)
+    const extraArgs: { flag: string; value: string }[] = req.body.extraArgs || [];
+    for (const arg of extraArgs) {
+      if (!ALLOWED_PLAYWRIGHT_FLAGS.has(arg.flag)) {
+        return res.status(400).json({ error: `Disallowed CLI flag: ${arg.flag}` });
+      }
+      args.push(arg.flag);
+      if (arg.value) args.push(`"${arg.value.replace(/"/g, '')}"`);
+    }
 
     // 3. Fetch Variables
     const envId = req.body.envId as string | undefined;

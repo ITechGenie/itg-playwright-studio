@@ -54,7 +54,9 @@ export const getNavData = (projectId: string) => ({
       title: "Settings",
       url: `/app/project/${projectId}/settings`,
       icon: <Settings className="size-4" />,
-      items: [],
+      items: [
+        { title: "Run Configuration", url: `/app/project/${projectId}/settings/run` },
+      ],
     },
   ]
 })
