@@ -203,4 +203,57 @@ export const apiClient = {
     if (!res.ok) throw new Error('Failed to fetch data set details');
     return res.json();
   },
+
+  // --- Schedules ---
+  async getSchedules(projectId: string) {
+    const res = await fetch(ENDPOINTS.PROJECT_SCHEDULES(projectId), { headers: authHeaders() });
+    if (!res.ok) throw new Error('Failed to fetch schedules');
+    return res.json();
+  },
+
+  async createSchedule(projectId: string, payload: any) {
+    const res = await fetch(ENDPOINTS.PROJECT_SCHEDULES(projectId), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...authHeaders() },
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error((err as any).error || 'Failed to create schedule');
+    }
+    return res.json();
+  },
+
+  async updateSchedule(projectId: string, scheduleId: string, patch: any) {
+    const res = await fetch(ENDPOINTS.PROJECT_SCHEDULE(projectId, scheduleId), {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', ...authHeaders() },
+      body: JSON.stringify(patch),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error((err as any).error || 'Failed to update schedule');
+    }
+    return res.json();
+  },
+
+  async deleteSchedule(projectId: string, scheduleId: string) {
+    const res = await fetch(ENDPOINTS.PROJECT_SCHEDULE(projectId, scheduleId), {
+      method: 'DELETE',
+      headers: authHeaders(),
+    });
+    if (!res.ok) throw new Error('Failed to delete schedule');
+  },
+
+  async runScheduleNow(projectId: string, scheduleId: string) {
+    const res = await fetch(ENDPOINTS.PROJECT_SCHEDULE_RUN(projectId, scheduleId), {
+      method: 'POST',
+      headers: authHeaders(),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error((err as any).error || 'Failed to trigger run');
+    }
+    return res.json();
+  },
 };

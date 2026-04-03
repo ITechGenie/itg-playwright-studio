@@ -1,52 +1,25 @@
 import { Router } from 'express';
 import * as path from 'path';
 import * as fs from 'fs/promises';
-import { spawn, ChildProcess } from 'child_process';
-import { randomUUID } from 'crypto';
-import { WebSocketServer, WebSocket } from 'ws';
+import { WebSocketServer } from 'ws';
 import { PLAYWRIGHT_DEFAULTS, PlaywrightRunOptions } from '../playwright-defaults.js';
-import { runStore } from '../run-store.js';
 import { db } from '../db/index.js';
-import { projects, environments, dataSets } from '../db/schema.js';
+import { projects } from '../db/schema.js';
 import { eq } from 'drizzle-orm';
-import { decrypt } from './data.js';
+import { runStore } from '../run-store.js';
+import { triggerRun } from '../lib/trigger-run.js';
 
 // ── Whitelist of allowed Playwright CLI flags ──────────────────────────────────
-// Only these flags can be passed via extraArgs. Anything else is rejected.
 export const ALLOWED_PLAYWRIGHT_FLAGS = new Set([
-  '--block-service-workers',
-  '--channel',
-  '--color-scheme',
-  '--device',
-  '--geolocation',
-  '--ignore-https-errors',
-  '--lang',
-  '--proxy-server',
-  '--proxy-bypass',
-  '--timezone',
-  '--timeout',
-  '--user-agent',
-  '--user-data-dir',
-  '--viewport-size',
-  '--save-har',
-  '--save-har-glob',
-  '--save-storage',
-  '--load-storage',
-  '--is-mobile',
-  '--has-touch',
+  '--block-service-workers', '--channel', '--color-scheme', '--device',
+  '--geolocation', '--ignore-https-errors', '--lang', '--proxy-server',
+  '--proxy-bypass', '--timezone', '--timeout', '--user-agent', '--user-data-dir',
+  '--viewport-size', '--save-har', '--save-har-glob', '--save-storage',
+  '--load-storage', '--is-mobile', '--has-touch',
 ]);
 
-export function createRunRouter(wss: WebSocketServer) {
+export function createRunRouter(_wss: WebSocketServer) {
   const router = Router();
-
-  function broadcast(msg: object) {
-    const payload = JSON.stringify(msg);
-    wss.clients.forEach((client) => {
-      if (client.readyState === WebSocket.OPEN) {
-        client.send(payload);
-      }
-    });
-  }
 
   /**
    * POST /api/projects/:projectId/run
@@ -61,194 +34,81 @@ export function createRunRouter(wss: WebSocketServer) {
     // 1. Resolve project directory
     const [project] = await db.select().from(projects).where(eq(projects.id, projectId));
     if (!project) return res.status(404).json({ error: 'Project not found' });
-    
-    const folderName = project.name;
-    const basePath = process.env.PROJECTS_BASE_PATH || 'C:/tmp/playwright-studio/projects';
-    const executionsPath = process.env.EXECUTIONS_BASE_PATH || 'C:/tmp/playwright-studio/executions';
-    const projectRoot = path.resolve(basePath, folderName);
 
-    // Validate paths
-    const finalAbsPaths: string[] = [];
+    const basePath = process.env.PROJECTS_BASE_PATH || path.join(process.cwd(), 'projects');
+    const projectRoot = path.resolve(basePath, project.name);
+
+    // 2. Validate paths (path traversal check)
+    const relPaths: string[] = [];
     if (requestedPaths.length > 0) {
       for (const p of requestedPaths) {
-        const fullPath = path.resolve(projectRoot, p);
-        if (!fullPath.startsWith(projectRoot)) return res.status(403).json({ error: `Forbidden: path traversal: ${p}` });
-        finalAbsPaths.push(fullPath);
+        const full = path.resolve(projectRoot, p);
+        if (!full.startsWith(projectRoot))
+          return res.status(403).json({ error: `Forbidden: path traversal: ${p}` });
+        relPaths.push(p);
       }
-    } else {
-      const relPath = requestedSubPath || '';
-      const fullPath = path.resolve(projectRoot, relPath);
-      if (!fullPath.startsWith(projectRoot)) return res.status(403).json({ error: 'Forbidden: path traversal detected' });
-      finalAbsPaths.push(fullPath);
+    } else if (requestedSubPath) {
+      const full = path.resolve(projectRoot, requestedSubPath);
+      if (!full.startsWith(projectRoot))
+        return res.status(403).json({ error: 'Forbidden: path traversal detected' });
+      relPaths.push(requestedSubPath);
     }
+    // empty relPaths = run all tests
 
-    // 2. Prepare OPTIONS
-    const opts: PlaywrightRunOptions = {
-      ...PLAYWRIGHT_DEFAULTS,
-      ...req.body,
-    };
-
-    const args: string[] = ['test'];
-    for (const abs of finalAbsPaths) {
-       args.push(`"${abs}"`);
-    }
-
-    const serverConfigPath = path.join(process.cwd(), 'playwright.config.cjs');
-    args.push('--config', `"${serverConfigPath}"`);
-    
-    if (!opts.headless)   args.push('--headed');
-    if (opts.workers)     args.push('--workers', String(opts.workers));
-    if (opts.timeout)     args.push('--timeout', String(opts.timeout));
-    if (opts.retries)     args.push('--retries', String(opts.retries));
-    if (opts.grep)        args.push('--grep', opts.grep);
-
-    // Multi-browser support: native Playwright --project flags
-    const browsers: string[] = req.body.browsers || (req.body.browser ? [req.body.browser] : ['chromium']);
-    for (const b of browsers) {
-      args.push('--project', b);
-    }
-
-    // Extra CLI args (Context-specific options mapped to env vars, others as CLI flags)
+    // 3. Validate extra args
     const extraArgs: { flag: string; value: string }[] = req.body.extraArgs || [];
     const extraEnvVars: Record<string, string> = {};
-
     for (const arg of extraArgs) {
-      if (!ALLOWED_PLAYWRIGHT_FLAGS.has(arg.flag)) {
+      if (!ALLOWED_PLAYWRIGHT_FLAGS.has(arg.flag))
         return res.status(400).json({ error: `Disallowed CLI flag: ${arg.flag}` });
-      }
-
-      // If it's a context-specific flag in our whitelist, we pass it via ENV for config to handle
-      // This prevents "unknown option" errors in Playwright CLI
       const envKey = `PW_STUDIO_ARG_${arg.flag.toUpperCase().replace(/^-+/, '').replace(/-/g, '_')}`;
       extraEnvVars[envKey] = arg.value || 'true';
     }
 
-    // 3. Fetch Variables
-    const envId = req.body.envId as string | undefined;
-    const dataSetIds = (req.body.dataSetIds as string[]) || [];
+    // 4. Build RunConfig from request body
+    const opts: PlaywrightRunOptions = { ...PLAYWRIGHT_DEFAULTS, ...req.body };
+    const browsers: string[] = req.body.browsers || (req.body.browser ? [req.body.browser] : ['chromium']);
 
-    const customSharedVars: Record<string, string> = {};
-    if (envId) {
-      const [envData] = await db.select().from(environments).where(eq(environments.id, envId));
-      if (envData && envData.variables) {
-        Object.assign(customSharedVars, JSON.parse(envData.variables));
-      }
-    }
+    const config = {
+      browsers,
+      headless: opts.headless !== false,
+      workers: opts.workers ?? 1,
+      timeout: opts.timeout ?? 30000,
+      width: req.body.width ?? 1280,
+      height: req.body.height ?? 720,
+      baseURL: req.body.baseURL || 'http://localhost:5173',
+      video: req.body.video || 'retain-on-failure',
+      screenshot: req.body.screenshot || 'only-on-failure',
+      envId: req.body.envId,
+      dataSetIds: req.body.dataSetIds,
+      extraEnvVars,  // passed through to triggerRun
+      grep: opts.grep,
+      retries: opts.retries,
+    };
 
+    // 5. Delegate to shared triggerRun — supports multi-dataset spawning
+    const dataSetIds: string[] = req.body.dataSetIds || [];
     const runsToSpawn = dataSetIds.length > 0 ? dataSetIds : [null];
     const spawnedRuns = [];
 
-    // Loop through datasets (or just 1 isolated run if no datasets selected)
     for (const dId of runsToSpawn) {
-      const runCustomVars = { ...customSharedVars };
-      let datasetName = '';
-      
-      if (dId) {
-        const [dsData] = await db.select().from(dataSets).where(eq(dataSets.id, dId));
-        if (dsData) {
-          datasetName = ` [${dsData.name}]`;
-          if (dsData.variables) {
-            Object.assign(runCustomVars, JSON.parse(dsData.variables));
-          }
-        }
+      try {
+        const result = await triggerRun({
+          projectId,
+          targetPaths: relPaths,
+          config: {
+            ...config,
+            dataSetIds: dId ? [dId] : undefined,
+          },
+          triggeredBy: user,
+        });
+        spawnedRuns.push({ runId: result.runId, status: 'running', command: result.command, datasetName: result.datasetName ?? '' });
+      } catch (err: any) {
+        console.error('[Run] triggerRun failed:', err);
+        return res.status(500).json({ error: err.message || 'Failed to start run' });
       }
-
-      // Decrypt any stored secrets safely
-      for (const [k, v] of Object.entries(runCustomVars)) {
-        if (typeof v === 'string' && v.includes(':')) {
-           runCustomVars[k] = decrypt(v);
-        }
-      }
-
-      const runId = randomUUID();
-      const command = `npx playwright ${args.join(' ')}`;
-      
-      await runStore.createRun(
-        projectId, 
-        runId, 
-        (requestedPaths.length > 0 ? `${requestedPaths.length} files selected` : requestedSubPath) + datasetName, 
-        command, 
-        user,
-        requestedPaths.length > 0 ? requestedPaths : undefined
-      );
-
-      spawnedRuns.push({ runId, status: 'running', command, datasetName });
-
-      // 4. Prepare Workspace
-      const executionRoot = path.join(executionsPath, projectId, 'runs', runId);
-      const reportDir = path.join(executionRoot, 'report');
-      const resultsDir = path.join(executionRoot, 'test-results');
-      
-      await fs.mkdir(reportDir, { recursive: true });
-      await fs.mkdir(resultsDir, { recursive: true });
-
-      const serverRoot = process.cwd();
-      const workspaceRoot = path.resolve(serverRoot, '..', '..');
-
-      const runEnv = {
-        ...process.env,
-        TEST_PROJECT_DIR: projectRoot,
-        REPORT_DIR: reportDir,
-        RESULTS_DIR: resultsDir,
-        HEADED: opts.headless ? 'false' : 'true',
-        TIMEOUT: String(opts.timeout),
-        NODE_PATH: path.join(workspaceRoot, 'node_modules'),
-        FORCE_COLOR: '1',
-        BROWSER: req.body.browser || 'chromium',
-        WIDTH: String(req.body.width || 1280),
-        HEIGHT: String(req.body.height || 720),
-        BASE_URL: req.body.baseURL || 'http://localhost:5173',
-        VIDEO: req.body.video || 'retain-on-failure',
-        SCREENSHOT: req.body.screenshot || 'only-on-failure',
-        ...runCustomVars, // Dynamically injected variables (Overrides defaults above if matched)
-        ...extraEnvVars,  // Configuration overrides from "Extra Args" UI
-      };
-
-      // 5. Execute
-      broadcast({ type: 'run:start', runId, command });
-      await runStore.addLog(runId, 'info', `$ ${command}`);
-      
-      // Print relevant Studio Environment details for user visibility
-      const studioEnvLog = [
-        "--- Studio Environment Details ---",
-        `BASE_URL: ${runEnv.BASE_URL}`,
-        `VIEWPORT: ${runEnv.WIDTH}x${runEnv.HEIGHT}`,
-        ...Object.keys(extraEnvVars).map(k => `${k.replace('PW_STUDIO_ARG_', '')}: ${extraEnvVars[k]}`),
-        ...Object.keys(runCustomVars).map(k => `${k}: ${runCustomVars[k]}`),
-        "----------------------------------"
-      ].join('\n');
-      await runStore.addLog(runId, 'info', studioEnvLog);
-
-      const child: ChildProcess = spawn('npx', ['playwright', ...args], {
-        cwd: serverRoot,
-        shell: true,
-        env: runEnv,
-      });
-
-      child.stdout?.on('data', (chunk: Buffer) => {
-        const data = chunk.toString();
-        runStore.addLog(runId, 'stdout', data);
-        broadcast({ type: 'run:stdout', runId, data });
-      });
-
-      child.stderr?.on('data', (chunk: Buffer) => {
-        const data = chunk.toString();
-        runStore.addLog(runId, 'stderr', data);
-        broadcast({ type: 'run:stderr', runId, data });
-      });
-
-      child.on('close', (exitCode) => {
-        runStore.addLog(runId, 'done', 'Execution finished.', exitCode ?? 0);
-        broadcast({ type: 'run:done', runId, exitCode });
-      });
-
-      child.on('error', (err) => {
-        runStore.addLog(runId, 'error', err.message);
-        broadcast({ type: 'run:error', runId, error: err.message });
-      });
     }
 
-    // Return backwards compatible shape for single run, or array for multi-run
     if (spawnedRuns.length === 1) {
       res.json(spawnedRuns[0]);
     } else {
@@ -268,7 +128,6 @@ export function createRunRouter(wss: WebSocketServer) {
 
   /**
    * GET /api/projects/:projectId/runs
-   * Returns a paginated list of runs with dynamic report existence checking.
    */
   router.get('/:projectId/runs', async (req, res) => {
     const { projectId } = req.params;
@@ -282,63 +141,27 @@ export function createRunRouter(wss: WebSocketServer) {
     const startDate = startDateStr ? new Date(startDateStr) : undefined;
     const endDate = endDateStr ? new Date(endDateStr) : undefined;
 
-    // Validate 2-week limit if both dates are provided
     if (startDate && endDate) {
       const twoWeeksMs = 14 * 24 * 60 * 60 * 1000;
-      if (endDate.getTime() - startDate.getTime() > twoWeeksMs) {
+      if (endDate.getTime() - startDate.getTime() > twoWeeksMs)
         return res.status(400).json({ error: 'Date range cannot exceed 2 weeks' });
-      }
     }
 
     try {
-      // 1. Get project info for path resolution
       const [project] = await db.select().from(projects).where(eq(projects.id, projectId));
       if (!project) return res.status(404).json({ error: 'Project not found' });
-      
-      const folderName = project.name;
-      const executionsPath = process.env.EXECUTIONS_BASE_PATH || 'C:/tmp/playwright-studio/executions';
 
-      // 2. Fetch runs from store
-      const runs = await runStore.getRecentRuns(projectId, {
-        limit,
-        offset,
-        status,
-        startDate,
-        endDate
-      });
+      const executionsPath = process.env.EXECUTIONS_BASE_PATH || path.join(process.cwd(), 'executions');
+      const runs = await runStore.getRecentRuns(projectId, { limit, offset, status, startDate, endDate });
 
-      // 3. Dynamic filesystem check for reports
       const runsWithReports = await Promise.all(runs.map(async (run) => {
         const executionRoot = path.join(executionsPath, projectId, 'runs', run.runId);
-        const htmlReport = path.join(executionRoot, 'report', 'html', 'index.html');
-        const monocartReport = path.join(executionRoot, 'report', 'monocart', 'index.html');
-        const harFile = path.join(executionRoot, 'test-results', 'network.har');
-        
-        // Simple file existence check
-        let hasHtmlReport = false;
-        let hasMonocartReport = false;
-        let hasHar = false;
-        
-        try {
-          await fs.access(htmlReport);
-          hasHtmlReport = true;
-        } catch {}
-        
-        try {
-          await fs.access(monocartReport);
-          hasMonocartReport = true;
-        } catch {}
-
-        try {
-          await fs.access(harFile);
-          hasHar = true;
-        } catch {}
-        
+        const check = async (p: string) => { try { await fs.access(p); return true; } catch { return false; } };
         return {
           ...run,
-          hasHtmlReport,
-          hasMonocartReport,
-          hasHar
+          hasHtmlReport: await check(path.join(executionRoot, 'report', 'html', 'index.html')),
+          hasMonocartReport: await check(path.join(executionRoot, 'report', 'monocart', 'index.html')),
+          hasHar: await check(path.join(executionRoot, 'test-results', 'network.har')),
         };
       }));
 

@@ -54,7 +54,6 @@ export interface TestRunnerPanelProps {
     workers: number;
     width: number;
     height: number;
-    baseURL: string;
     video: string;
     screenshot: string;
     timeout: number;
@@ -234,7 +233,6 @@ export function TestRunnerPanel({
         browsers: localConfig.browsers,
         width: localConfig.width,
         height: localConfig.height,
-        baseURL: localConfig.baseURL,
         video: localConfig.video,
         screenshot: localConfig.screenshot,
         timeout: localConfig.timeout,

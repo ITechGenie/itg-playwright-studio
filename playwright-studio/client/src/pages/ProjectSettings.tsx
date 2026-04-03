@@ -30,7 +30,6 @@ export default function ProjectSettings() {
   const [workers, setWorkers] = useState("1")
   const [width, setWidth] = useState("1280")
   const [height, setHeight] = useState("720")
-  const [baseURL, setBaseURL] = useState("http://localhost:5173")
   const [video, setVideo] = useState("retain-on-failure")
   const [screenshot, setScreenshot] = useState("only-on-failure")
   const [timeout, setTimeout_] = useState("30000")
@@ -48,7 +47,6 @@ export default function ProjectSettings() {
         setWorkers(String(c.workers || 1))
         setWidth(String(c.viewportWidth || 1280))
         setHeight(String(c.viewportHeight || 720))
-        setBaseURL(c.baseUrl || "http://localhost:5173")
         setVideo(c.video || "retain-on-failure")
         setScreenshot(c.screenshot || "only-on-failure")
         setTimeout_(String(c.timeout || 30000))
@@ -91,7 +89,6 @@ export default function ProjectSettings() {
         workers: parseInt(workers),
         viewportWidth: parseInt(width),
         viewportHeight: parseInt(height),
-        baseUrl: baseURL,
         video,
         screenshot,
         timeout: parseInt(timeout),
@@ -177,10 +174,6 @@ export default function ProjectSettings() {
                   <Label className="text-xs font-bold uppercase text-zinc-400">Viewport Height</Label>
                   <Input type="number" value={height} onChange={e => setHeight(e.target.value)} className="h-10 bg-zinc-900 border-zinc-800 text-sm" />
                 </div>
-              </div>
-              <div className="space-y-2">
-                <Label className="text-xs font-bold uppercase text-zinc-400">Base URL</Label>
-                <Input value={baseURL} onChange={e => setBaseURL(e.target.value)} placeholder="http://localhost:5173" className="h-10 bg-zinc-900 border-zinc-800 text-sm" />
               </div>
               <div className="space-y-2">
                 <Label className="text-xs font-bold uppercase text-zinc-400">Timeout (ms)</Label>

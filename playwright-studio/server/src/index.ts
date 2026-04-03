@@ -8,12 +8,16 @@ import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
 import { createRunRouter } from './routes/run.js';
 import { createDataRouter } from './routes/data.js';
+import { createSchedulesRouter } from './routes/schedules.js';
 import authRouter from './routes/auth.js';
 import { db, sqliteDb } from './db/index.js';
 import { projects, projectConfigs, roles } from './db/schema.js';
 import { authMiddleware, requireAdmin, requireProjectRole } from './middleware/auth.js';
 import { eq } from 'drizzle-orm';
 import { generateId } from './lib/uuid.js';
+import { leaderElection } from './lib/leader-election.js';
+import { schedulerService } from './lib/scheduler-service.js';
+import { setWss } from './lib/trigger-run.js';
 
 dotenv.config();
 
@@ -131,8 +135,29 @@ async function applyMigrations() {
     await ensureColumn('project_configs', 'browsers', 'TEXT DEFAULT \'["chromium"]\' NOT NULL');
     await ensureColumn('project_configs', 'extra_args', 'TEXT DEFAULT \'[]\' NOT NULL');
 
-    // Backfill existing mandatory role with safe fallback
-    const result = await sqliteDb.execute("SELECT COUNT(*) as cnt FROM roles WHERE name='user' AND scope='global'");
+    // Scheduler tables (safe create for existing DBs handled by SQL migration)
+    // Ensure scheduler_lock table exists for older DBs that may have skipped the migration
+    await sqliteDb.execute(`CREATE TABLE IF NOT EXISTS scheduler_lock (
+      lock_key TEXT PRIMARY KEY NOT NULL,
+      holder_id TEXT NOT NULL,
+      expires_at INTEGER NOT NULL
+    )`);
+    await sqliteDb.execute(`CREATE TABLE IF NOT EXISTS schedules (
+      id TEXT PRIMARY KEY NOT NULL,
+      project_id TEXT NOT NULL,
+      name TEXT NOT NULL,
+      target_paths TEXT NOT NULL DEFAULT '[]',
+      config TEXT NOT NULL,
+      pattern TEXT NOT NULL,
+      cron_expression TEXT NOT NULL,
+      enabled INTEGER NOT NULL DEFAULT 1,
+      created_at INTEGER NOT NULL,
+      last_run_at INTEGER,
+      last_run_id TEXT,
+      next_run_at INTEGER
+    )`);
+
+    // Backfill existing mandatory role with safe fallback    const result = await sqliteDb.execute("SELECT COUNT(*) as cnt FROM roles WHERE name='user' AND scope='global'");
     const count = Number(result.rows[0]?.cnt ?? 0);
     if (count === 0) {
       const roleId = generateId();
@@ -242,6 +267,7 @@ app.use('/apis/auth', authRouter);
 // Mount run router and data router under /apis/project with authentication and project role checks
 app.use('/apis/project', authMiddleware, requireProjectRole('user'), createRunRouter(wss));
 app.use('/apis/project', authMiddleware, requireProjectRole('user'), createDataRouter());
+app.use('/apis/project', authMiddleware, requireProjectRole('user'), createSchedulesRouter());
 
 // Project Specific Operations
 app.put('/apis/project/:projectId/config', authMiddleware, requireProjectRole('admin'), async (req, res) => {
@@ -407,11 +433,21 @@ wss.on('connection', (ws) => {
   ws.send(JSON.stringify({ type: 'connected', message: 'Welcome to Playwright Studio' }));
 });
 
+// Share WSS with the internal trigger-run module
+setWss(wss);
+
 const PORT = parseInt(process.env.PORT || '3000');
 server.listen(PORT, async () => {
   try {
     await applyMigrations();
     await syncProjects();
+
+    // Start leader election — only the winning pod initializes the scheduler
+    leaderElection.start(
+      () => schedulerService.initialize(),
+      () => schedulerService.cancelAllJobs()
+    );
+
     console.log(`🚀 Studio API Server running on http://localhost:${PORT}`);
   } catch (err) {
     console.error('Startup failed:', err);

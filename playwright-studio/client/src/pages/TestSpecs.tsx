@@ -3,25 +3,20 @@ import { useParams, useNavigate } from "react-router-dom"
 import { Button } from "@/components/ui/button"
 import { FileManager } from "@/components/file-manager"
 import { TestRunnerPanel } from "@/components/test-runner-panel"
+import { ScheduleDrawer } from "@/components/schedule-drawer"
 import { Drawer, DrawerContent, DrawerTitle, DrawerDescription } from "@/components/ui/drawer"
-import { Wand2Icon, Settings2Icon, PlusIcon } from "lucide-react"
+import { Wand2Icon, Settings2Icon, PlusIcon, CalendarClockIcon } from "lucide-react"
 import { apiClient } from "@/services/api-client"
 import { PageHeader } from "@/components/page-header"
+import { type RunConfig } from "@/components/config-panel"
 
-export interface RunConfig {
-  browsers: string[];
-  headless: boolean;
-  workers: number;
-  width: number;
-  height: number;
+// RunConfig for the existing TestRunnerPanel (includes extraArgs which ConfigPanel omits)
+interface LegacyRunConfig extends RunConfig {
   baseURL: string;
-  video: string;
-  screenshot: string;
-  timeout: number;
   extraArgs: { flag: string; value: string }[];
 }
 
-const DEFAULT_CONFIG: RunConfig = {
+const DEFAULT_CONFIG: LegacyRunConfig = {
   browsers: ["chromium"],
   headless: true,
   workers: 1,
@@ -40,7 +35,8 @@ export default function TestSpecs() {
 
   const [runnerTarget, setRunnerTarget] = useState<string | undefined>(undefined)
   const [selectedPaths, setSelectedPaths] = useState<string[]>([])
-  const [runConfig, setRunConfig] = useState<RunConfig>(DEFAULT_CONFIG)
+  const [runConfig, setRunConfig] = useState<LegacyRunConfig>(DEFAULT_CONFIG)
+  const [scheduleDrawerOpen, setScheduleDrawerOpen] = useState(false)
 
   useEffect(() => {
     if (!projectId) return
@@ -102,6 +98,15 @@ export default function TestSpecs() {
 
             <Button
               size="lg"
+              className="h-11 gap-2 bg-purple-700 hover:bg-purple-600 text-white font-bold px-6 shadow-lg shadow-purple-900/20"
+              onClick={() => setScheduleDrawerOpen(true)}
+            >
+              <CalendarClockIcon className="h-5 w-5" />
+              Schedule Test
+            </Button>
+
+            <Button
+              size="lg"
               className="h-11 gap-2 bg-green-700 hover:bg-green-600 text-white font-bold px-8 shadow-lg shadow-green-900/20"
               onClick={() => openRunner(selectedPaths.length > 0 ? "SELECTED" : "")}
             >
@@ -154,6 +159,16 @@ export default function TestSpecs() {
           </div>
         </DrawerContent>
       </Drawer>
+
+      {projectId && (
+        <ScheduleDrawer
+          projectId={projectId}
+          open={scheduleDrawerOpen}
+          onOpenChange={setScheduleDrawerOpen}
+          targetPaths={selectedPaths}
+          initialConfig={runConfig}
+        />
+      )}
     </div>
   )
 }
