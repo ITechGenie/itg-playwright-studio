@@ -116,7 +116,15 @@ export function TestRunnerPanel({
   // Update datasets when environment changes
   useEffect(() => {
     setSelectedDatasetIds([]);
-  }, [selectedEnvId]);
+    
+    if (selectedEnvId && selectedEnvId !== "none") {
+      apiClient.getDataEnvironment(projectId, selectedEnvId)
+        .then(fullEnv => {
+          setEnvironments(prev => prev.map(e => e.id === fullEnv.id ? fullEnv : e));
+        })
+        .catch(err => console.error("Failed to fetch env details in runner", err));
+    }
+  }, [selectedEnvId, projectId]);
 
   // ── Fetch existing logs if attaching to a run ────────────────────────────
   useEffect(() => {
@@ -282,7 +290,7 @@ export function TestRunnerPanel({
   };
 
   return (
-    <div className="flex flex-col h-full bg-zinc-950 text-sm font-mono rounded-t-lg border border-zinc-800 overflow-hidden shadow-2xl">
+    <div className="flex flex-col h-full bg-zinc-950 text-sm rounded-t-lg border border-zinc-800 overflow-hidden shadow-2xl">
       {/* ── Toolbar ── */}
       <div className="flex items-center gap-3 px-3 py-2 bg-zinc-900 border-b border-zinc-800 shrink-0 flex-wrap gap-y-2">
         <span className="text-zinc-300 font-semibold truncate max-w-[200px]">
@@ -305,7 +313,7 @@ export function TestRunnerPanel({
         <div className="h-4 w-px bg-zinc-800 mx-1" />
 
         <div className="flex items-center gap-1.5">
-          <Label className="text-zinc-500 text-[10px] uppercase font-bold tracking-tight">Filter</Label>
+          <Label className="text-zinc-500 text-[10px] uppercase font-bold">Filter</Label>
           <Input
             value={grep}
             onChange={e => setGrep(e.target.value)}
@@ -318,7 +326,7 @@ export function TestRunnerPanel({
         {/* Data Manager Environments Selection */}
         {environments.length > 0 && (
           <div className="flex items-center gap-1.5 border-l border-zinc-800 pl-3">
-            <Label className="text-zinc-500 text-[10px] uppercase font-bold tracking-tight">Env</Label>
+            <Label className="text-zinc-500 text-[10px] uppercase font-bold">Env</Label>
             <Select value={selectedEnvId} onValueChange={setSelectedEnvId} disabled={isRunning}>
               <SelectTrigger className="h-6 w-[120px] text-[10px] bg-zinc-950 border-zinc-800 text-zinc-300">
                 <SelectValue placeholder="Base Env" />
@@ -334,7 +342,7 @@ export function TestRunnerPanel({
             {/* Multi-Select Datasets Dropdown */}
             {selectedEnvId && selectedEnvId !== "none" && (
               <>
-                <Label className="text-zinc-500 text-[10px] uppercase font-bold tracking-tight ml-2">Datasets</Label>
+                <Label className="text-zinc-500 text-[10px] uppercase font-bold ml-2">Datasets</Label>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild disabled={isRunning}>
                     <Button variant="outline" className="h-6 px-2 text-[10px] bg-zinc-950 border-zinc-800 text-zinc-300 min-w-[100px] justify-start text-left font-normal truncate hover:text-white hover:bg-zinc-800">
@@ -406,9 +414,9 @@ export function TestRunnerPanel({
       {isConfigExpanded && (
         <div className="bg-zinc-900 border-b border-zinc-800 p-3 grid grid-cols-4 gap-4 animate-in slide-in-from-top duration-200">
           <div className="space-y-1.5">
-            <Label className="text-[10px] uppercase font-bold text-zinc-500 tracking-wider">Browsers</Label>
+            <Label className="text-[10px] uppercase font-bold text-zinc-500">Browsers</Label>
             <div className="flex flex-wrap gap-1">
-              {['chromium', 'firefox', 'webkit'].map(b => (
+              {['chromium', 'firefox', 'webkit', 'chrome', 'msedge'].map(b => (
                 <Badge
                   key={b}
                   variant="outline"
@@ -429,7 +437,7 @@ export function TestRunnerPanel({
             </div>
           </div>
           <div className="space-y-1.5">
-            <Label className="text-[10px] uppercase font-bold text-zinc-500 tracking-wider">Parallelism</Label>
+            <Label className="text-[10px] uppercase font-bold text-zinc-500">Parallelism</Label>
             <div className="flex items-center gap-3">
               <div className="flex items-center gap-1">
                 <Switch
@@ -449,7 +457,7 @@ export function TestRunnerPanel({
             </div>
           </div>
           <div className="space-y-1.5">
-            <Label className="text-[10px] uppercase font-bold text-zinc-500 tracking-wider">Viewport</Label>
+            <Label className="text-[10px] uppercase font-bold text-zinc-500">Viewport</Label>
             <div className="flex items-center gap-1">
               <Input
                 value={localConfig.width}
@@ -465,7 +473,7 @@ export function TestRunnerPanel({
             </div>
           </div>
           <div className="space-y-1.5">
-            <Label className="text-[10px] uppercase font-bold text-zinc-500 tracking-wider">Extra Args</Label>
+            <Label className="text-[10px] uppercase font-bold text-zinc-500">Extra Args</Label>
             <div className="flex flex-wrap gap-1">
               {localConfig.extraArgs.length > 0 ? (
                 localConfig.extraArgs.map((a, idx) => (

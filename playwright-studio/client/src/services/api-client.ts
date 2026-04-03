@@ -150,6 +150,12 @@ export const apiClient = {
     return res.json();
   },
 
+  async getDataTemplate(projectId: string, templateId: string) {
+    const res = await fetch(ENDPOINTS.DATA_TEMPLATES(projectId) + '/' + templateId, { headers: authHeaders() });
+    if (!res.ok) throw new Error('Failed to fetch data template details');
+    return res.json();
+  },
+
   async createDataTemplate(projectId: string, payload: any) {
     const res = await fetch(ENDPOINTS.DATA_TEMPLATES(projectId), {
       method: 'POST',
@@ -163,6 +169,12 @@ export const apiClient = {
   async getDataEnvironments(projectId: string) {
     const res = await fetch(ENDPOINTS.DATA_ENVIRONMENTS(projectId), { headers: authHeaders() });
     if (!res.ok) throw new Error('Failed to fetch data environments');
+    return res.json();
+  },
+
+  async getDataEnvironment(projectId: string, envId: string) {
+    const res = await fetch(ENDPOINTS.DATA_ENVIRONMENTS(projectId) + '/' + envId, { headers: authHeaders() });
+    if (!res.ok) throw new Error('Failed to fetch data environment details');
     return res.json();
   },
 
@@ -183,6 +195,12 @@ export const apiClient = {
       body: JSON.stringify(payload)
     });
     if (!res.ok) throw new Error('Failed to create data set');
+    return res.json();
+  },
+
+  async getDataSet(projectId: string, envId: string, datasetId: string) {
+    const res = await fetch(ENDPOINTS.DATA_DATASETS(projectId, envId) + '/' + datasetId, { headers: authHeaders() });
+    if (!res.ok) throw new Error('Failed to fetch data set details');
     return res.json();
   },
 };

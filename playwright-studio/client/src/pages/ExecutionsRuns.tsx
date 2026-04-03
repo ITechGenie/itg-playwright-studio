@@ -21,7 +21,8 @@ import {
   CalendarIcon,
   XIcon,
   InfoIcon,
-  TerminalIcon
+  TerminalIcon,
+  DownloadIcon
 } from "lucide-react"
 import { 
   Sheet, 
@@ -363,7 +364,7 @@ export default function ExecutionsRuns() {
 
       {/* Execution Details Sheet */}
       <Sheet open={!!selectedRun} onOpenChange={(open) => !open && setSelectedRun(null)}>
-        <SheetContent className="sm:max-w-md bg-zinc-950 border-zinc-800 text-white overflow-y-auto">
+        <SheetContent className="sm:!max-w-[90%] !w-[90%] bg-zinc-950 border-zinc-800 text-white overflow-y-auto">
           <SheetHeader className="mb-6">
             <SheetTitle className="text-xl font-bold flex items-center gap-2">
               <HistoryIcon className="h-5 w-5 text-blue-500" />
@@ -437,9 +438,9 @@ export default function ExecutionsRuns() {
               </div>
 
               {/* Reports Quick Link */}
-              {(selectedRun.hasHtmlReport || selectedRun.hasMonocartReport) && (
+              {(selectedRun.hasHtmlReport || selectedRun.hasMonocartReport || (selectedRun as any).hasHar) && (
                 <div className="pt-4 space-y-3">
-                  <p className="text-[10px] uppercase font-bold text-zinc-500 tracking-wider">Reports Access</p>
+                  <p className="text-[10px] uppercase font-bold text-zinc-500 tracking-wider">Reports & Artifacts</p>
                   <div className="grid grid-cols-2 gap-3">
                     {selectedRun.hasMonocartReport && (
                       <Button 
@@ -448,6 +449,7 @@ export default function ExecutionsRuns() {
                         className="h-9 text-xs border-indigo-500/20 bg-indigo-500/5 text-indigo-400 hover:bg-indigo-500/10"
                         onClick={() => window.open(apiClient.getReportUrl(projectId!, selectedRun.runId, 'monocart'), '_blank')}
                       >
+                        <ExternalLinkIcon className="h-3 w-3 mr-2" />
                         Monocart View
                       </Button>
                     )}
@@ -458,7 +460,22 @@ export default function ExecutionsRuns() {
                         className="h-9 text-xs border-orange-500/20 bg-orange-500/5 text-orange-400 hover:bg-orange-500/10"
                         onClick={() => window.open(apiClient.getReportUrl(projectId!, selectedRun.runId, 'html'), '_blank')}
                       >
+                        <ExternalLinkIcon className="h-3 w-3 mr-2" />
                         HTML View
+                      </Button>
+                    )}
+                    {(selectedRun as any).hasHar && (
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="h-9 text-xs border-emerald-500/20 bg-emerald-500/5 text-emerald-400 hover:bg-emerald-500/10"
+                        onClick={() => {
+                          const url = `/apis/reports/${projectId}/runs/${selectedRun.runId}/test-results/network.har`;
+                          window.open(url, '_blank');
+                        }}
+                      >
+                        <DownloadIcon className="h-3 w-3 mr-2" />
+                        Download HAR
                       </Button>
                     )}
                   </div>

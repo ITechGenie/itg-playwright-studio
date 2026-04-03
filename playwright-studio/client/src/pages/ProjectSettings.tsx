@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { SaveIcon, PlusIcon, XIcon, Loader2Icon, CheckCircleIcon, SettingsIcon } from "lucide-react"
+import { SaveIcon, PlusIcon, XIcon, Loader2Icon, CheckCircleIcon } from "lucide-react"
 import { apiClient } from "@/services/api-client"
 import { PageHeader } from "@/components/page-header"
 import { cn } from "@/lib/utils"
@@ -256,11 +256,25 @@ export default function ProjectSettings() {
             </CardContent>
           </Card>
 
-          <div className="flex justify-end gap-3 pb-8">
-            {saved && <span className="text-green-500 text-xs font-bold flex items-center gap-1.5"><CheckCircleIcon className="h-4 w-4" /> Saved</span>}
-            <Button size="lg" className="px-10 bg-blue-600 hover:bg-blue-500 text-white font-bold transition-all" onClick={handleSave} disabled={saving}>
-              {saving ? <><Loader2Icon className="h-4 w-4 mr-2 animate-spin" /> Saving...</> : <><SaveIcon className="h-4 w-4 mr-2" /> Save Settings</>}
+          <div className="flex items-center gap-6 pb-20 pt-4 border-t border-zinc-900">
+            <Button 
+              size="lg" 
+              className="px-10 h-11 bg-blue-600 hover:bg-blue-500 text-white font-bold transition-all shadow-lg shadow-blue-600/10" 
+              onClick={handleSave} 
+              disabled={saving}
+            >
+              {saving ? (
+                <><Loader2Icon className="h-4 w-4 mr-2 animate-spin" /> Saving...</>
+              ) : (
+                <><SaveIcon className="h-4 w-4 mr-2" /> Save Settings</>
+              )}
             </Button>
+            {saved && (
+              <span className="text-green-500 text-xs font-bold flex items-center gap-2 animate-in fade-in zoom-in duration-300">
+                <CheckCircleIcon className="size-4" /> 
+                Configuration Saved Successfully
+              </span>
+            )}
           </div>
         </div>
       </div>

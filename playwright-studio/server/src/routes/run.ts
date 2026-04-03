@@ -32,6 +32,8 @@ export const ALLOWED_PLAYWRIGHT_FLAGS = new Set([
   '--save-har-glob',
   '--save-storage',
   '--load-storage',
+  '--is-mobile',
+  '--has-touch',
 ]);
 
 export function createRunRouter(wss: WebSocketServer) {
@@ -106,14 +108,19 @@ export function createRunRouter(wss: WebSocketServer) {
       args.push('--project', b);
     }
 
-    // Extra CLI args (validated against whitelist)
+    // Extra CLI args (Context-specific options mapped to env vars, others as CLI flags)
     const extraArgs: { flag: string; value: string }[] = req.body.extraArgs || [];
+    const extraEnvVars: Record<string, string> = {};
+
     for (const arg of extraArgs) {
       if (!ALLOWED_PLAYWRIGHT_FLAGS.has(arg.flag)) {
         return res.status(400).json({ error: `Disallowed CLI flag: ${arg.flag}` });
       }
-      args.push(arg.flag);
-      if (arg.value) args.push(`"${arg.value.replace(/"/g, '')}"`);
+
+      // If it's a context-specific flag in our whitelist, we pass it via ENV for config to handle
+      // This prevents "unknown option" errors in Playwright CLI
+      const envKey = `PW_STUDIO_ARG_${arg.flag.toUpperCase().replace(/^-+/, '').replace(/-/g, '_')}`;
+      extraEnvVars[envKey] = arg.value || 'true';
     }
 
     // 3. Fetch Variables
@@ -194,11 +201,23 @@ export function createRunRouter(wss: WebSocketServer) {
         VIDEO: req.body.video || 'retain-on-failure',
         SCREENSHOT: req.body.screenshot || 'only-on-failure',
         ...runCustomVars, // Dynamically injected variables (Overrides defaults above if matched)
+        ...extraEnvVars,  // Configuration overrides from "Extra Args" UI
       };
 
       // 5. Execute
       broadcast({ type: 'run:start', runId, command });
       await runStore.addLog(runId, 'info', `$ ${command}`);
+      
+      // Print relevant Studio Environment details for user visibility
+      const studioEnvLog = [
+        "--- Studio Environment Details ---",
+        `BASE_URL: ${runEnv.BASE_URL}`,
+        `VIEWPORT: ${runEnv.WIDTH}x${runEnv.HEIGHT}`,
+        ...Object.keys(extraEnvVars).map(k => `${k.replace('PW_STUDIO_ARG_', '')}: ${extraEnvVars[k]}`),
+        ...Object.keys(runCustomVars).map(k => `${k}: ${runCustomVars[k]}`),
+        "----------------------------------"
+      ].join('\n');
+      await runStore.addLog(runId, 'info', studioEnvLog);
 
       const child: ChildProcess = spawn('npx', ['playwright', ...args], {
         cwd: serverRoot,
@@ -293,10 +312,12 @@ export function createRunRouter(wss: WebSocketServer) {
         const executionRoot = path.join(executionsPath, projectId, 'runs', run.runId);
         const htmlReport = path.join(executionRoot, 'report', 'html', 'index.html');
         const monocartReport = path.join(executionRoot, 'report', 'monocart', 'index.html');
+        const harFile = path.join(executionRoot, 'test-results', 'network.har');
         
         // Simple file existence check
         let hasHtmlReport = false;
         let hasMonocartReport = false;
+        let hasHar = false;
         
         try {
           await fs.access(htmlReport);
@@ -307,11 +328,17 @@ export function createRunRouter(wss: WebSocketServer) {
           await fs.access(monocartReport);
           hasMonocartReport = true;
         } catch {}
+
+        try {
+          await fs.access(harFile);
+          hasHar = true;
+        } catch {}
         
         return {
           ...run,
           hasHtmlReport,
-          hasMonocartReport
+          hasMonocartReport,
+          hasHar
         };
       }));
 
