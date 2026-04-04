@@ -4,7 +4,7 @@ export const getNavData = (projectId: string) => ({
   user: {
     name: "Developer",
     email: "dev@example.com",
-    avatar: "/avatars/shadcn.jpg",
+    avatar: "/app/playwright-studio.png",
   },
   teams: [
     {

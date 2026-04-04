@@ -11,7 +11,7 @@ import { createDataRouter } from './routes/data.js';
 import { createSchedulesRouter } from './routes/schedules.js';
 import authRouter from './routes/auth.js';
 import { db, sqliteDb } from './db/index.js';
-import { projects, projectConfigs, roles } from './db/schema.js';
+import { projects, projectConfigs, roles, users, memberships } from './db/schema.js';
 import { authMiddleware, requireAdmin, requireProjectRole } from './middleware/auth.js';
 import { eq } from 'drizzle-orm';
 import { generateId } from './lib/uuid.js';
@@ -19,6 +19,41 @@ import { leaderElection } from './lib/leader-election.js';
 import { schedulerService } from './lib/scheduler-service.js';
 import { setWss } from './lib/trigger-run.js';
 import { runStore } from './run-store.js';
+
+const SUPERADMIN_EMAIL = 'superadmin@localhost';
+const SUPERADMIN_ROLE_ID = 'role_super_admin_global';
+const SUPERADMIN_USER_ID = 'user_superadmin_local';
+
+async function seedSuperAdmin() {
+  try {
+    // Ensure super_admin role exists
+    const [existingRole] = await db.select().from(roles).where(eq(roles.id, SUPERADMIN_ROLE_ID));
+    if (!existingRole) {
+      await db.insert(roles).values({ id: SUPERADMIN_ROLE_ID, name: 'super_admin', scope: 'global' });
+    }
+
+    // Ensure superadmin user exists
+    const [existingUser] = await db.select().from(users).where(eq(users.email, SUPERADMIN_EMAIL));
+    if (!existingUser) {
+      await db.insert(users).values({
+        id: SUPERADMIN_USER_ID,
+        email: SUPERADMIN_EMAIL,
+        name: 'Super Admin',
+        createdAt: new Date(),
+      });
+      await db.insert(memberships).values({
+        id: generateId(),
+        userId: SUPERADMIN_USER_ID,
+        roleId: SUPERADMIN_ROLE_ID,
+        projectId: null,
+        createdAt: new Date(),
+      });
+      console.log('[Seed] Superadmin user created');
+    }
+  } catch (err) {
+    console.warn('[Seed] Superadmin seed failed (non-fatal):', err);
+  }
+}
 
 dotenv.config();
 
@@ -443,6 +478,7 @@ server.listen(PORT, async () => {
     await applyMigrations();
     await syncProjects();
     await runStore.cleanupOrphanedRuns();
+    await seedSuperAdmin();
 
     // Start leader election — only the winning pod initializes the scheduler
     leaderElection.start(
