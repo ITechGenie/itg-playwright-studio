@@ -628,7 +628,7 @@ export function FileManager({ basePath = "", title = "File Manager", actions, on
                                         <span className="hidden lg:block w-16 text-right text-xs">{item.date}</span>
                                         <span className="hidden lg:block w-14 text-right text-xs">{item.size}</span>
                                         <Avatar className="h-5 w-5">
-                                            <AvatarImage src={item.owner?.avatar || "/placeholder.svg"} />
+                                            <AvatarImage src={item.owner?.avatar || "/app/playwright-studio.png"} />
                                             <AvatarFallback className="text-[10px]">{item.owner?.name?.charAt(0)}</AvatarFallback>
                                         </Avatar>
                                         <DropdownMenu>

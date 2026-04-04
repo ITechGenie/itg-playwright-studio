@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="screenshots/logo.png" width="200" alt="Playwright Studio Logo">
+</p>
+
 # 🎭 Playwright Studio
 
 > **The ultimate web-based control plane for Playwright tests.**
@@ -54,6 +58,51 @@ flowchart TD
 - **📑 Rich Reporting**: Built-in support for **Monocart** and **HTML** reporters with direct viewing from the history tab.
 - **🔄 Local Sync**: Automatically discovers and synchronizes your existing Playwright project folders into the database.
 - **🛡️ Secure Access**: Token-based authentication and Role-Based Access Control (RBAC) foundation.
+- **📅 Advanced Scheduling**: Schedule tests to run automatically with cron-like precision.
+
+---
+
+## 📸 Visual Tour
+
+### 🔐 Multi-Provider Login
+The entry point supporting OAuth and local administrative access.
+<img src="screenshots/login.png" width="900" alt="Login Page">
+
+### 📂 Project Workspace
+A bird’s-eye view of all your integrated Playwright projects.
+<img src="screenshots/projects.png" width="900" alt="Projects List">
+
+### 🔍 User Journey Explorer
+The central hub for browsing and managing test specifications.
+<img src="screenshots/explorer.png" width="900" alt="Test Specs Explorer">
+
+### 🧪 Runner & Prepare
+Interactive drawer for preparing and selecting tests for execution.
+<img src="screenshots/prepare_tests.png" width="900" alt="Runner Drawer">
+
+### ⚡ Live Execution Logs
+Real-time feedback and execution logs for parallel test runs.
+<img src="screenshots/test_execution.png" width="900" alt="Live Execution">
+
+### 📅 Advanced Scheduler
+Easily configure recurring test runs for continuous monitoring.
+<img src="screenshots/scheduler.png" width="900" alt="Schedule Dialog">
+
+### 📊 Historical Run Analytics
+Complete history of every execution with direct access to HTML reports.
+<img src="screenshots/executions.png" width="900" alt="Execution History">
+
+### 📦 Data Manager - Templates
+Define schema-based data templates for your user journeys.
+<img src="screenshots/data_templates.png" width="900" alt="Data Templates">
+
+### 🌐 Environment & Datasets
+Manage environment-specific data overrides effortlessly.
+<img src="screenshots/data_environments.png" width="900" alt="Data Environments">
+
+### ⚙️ Global Configuration
+Fine-tune project-level Playwright settings from the UI.
+<img src="screenshots/settings.png" width="900" alt="Settings Configuration">
 
 ---
 

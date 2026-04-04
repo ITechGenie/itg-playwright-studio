@@ -265,7 +265,40 @@ router.get('/config', (req, res) => {
   if (process.env.GITHUB_CLIENT_ID && process.env.GITHUB_CLIENT_SECRET) providers.push('github');
   if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) providers.push('google');
 
-  res.json({ providers });
+  // localAuthEnabled: only when no OAuth providers are configured AND ALLOW_LOCAL_AUTH is not explicitly false
+  const allowLocalAuth = process.env.ALLOW_LOCAL_AUTH !== 'false';
+  const localAuthEnabled = allowLocalAuth && providers.length === 0;
+
+  res.json({ providers, localAuthEnabled });
+});
+
+/**
+ * POST /login/local
+ * Passwordless superadmin login — only works when no OAuth providers are configured
+ * and ALLOW_LOCAL_AUTH is not explicitly disabled.
+ */
+router.post('/login/local', async (req, res) => {
+  const providers = [];
+  if (process.env.GITLAB_CLIENT_ID && process.env.GITLAB_CLIENT_SECRET) providers.push('gitlab');
+  if (process.env.GITHUB_CLIENT_ID && process.env.GITHUB_CLIENT_SECRET) providers.push('github');
+  if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) providers.push('google');
+
+  const allowLocalAuth = process.env.ALLOW_LOCAL_AUTH !== 'false';
+
+  if (!allowLocalAuth || providers.length > 0) {
+    return res.status(403).json({ error: 'Local login is disabled when OAuth providers are configured' });
+  }
+
+  try {
+    const [user] = await db.select().from(users).where(eq(users.email, 'superadmin@localhost'));
+    if (!user) return res.status(404).json({ error: 'Superadmin user not found' });
+
+    const token = signJwt(user.id);
+    return res.json({ token });
+  } catch (err) {
+    console.error('Local login error:', err);
+    return res.status(500).json({ error: 'Login failed' });
+  }
 });
 
 export default router;
