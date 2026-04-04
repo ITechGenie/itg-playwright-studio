@@ -18,6 +18,11 @@ export const ENDPOINTS = {
   DATA_TEMPLATES: (projectId: string) => `${APIS_BASE}/project/${projectId}/data/templates`,
   DATA_ENVIRONMENTS: (projectId: string) => `${APIS_BASE}/project/${projectId}/data/environments`,
   DATA_DATASETS: (projectId: string, envId: string) => `${APIS_BASE}/project/${projectId}/data/environments/${envId}/datasets`,
+
+  // Scheduler Routes
+  PROJECT_SCHEDULES: (projectId: string) => `${APIS_BASE}/project/${projectId}/schedules`,
+  PROJECT_SCHEDULE: (projectId: string, scheduleId: string) => `${APIS_BASE}/project/${projectId}/schedules/${scheduleId}`,
+  PROJECT_SCHEDULE_RUN: (projectId: string, scheduleId: string) => `${APIS_BASE}/project/${projectId}/schedules/${scheduleId}/run`,
   
   // Auth Routes
   AUTH_ME: `${APIS_BASE}/auth/me`,

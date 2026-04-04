@@ -17,6 +17,7 @@ const NewProject = lazy(() => import("./pages/NewProject"))
 const DataTemplates = lazy(() => import("./pages/DataTemplates"))
 const DataEnvironments = lazy(() => import("./pages/DataEnvironments"))
 const ProjectSettings = lazy(() => import("./pages/ProjectSettings"))
+const Schedules = lazy(() => import("./pages/Schedules"))
 
 export default function App() {
   return (
@@ -40,8 +41,8 @@ export default function App() {
                   <Route path="specs" element={<TestSpecs />} />
                   <Route path="specs/*" element={<TestSpecs />} />
 
-                  <Route path="schedules" element={<TestSpecs />} />
-                  <Route path="schedules/*" element={<TestSpecs />} />
+                  <Route path="schedules" element={<Schedules />} />
+                  <Route path="schedules/*" element={<Schedules />} />
 
                   <Route path="run/:runId" element={<RunLogPage />} />
                   <Route path="executions/runs" element={<ExecutionsRuns />} />

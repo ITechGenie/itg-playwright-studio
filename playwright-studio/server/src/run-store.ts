@@ -1,7 +1,6 @@
 import { db } from './db/index.js';
 import { executions } from './db/schema.js';
 import { eq, desc, and, gte, lte } from 'drizzle-orm';
-
 export interface RunLog {
   timestamp: string;
   type: 'stdout' | 'stderr' | 'info' | 'done' | 'error';
@@ -28,6 +27,28 @@ class RunStore {
   // or reading files constantly during execution. 
   // For finished runs, we'll fetch metadata from DB.
   private activeLogs: Map<string, RunLog[]> = new Map();
+
+  /**
+   * Called on server startup — marks any runs still in 'running' state as 'failed'.
+   * These are orphans from a previous server crash or restart.
+   */
+  async cleanupOrphanedRuns(): Promise<void> {
+    const now = new Date();
+    const result = await db
+      .update(executions)
+      .set({
+        status: 'failed',
+        endTime: now,
+        exitCode: -1,
+        duration: null,
+      })
+      .where(eq(executions.status, 'running'));
+
+    const count = (result as any)?.rowsAffected ?? 0;
+    if (count > 0) {
+      console.log(`[RunStore] Marked ${count} orphaned run(s) as failed on startup`);
+    }
+  }
 
   async getRun(runId: string): Promise<TestRun | undefined> {
     const [record] = await db.select().from(executions).where(eq(executions.id, runId));

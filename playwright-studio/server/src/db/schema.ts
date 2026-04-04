@@ -110,3 +110,24 @@ export const dataSets = sqliteTable('data_sets', {
   variables: text('variables'), // JSON string of dataset-scoped values
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
 });
+
+export const schedules = sqliteTable('schedules', {
+  id: text('id').primaryKey(),
+  projectId: text('project_id').notNull().references(() => projects.id),
+  name: text('name').notNull(),
+  targetPaths: text('target_paths').notNull().default('[]'),   // JSON string[]
+  config: text('config').notNull(),                            // JSON RunConfig
+  pattern: text('pattern').notNull(),                          // JSON SchedulePattern
+  cronExpression: text('cron_expression').notNull(),
+  enabled: integer('enabled').notNull().default(1),            // 0 | 1
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
+  lastRunAt: integer('last_run_at', { mode: 'timestamp' }),
+  lastRunId: text('last_run_id'),
+  nextRunAt: integer('next_run_at', { mode: 'timestamp' }),
+});
+
+export const schedulerLock = sqliteTable('scheduler_lock', {
+  lockKey: text('lock_key').primaryKey(),                              // always 'leader'
+  holderId: text('holder_id').notNull(),                               // pod UUID
+  expiresAt: integer('expires_at', { mode: 'timestamp' }).notNull(),  // TTL 30s
+});
