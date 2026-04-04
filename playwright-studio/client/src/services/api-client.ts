@@ -5,15 +5,27 @@ function authHeaders(): Record<string, string> {
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
+async function apiFetch(url: string | URL, options: RequestInit = {}) {
+  const res = await fetch(url.toString(), options);
+  if (res.status === 401) {
+    localStorage.removeItem('authToken');
+    // Save current path to redirect back after login if needed? 
+    // For now, just redirect to login as requested.
+    window.location.href = '/app/login';
+    throw new Error('Unauthorized');
+  }
+  return res;
+}
+
 export const apiClient = {
   async getProjects() {
-    const res = await fetch(ENDPOINTS.PROJECTS, { headers: authHeaders() });
+    const res = await apiFetch(ENDPOINTS.PROJECTS, { headers: authHeaders() });
     if (!res.ok) throw new Error('Failed to fetch projects');
     return res.json();
   },
 
   async getMe() {
-    const res = await fetch(ENDPOINTS.AUTH_ME, { headers: authHeaders() });
+    const res = await apiFetch(ENDPOINTS.AUTH_ME, { headers: authHeaders() });
     if (!res.ok) {
       throw new Error('Failed to fetch user info');
     }
@@ -21,14 +33,14 @@ export const apiClient = {
   },
 
   async getAuthConfig() {
-    const res = await fetch(ENDPOINTS.AUTH_CONFIG);
+    const res = await apiFetch(ENDPOINTS.AUTH_CONFIG);
     if (!res.ok) throw new Error('Failed to fetch auth config');
     return res.json();
   },
 
   async logout() {
     try {
-      await fetch(ENDPOINTS.AUTH_LOGOUT, {
+      await apiFetch(ENDPOINTS.AUTH_LOGOUT, {
         method: 'POST',
         headers: authHeaders(),
       });
@@ -40,7 +52,7 @@ export const apiClient = {
   },
 
   async createProject(name: string) {
-    const res = await fetch(ENDPOINTS.PROJECTS, {
+    const res = await apiFetch(ENDPOINTS.PROJECTS, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', ...authHeaders() },
       body: JSON.stringify({ name }),
@@ -53,13 +65,13 @@ export const apiClient = {
   },
 
   async syncProjects() {
-    const res = await fetch(ENDPOINTS.SYNC, { method: 'POST', headers: authHeaders() });
+    const res = await apiFetch(ENDPOINTS.SYNC, { method: 'POST', headers: authHeaders() });
     if (!res.ok) throw new Error('Failed to sync projects');
     return res.json();
   },
 
   async updateProjectConfig(projectId: string, config: any) {
-    const res = await fetch(ENDPOINTS.PROJECT_CONFIG(projectId), {
+    const res = await apiFetch(ENDPOINTS.PROJECT_CONFIG(projectId), {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json', ...authHeaders() },
       body: JSON.stringify(config),
@@ -85,13 +97,13 @@ export const apiClient = {
     const queryString = params.toString();
     const url = `${ENDPOINTS.PROJECT_RUNS(projectId)}${queryString ? `?${queryString}` : ''}`;
     
-    const res = await fetch(url, { headers: authHeaders() });
+    const res = await apiFetch(url, { headers: authHeaders() });
     if (!res.ok) throw new Error('Failed to fetch runs');
     return res.json();
   },
 
   async getRunDetails(projectId: string, runId: string) {
-    const res = await fetch(ENDPOINTS.RUN_DETAILS(projectId, runId), { headers: authHeaders() });
+    const res = await apiFetch(ENDPOINTS.RUN_DETAILS(projectId, runId), { headers: authHeaders() });
     if (!res.ok) throw new Error('Failed to fetch run details');
     return res.json();
   },
@@ -101,7 +113,7 @@ export const apiClient = {
     paths?: string[]; 
     [key: string]: any 
   }) {
-    const res = await fetch(ENDPOINTS.PROJECT_RUN(projectId), {
+    const res = await apiFetch(ENDPOINTS.PROJECT_RUN(projectId), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', ...authHeaders() },
       body: JSON.stringify(options),
@@ -113,7 +125,7 @@ export const apiClient = {
   async getProjectFiles(projectId: string, path: string = '') {
     const url = new URL(window.location.origin + ENDPOINTS.PROJECT_FILES(projectId));
     if (path) url.searchParams.set('path', path);
-    const res = await fetch(url.toString(), { headers: authHeaders() });
+    const res = await apiFetch(url, { headers: authHeaders() });
     if (!res.ok) throw new Error('Failed to fetch project files');
     return res.json();
   },
@@ -121,7 +133,7 @@ export const apiClient = {
   async getFileContent(projectId: string, path: string) {
     const url = new URL(window.location.origin + ENDPOINTS.PROJECT_FILES(projectId) + '/content');
     url.searchParams.set('path', path);
-    const res = await fetch(url.toString(), { headers: authHeaders() });
+    const res = await apiFetch(url, { headers: authHeaders() });
     if (!res.ok) throw new Error('Failed to fetch file content');
     return res.json();
   },
@@ -129,7 +141,7 @@ export const apiClient = {
   async updateFileContent(projectId: string, path: string, content: string) {
     const url = new URL(window.location.origin + ENDPOINTS.PROJECT_FILES(projectId) + '/content');
     url.searchParams.set('path', path);
-    const res = await fetch(url.toString(), { 
+    const res = await apiFetch(url, { 
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', ...authHeaders() },
         body: JSON.stringify({ content })
@@ -145,19 +157,19 @@ export const apiClient = {
 
   // --- Data Manager ---
   async getDataTemplates(projectId: string) {
-    const res = await fetch(ENDPOINTS.DATA_TEMPLATES(projectId), { headers: authHeaders() });
+    const res = await apiFetch(ENDPOINTS.DATA_TEMPLATES(projectId), { headers: authHeaders() });
     if (!res.ok) throw new Error('Failed to fetch data templates');
     return res.json();
   },
 
   async getDataTemplate(projectId: string, templateId: string) {
-    const res = await fetch(ENDPOINTS.DATA_TEMPLATES(projectId) + '/' + templateId, { headers: authHeaders() });
+    const res = await apiFetch(ENDPOINTS.DATA_TEMPLATES(projectId) + '/' + templateId, { headers: authHeaders() });
     if (!res.ok) throw new Error('Failed to fetch data template details');
     return res.json();
   },
 
   async createDataTemplate(projectId: string, payload: any) {
-    const res = await fetch(ENDPOINTS.DATA_TEMPLATES(projectId), {
+    const res = await apiFetch(ENDPOINTS.DATA_TEMPLATES(projectId), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', ...authHeaders() },
       body: JSON.stringify(payload)
@@ -167,19 +179,19 @@ export const apiClient = {
   },
 
   async getDataEnvironments(projectId: string) {
-    const res = await fetch(ENDPOINTS.DATA_ENVIRONMENTS(projectId), { headers: authHeaders() });
+    const res = await apiFetch(ENDPOINTS.DATA_ENVIRONMENTS(projectId), { headers: authHeaders() });
     if (!res.ok) throw new Error('Failed to fetch data environments');
     return res.json();
   },
 
   async getDataEnvironment(projectId: string, envId: string) {
-    const res = await fetch(ENDPOINTS.DATA_ENVIRONMENTS(projectId) + '/' + envId, { headers: authHeaders() });
+    const res = await apiFetch(ENDPOINTS.DATA_ENVIRONMENTS(projectId) + '/' + envId, { headers: authHeaders() });
     if (!res.ok) throw new Error('Failed to fetch data environment details');
     return res.json();
   },
 
   async createDataEnvironment(projectId: string, payload: any) {
-    const res = await fetch(ENDPOINTS.DATA_ENVIRONMENTS(projectId), {
+    const res = await apiFetch(ENDPOINTS.DATA_ENVIRONMENTS(projectId), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', ...authHeaders() },
       body: JSON.stringify(payload)
@@ -189,7 +201,7 @@ export const apiClient = {
   },
 
   async createDataSet(projectId: string, envId: string, payload: any) {
-    const res = await fetch(ENDPOINTS.DATA_DATASETS(projectId, envId), {
+    const res = await apiFetch(ENDPOINTS.DATA_DATASETS(projectId, envId), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', ...authHeaders() },
       body: JSON.stringify(payload)
@@ -199,20 +211,20 @@ export const apiClient = {
   },
 
   async getDataSet(projectId: string, envId: string, datasetId: string) {
-    const res = await fetch(ENDPOINTS.DATA_DATASETS(projectId, envId) + '/' + datasetId, { headers: authHeaders() });
+    const res = await apiFetch(ENDPOINTS.DATA_DATASETS(projectId, envId) + '/' + datasetId, { headers: authHeaders() });
     if (!res.ok) throw new Error('Failed to fetch data set details');
     return res.json();
   },
 
   // --- Schedules ---
   async getSchedules(projectId: string) {
-    const res = await fetch(ENDPOINTS.PROJECT_SCHEDULES(projectId), { headers: authHeaders() });
+    const res = await apiFetch(ENDPOINTS.PROJECT_SCHEDULES(projectId), { headers: authHeaders() });
     if (!res.ok) throw new Error('Failed to fetch schedules');
     return res.json();
   },
 
   async createSchedule(projectId: string, payload: any) {
-    const res = await fetch(ENDPOINTS.PROJECT_SCHEDULES(projectId), {
+    const res = await apiFetch(ENDPOINTS.PROJECT_SCHEDULES(projectId), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', ...authHeaders() },
       body: JSON.stringify(payload),
@@ -225,7 +237,7 @@ export const apiClient = {
   },
 
   async updateSchedule(projectId: string, scheduleId: string, patch: any) {
-    const res = await fetch(ENDPOINTS.PROJECT_SCHEDULE(projectId, scheduleId), {
+    const res = await apiFetch(ENDPOINTS.PROJECT_SCHEDULE(projectId, scheduleId), {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json', ...authHeaders() },
       body: JSON.stringify(patch),
@@ -238,7 +250,7 @@ export const apiClient = {
   },
 
   async deleteSchedule(projectId: string, scheduleId: string) {
-    const res = await fetch(ENDPOINTS.PROJECT_SCHEDULE(projectId, scheduleId), {
+    const res = await apiFetch(ENDPOINTS.PROJECT_SCHEDULE(projectId, scheduleId), {
       method: 'DELETE',
       headers: authHeaders(),
     });
@@ -246,7 +258,7 @@ export const apiClient = {
   },
 
   async runScheduleNow(projectId: string, scheduleId: string) {
-    const res = await fetch(ENDPOINTS.PROJECT_SCHEDULE_RUN(projectId, scheduleId), {
+    const res = await apiFetch(ENDPOINTS.PROJECT_SCHEDULE_RUN(projectId, scheduleId), {
       method: 'POST',
       headers: authHeaders(),
     });

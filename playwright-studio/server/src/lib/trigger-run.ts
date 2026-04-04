@@ -157,6 +157,17 @@ export async function triggerRun(opts: TriggerRunOptions): Promise<TriggerRunRes
     env: runEnv,
   });
 
+  // Process-level timeout — kill the child if it runs longer than config.timeout * 3
+  // (gives enough headroom for retries) with a hard cap of 30 minutes
+  const maxRunMs = Math.min((config.timeout ?? 30000) * 3, 30 * 60 * 1000);
+  const killTimer = setTimeout(() => {
+    if (!child.killed) {
+      console.warn(`[Run] ${runId} exceeded max runtime (${maxRunMs / 1000}s), killing process`);
+      child.kill('SIGTERM');
+      runStore.addLog(runId, 'error', `⏱ Run timed out after ${maxRunMs / 1000}s and was killed`);
+    }
+  }, maxRunMs);
+
   child.stdout?.on('data', (chunk: Buffer) => {
     const data = chunk.toString();
     runStore.addLog(runId, 'stdout', data);
@@ -170,11 +181,13 @@ export async function triggerRun(opts: TriggerRunOptions): Promise<TriggerRunRes
   });
 
   child.on('close', exitCode => {
+    clearTimeout(killTimer);
     runStore.addLog(runId, 'done', 'Execution finished.', exitCode ?? 0);
     broadcast({ type: 'run:done', runId, exitCode });
   });
 
   child.on('error', err => {
+    clearTimeout(killTimer);
     runStore.addLog(runId, 'error', err.message);
     broadcast({ type: 'run:error', runId, error: err.message });
   });

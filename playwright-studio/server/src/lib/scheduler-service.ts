@@ -31,13 +31,31 @@ class SchedulerService {
     // Cancel existing job for this id if any
     this.unregisterJob(schedule.id);
 
-    const job = nodeSchedule.scheduleJob(schedule.cronExpression, async () => {
+    // Use a RecurrenceRule with start=now to prevent node-schedule from
+    // firing all missed invocations when the server restarts (catch-up behavior).
+    const rule = new nodeSchedule.RecurrenceRule();
+    // Parse the 5-part cron into RecurrenceRule fields
+    const parts = schedule.cronExpression.split(' ');
+    if (parts.length === 5) {
+      const [minute, hour, dayOfMonth, month, dayOfWeek] = parts;
+      if (minute !== '*' && !minute.startsWith('*/')) rule.minute = parseInt(minute);
+      else if (minute.startsWith('*/')) rule.minute = new nodeSchedule.Range(0, 59, parseInt(minute.slice(2)));
+      if (hour !== '*' && !hour.startsWith('*/')) rule.hour = parseInt(hour);
+      else if (hour.startsWith('*/')) rule.hour = new nodeSchedule.Range(0, 23, parseInt(hour.slice(2)));
+      if (dayOfMonth !== '*') rule.date = parseInt(dayOfMonth);
+      if (month !== '*') rule.month = parseInt(month) - 1;
+      if (dayOfWeek !== '*') rule.dayOfWeek = dayOfWeek.split(',').map(Number);
+    }
+    // Start from now — skips all past missed ticks
+    rule.start = new Date();
+
+    const job = nodeSchedule.scheduleJob(rule, async () => {
       await this._triggerRun(schedule);
     });
 
     if (job) {
       this.jobs.set(schedule.id, job);
-      console.log(`[Scheduler] Registered job "${schedule.name}" (${schedule.cronExpression})`);
+      console.log(`[Scheduler] Registered job "${schedule.name}" (${schedule.cronExpression}) — next: ${job.nextInvocation()}`);
     } else {
       console.error(`[Scheduler] Failed to register job for schedule ${schedule.id} — invalid cron?`);
     }

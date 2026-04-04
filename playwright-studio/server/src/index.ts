@@ -18,6 +18,7 @@ import { generateId } from './lib/uuid.js';
 import { leaderElection } from './lib/leader-election.js';
 import { schedulerService } from './lib/scheduler-service.js';
 import { setWss } from './lib/trigger-run.js';
+import { runStore } from './run-store.js';
 
 dotenv.config();
 
@@ -441,6 +442,7 @@ server.listen(PORT, async () => {
   try {
     await applyMigrations();
     await syncProjects();
+    await runStore.cleanupOrphanedRuns();
 
     // Start leader election — only the winning pod initializes the scheduler
     leaderElection.start(
