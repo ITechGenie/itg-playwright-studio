@@ -117,8 +117,55 @@ async function fetchUser(provider: string, accessToken: string) {
   }
 
   const data = await response.json();
+
+  // GitHub may return null email if the user has set it to private.
+  // Fall back to the /user/emails endpoint to get the primary verified email.
+  if (provider === 'github' && !data.email) {
+    const emailsRes = await fetch('https://api.github.com/user/emails', {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        Accept: 'application/json',
+      },
+    });
+    if (emailsRes.ok) {
+      const emails: { email: string; primary: boolean; verified: boolean }[] = await emailsRes.json();
+      const primary = emails.find(e => e.primary && e.verified) || emails.find(e => e.verified) || emails[0];
+      if (primary) data.email = primary.email;
+    }
+  }
+
   console.debug("Logged in user info : ", data);
   return data;
+}
+
+function authErrorPage(res: any, message: string) {
+  const escaped = message.replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  res.status(200).send(`<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Authentication Error</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: #09090b; color: #fafafa; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 24px; }
+    .card { background: #18181b; border: 1px solid #27272a; border-radius: 12px; padding: 40px 36px; max-width: 480px; width: 100%; text-align: center; }
+    .icon { font-size: 48px; margin-bottom: 20px; }
+    h1 { font-size: 20px; font-weight: 600; margin-bottom: 12px; color: #fafafa; }
+    p { font-size: 14px; color: #a1a1aa; line-height: 1.6; margin-bottom: 28px; word-break: break-word; }
+    a { display: inline-block; background: #2563eb; color: #fff; text-decoration: none; padding: 10px 24px; border-radius: 8px; font-size: 14px; font-weight: 600; transition: background 0.15s; }
+    a:hover { background: #1d4ed8; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="icon">⚠️</div>
+    <h1>Authentication Failed</h1>
+    <p>${escaped}</p>
+    <a href="/app/login">Back to Login</a>
+  </div>
+</body>
+</html>`);
 }
 
 router.get('/callback/:provider', async (req, res) => {
@@ -126,13 +173,14 @@ router.get('/callback/:provider', async (req, res) => {
     const provider = req.params.provider;
     const { code } = req.query;
     if (!code || typeof code !== 'string') {
-      return res.status(400).json({ error: 'Missing code' });
+      return authErrorPage(res, 'Missing authorization code. Please try logging in again.');
     }
 
     const tokenPayload = await fetchToken(provider, code);
     const accessToken = tokenPayload.access_token;
     if (!accessToken) {
-      return res.status(400).json({ error: 'Failed to obtain access token', details: tokenPayload });
+      const detail = tokenPayload.error_description || tokenPayload.error || JSON.stringify(tokenPayload);
+      return authErrorPage(res, `Failed to obtain access token: ${detail}`);
     }
 
     const profile = await fetchUser(provider, accessToken);
@@ -141,7 +189,7 @@ router.get('/callback/:provider', async (req, res) => {
     const avatarUrl = profile.avatar_url || profile.picture;
 
     if (!email) {
-      return res.status(400).json({ error: 'OAuth provider did not return email address' });
+      return authErrorPage(res, 'The OAuth provider did not return an email address. Make sure your email is verified and the required scopes are granted.');
     }
 
     let [user] = await db.select().from(users).where(eq(users.email, email));
@@ -200,7 +248,8 @@ router.get('/callback/:provider', async (req, res) => {
     res.redirect(`${APP_BASE}/app/projects?token=${jwtToken}`);
   } catch (err) {
     console.error('OAuth callback error:', err);
-    res.status(500).json({ error: 'OAuth callback failed' });
+    const message = err instanceof Error ? err.message : 'An unexpected error occurred during authentication.';
+    return authErrorPage(res, message);
   }
 });
 
