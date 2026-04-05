@@ -1,4 +1,4 @@
--- Initial consolidated schema for Playwright Studio
+-- Initial consolidated schema for ITG Playwright Studio
 -- Combines base tables, Auth/RBAC, and custom column additions
 
 CREATE TABLE IF NOT EXISTS users (

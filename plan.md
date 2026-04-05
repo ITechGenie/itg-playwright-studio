@@ -177,8 +177,8 @@ An agent (playwright-studio-agent) running in developer system all connected to 
 
 
 
-Playwright Studio Development Plan
-This document outlines the detailed development plan for the Playwright Studio suite based on your architecture document (
+ITG Playwright Studio Development Plan
+This document outlines the detailed development plan for the ITG Playwright Studio suite based on your architecture document (
 plan.md
 ). We are parking the Playwright MCP AI integration for now to focus entirely on building a robust Studio UI, the Functional APIs, and the Authentication/Token architecture required for the Agent and Extension.
 
@@ -206,7 +206,7 @@ apps/extension/: Chrome Extension (Manifest V3, Vite, React).
 apps/agent/: Node.js CLI tool running locally on developer machines.
 packages/shared/: Shared types (Zod schemas) for API boundaries, script models, and communication events.
 3. Component Breakdown & Functional APIs
-A. Playwright Studio (Control Plane)
+A. ITG Playwright Studio (Control Plane)
 Frontend: React, Vite, Tailwind CSS, shadcn/ui.
 Key Views: Login Page (GitLab single-sign-on), Dashboard, Flow/Script Editor, Run History, Developer Settings (to generate API tokens), and Trace Viewer.
 Backend: Node.js (e.g., Express or Next.js API Routes). WebSockets (socket.io or ws) for real-time agent/worker communication.
