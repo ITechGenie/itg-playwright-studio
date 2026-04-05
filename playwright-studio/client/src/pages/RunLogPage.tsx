@@ -34,7 +34,18 @@ export default function RunLogPage() {
         <TestRunnerPanel 
           projectId={projectId} 
           initialRunId={runId}
-          showNewTab={false} // Already in a standalone tab
+          showNewTab={false}
+          runConfig={{
+            browsers: ['chromium'],
+            headless: true,
+            workers: 1,
+            width: 1280,
+            height: 720,
+            video: 'retain-on-failure',
+            screenshot: 'only-on-failure',
+            timeout: 30000,
+            extraArgs: [],
+          }}
         />
       </div>
     </div>

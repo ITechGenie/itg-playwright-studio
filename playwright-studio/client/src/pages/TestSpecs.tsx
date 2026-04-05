@@ -1,11 +1,15 @@
 import { useState, useEffect } from "react"
 import { useParams, useNavigate } from "react-router-dom"
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Badge } from "@/components/ui/badge"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { FileManager } from "@/components/file-manager"
 import { TestRunnerPanel } from "@/components/test-runner-panel"
 import { ScheduleDrawer } from "@/components/schedule-drawer"
 import { Drawer, DrawerContent, DrawerTitle, DrawerDescription } from "@/components/ui/drawer"
-import { Wand2Icon, Settings2Icon, PlusIcon, CalendarClockIcon } from "lucide-react"
+import { Wand2Icon, Settings2Icon, PlusIcon, CalendarClockIcon, GitBranchIcon } from "lucide-react"
 import { apiClient } from "@/services/api-client"
 import { PageHeader } from "@/components/page-header"
 import { type RunConfig } from "@/components/config-panel"
@@ -37,6 +41,12 @@ export default function TestSpecs() {
   const [selectedPaths, setSelectedPaths] = useState<string[]>([])
   const [runConfig, setRunConfig] = useState<LegacyRunConfig>(DEFAULT_CONFIG)
   const [scheduleDrawerOpen, setScheduleDrawerOpen] = useState(false)
+  const [projectRepoUrl, setProjectRepoUrl] = useState<string | null>(null)
+
+  // Add Spec dialog state
+  const [addSpecDialogOpen, setAddSpecDialogOpen] = useState(false)
+  const [newSpecName, setNewSpecName] = useState("")
+  const [addSpecCommitMsg, setAddSpecCommitMsg] = useState("")
 
   useEffect(() => {
     if (!projectId) return
@@ -61,6 +71,7 @@ export default function TestSpecs() {
             : [],
         })
       }
+      setProjectRepoUrl(proj?.repoUrl ?? null)
     })
   }, [projectId])
 
@@ -70,8 +81,29 @@ export default function TestSpecs() {
   const handleAddSpec = async () => {
     const filename = window.prompt("Enter new spec file name:", "example.spec.ts")
     if (!filename) return
+    if (projectRepoUrl) {
+      setNewSpecName(filename)
+      setAddSpecCommitMsg("")
+      setAddSpecDialogOpen(true)
+    } else {
+      try {
+        await apiClient.updateFileContent(projectId!, filename, "import { test, expect } from '@playwright/test';\n\ntest('New test', async ({ page }) => {\n  \n});\n")
+        window.location.reload()
+      } catch (e) {
+        alert("Failed to create spec")
+      }
+    }
+  }
+
+  const handleAddSpecConfirm = async (commitMsg?: string) => {
+    setAddSpecDialogOpen(false)
     try {
-      await apiClient.updateFileContent(projectId!, filename, "import { test, expect } from '@playwright/test';\n\ntest('New test', async ({ page }) => {\n  \n});\n")
+      await apiClient.updateFileContent(
+        projectId!,
+        newSpecName,
+        "import { test, expect } from '@playwright/test';\n\ntest('New test', async ({ page }) => {\n  \n});\n",
+        commitMsg
+      )
       window.location.reload()
     } catch (e) {
       alert("Failed to create spec")
@@ -85,6 +117,12 @@ export default function TestSpecs() {
         description="Explore and execute your Playwright test specifications. Select multiple files to run them in bulk."
         action={
           <div className="flex items-center gap-3">
+            {projectRepoUrl && (
+              <Badge variant="outline" className="h-8 gap-1.5 border-zinc-700 text-zinc-400 text-xs font-medium px-3">
+                <GitBranchIcon className="h-3.5 w-3.5 text-blue-400" />
+                Git
+              </Badge>
+            )}
             <Button
               variant="outline" 
               size="lg" 
@@ -169,6 +207,33 @@ export default function TestSpecs() {
           initialConfig={runConfig}
         />
       )}
+
+      <Dialog open={addSpecDialogOpen} onOpenChange={setAddSpecDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Push New Spec to Git</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 py-2">
+            <p className="text-sm text-zinc-400">Creating <span className="font-mono text-zinc-200">{newSpecName}</span></p>
+            <Label htmlFor="add-spec-commit" className="text-xs font-bold uppercase text-zinc-400">Commit Message</Label>
+            <Input
+              id="add-spec-commit"
+              placeholder="e.g. Add new test spec"
+              value={addSpecCommitMsg}
+              onChange={(e) => setAddSpecCommitMsg(e.target.value)}
+              autoFocus
+            />
+          </div>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => handleAddSpecConfirm()}>
+              Save Locally Only
+            </Button>
+            <Button disabled={!addSpecCommitMsg.trim()} onClick={() => handleAddSpecConfirm(addSpecCommitMsg.trim())}>
+              <GitBranchIcon className="h-3.5 w-3.5 mr-1.5" /> Save & Push
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

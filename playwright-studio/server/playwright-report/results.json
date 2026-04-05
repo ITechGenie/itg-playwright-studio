@@ -1,0 +1,3794 @@
+{
+  "config": {
+    "configFile": "/Users/prakash/MyDocs/Projects/playwright-studio/playwright-studio/server/playwright.config.cjs",
+    "rootDir": "/Users/prakash/MyDocs/Projects/playwright-studio/playwright-studio/server",
+    "forbidOnly": false,
+    "fullyParallel": true,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "actualWorkers": 5
+    },
+    "preserveOutput": "always",
+    "projects": [
+      {
+        "outputDir": "/Users/prakash/MyDocs/Projects/playwright-studio/playwright-studio/server/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 5
+        },
+        "id": "chromium",
+        "name": "chromium",
+        "testDir": "/Users/prakash/MyDocs/Projects/playwright-studio/playwright-studio/server",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.spec.ts",
+          "**/*.spec.js",
+          "**/*.test.ts",
+          "**/*.test.js"
+        ],
+        "timeout": 30000
+      },
+      {
+        "outputDir": "/Users/prakash/MyDocs/Projects/playwright-studio/playwright-studio/server/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 5
+        },
+        "id": "firefox",
+        "name": "firefox",
+        "testDir": "/Users/prakash/MyDocs/Projects/playwright-studio/playwright-studio/server",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.spec.ts",
+          "**/*.spec.js",
+          "**/*.test.ts",
+          "**/*.test.js"
+        ],
+        "timeout": 30000
+      },
+      {
+        "outputDir": "/Users/prakash/MyDocs/Projects/playwright-studio/playwright-studio/server/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 5
+        },
+        "id": "webkit",
+        "name": "webkit",
+        "testDir": "/Users/prakash/MyDocs/Projects/playwright-studio/playwright-studio/server",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.spec.ts",
+          "**/*.spec.js",
+          "**/*.test.ts",
+          "**/*.test.js"
+        ],
+        "timeout": 30000
+      },
+      {
+        "outputDir": "/Users/prakash/MyDocs/Projects/playwright-studio/playwright-studio/server/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 5
+        },
+        "id": "chrome",
+        "name": "chrome",
+        "testDir": "/Users/prakash/MyDocs/Projects/playwright-studio/playwright-studio/server",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.spec.ts",
+          "**/*.spec.js",
+          "**/*.test.ts",
+          "**/*.test.js"
+        ],
+        "timeout": 30000
+      },
+      {
+        "outputDir": "/Users/prakash/MyDocs/Projects/playwright-studio/playwright-studio/server/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 5
+        },
+        "id": "msedge",
+        "name": "msedge",
+        "testDir": "/Users/prakash/MyDocs/Projects/playwright-studio/playwright-studio/server",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.spec.ts",
+          "**/*.spec.js",
+          "**/*.test.ts",
+          "**/*.test.js"
+        ],
+        "timeout": 30000
+      }
+    ],
+    "quiet": false,
+    "reporter": [
+      [
+        "list",
+        null
+      ],
+      [
+        "html",
+        {
+          "outputFolder": "/Users/prakash/MyDocs/Projects/playwright-studio/playwright-studio/server/html-report",
+          "open": "never"
+        }
+      ],
+      [
+        "/Users/prakash/MyDocs/Projects/playwright-studio/node_modules/monocart-reporter/lib/index.js",
+        {
+          "name": "Playwright Studio Report",
+          "outputFile": "/Users/prakash/MyDocs/Projects/playwright-studio/playwright-studio/server/monocart-report/index.html",
+          "tags": {
+            "smoke": {
+              "style": {
+                "background": "#6366f1"
+              }
+            },
+            "regression": {
+              "style": {
+                "background": "#059669"
+              }
+            }
+          },
+          "groupBy": [
+            "project"
+          ]
+        }
+      ],
+      [
+        "json",
+        {
+          "outputFile": "/Users/prakash/MyDocs/Projects/playwright-studio/playwright-studio/server/playwright-report/results.json"
+        }
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "runAgents": "none",
+    "shard": null,
+    "tags": [],
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.58.2",
+    "workers": 5,
+    "webServer": null
+  },
+  "suites": [
+    {
+      "title": "src/lib/git-push-service.test.ts",
+      "file": "src/lib/git-push-service.test.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "GitPushService",
+          "file": "src/lib/git-push-service.test.ts",
+          "line": 12,
+          "column": 6,
+          "specs": [],
+          "suites": [
+            {
+              "title": "Error Handling",
+              "file": "src/lib/git-push-service.test.ts",
+              "line": 13,
+              "column": 8,
+              "specs": [
+                {
+                  "title": "should handle authentication errors correctly",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 30000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 0,
+                          "parallelIndex": 0,
+                          "status": "passed",
+                          "duration": 4,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-04-04T15:17:31.541Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "60f9ad7808ddcd1f2428-9141af99d2fa28108b10",
+                  "file": "src/lib/git-push-service.test.ts",
+                  "line": 14,
+                  "column": 5
+                },
+                {
+                  "title": "should handle permission errors correctly",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 30000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 1,
+                          "parallelIndex": 1,
+                          "status": "passed",
+                          "duration": 5,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-04-04T15:17:31.525Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "60f9ad7808ddcd1f2428-a4877c286210196cb88e",
+                  "file": "src/lib/git-push-service.test.ts",
+                  "line": 26,
+                  "column": 5
+                },
+                {
+                  "title": "should handle not found errors correctly",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 30000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 2,
+                          "parallelIndex": 2,
+                          "status": "passed",
+                          "duration": 4,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-04-04T15:17:31.486Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "60f9ad7808ddcd1f2428-5d1984dd030f23313b99",
+                  "file": "src/lib/git-push-service.test.ts",
+                  "line": 37,
+                  "column": 5
+                },
+                {
+                  "title": "should handle rate limit errors correctly",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 30000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 3,
+                          "parallelIndex": 3,
+                          "status": "passed",
+                          "duration": 4,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-04-04T15:17:31.522Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "60f9ad7808ddcd1f2428-160421ceb3e43ebecb36",
+                  "file": "src/lib/git-push-service.test.ts",
+                  "line": 48,
+                  "column": 5
+                },
+                {
+                  "title": "should handle conflict errors correctly",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 30000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 4,
+                          "parallelIndex": 4,
+                          "status": "passed",
+                          "duration": 5,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-04-04T15:17:31.525Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "60f9ad7808ddcd1f2428-e6dfe902d6168100df68",
+                  "file": "src/lib/git-push-service.test.ts",
+                  "line": 59,
+                  "column": 5
+                },
+                {
+                  "title": "should handle generic errors correctly",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 30000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 2,
+                          "parallelIndex": 2,
+                          "status": "passed",
+                          "duration": 2,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-04-04T15:17:31.508Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "60f9ad7808ddcd1f2428-0a58e0a45eea6dbda247",
+                  "file": "src/lib/git-push-service.test.ts",
+                  "line": 70,
+                  "column": 5
+                },
+                {
+                  "title": "should handle non-Error objects",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 30000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 2,
+                          "parallelIndex": 2,
+                          "status": "passed",
+                          "duration": 1,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-04-04T15:17:31.528Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "60f9ad7808ddcd1f2428-e4518faf5a2ba8bbc670",
+                  "file": "src/lib/git-push-service.test.ts",
+                  "line": 81,
+                  "column": 5
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "src/lib/git-sync-service.test.ts",
+      "file": "src/lib/git-sync-service.test.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "GitSyncService",
+          "file": "src/lib/git-sync-service.test.ts",
+          "line": 13,
+          "column": 6,
+          "specs": [],
+          "suites": [
+            {
+              "title": "URL Parsing Integration",
+              "file": "src/lib/git-sync-service.test.ts",
+              "line": 14,
+              "column": 8,
+              "specs": [
+                {
+                  "title": "should parse GitHub URL correctly",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 30000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 2,
+                          "parallelIndex": 2,
+                          "status": "passed",
+                          "duration": 3,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-04-04T15:17:31.550Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "826d2525747961a58395-4a9ec2634739f4bd6e67",
+                  "file": "src/lib/git-sync-service.test.ts",
+                  "line": 15,
+                  "column": 5
+                },
+                {
+                  "title": "should parse GitLab URL correctly",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 30000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 4,
+                          "parallelIndex": 4,
+                          "status": "passed",
+                          "duration": 4,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-04-04T15:17:31.554Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "826d2525747961a58395-43653c942823eea193e3",
+                  "file": "src/lib/git-sync-service.test.ts",
+                  "line": 26,
+                  "column": 5
+                },
+                {
+                  "title": "should handle invalid Git URL",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 30000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 3,
+                          "parallelIndex": 3,
+                          "status": "passed",
+                          "duration": 3,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-04-04T15:17:31.556Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "826d2525747961a58395-220b9460e97d69746183",
+                  "file": "src/lib/git-sync-service.test.ts",
+                  "line": 37,
+                  "column": 5
+                }
+              ]
+            },
+            {
+              "title": "Service Instantiation",
+              "file": "src/lib/git-sync-service.test.ts",
+              "line": 44,
+              "column": 8,
+              "specs": [
+                {
+                  "title": "should create service with default base path",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 30000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 1,
+                          "parallelIndex": 1,
+                          "status": "passed",
+                          "duration": 1,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-04-04T15:17:31.557Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "826d2525747961a58395-19581267bcee57ad6f60",
+                  "file": "src/lib/git-sync-service.test.ts",
+                  "line": 45,
+                  "column": 5
+                },
+                {
+                  "title": "should create service with custom base path",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 30000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 0,
+                          "parallelIndex": 0,
+                          "status": "passed",
+                          "duration": 1,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-04-04T15:17:31.576Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "826d2525747961a58395-ee006362f8e2513393de",
+                  "file": "src/lib/git-sync-service.test.ts",
+                  "line": 50,
+                  "column": 5
+                }
+              ]
+            },
+            {
+              "title": "Error Handling",
+              "file": "src/lib/git-sync-service.test.ts",
+              "line": 56,
+              "column": 8,
+              "specs": [
+                {
+                  "title": "should handle invalid Git URL in syncProject",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 30000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 2,
+                          "parallelIndex": 2,
+                          "status": "passed",
+                          "duration": 1,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-04-04T15:17:31.566Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "826d2525747961a58395-2b42029a2d787ccda68a",
+                  "file": "src/lib/git-sync-service.test.ts",
+                  "line": 57,
+                  "column": 5
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "src/lib/git-url-parser.test.ts",
+      "file": "src/lib/git-url-parser.test.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "GitUrlParser",
+          "file": "src/lib/git-url-parser.test.ts",
+          "line": 4,
+          "column": 6,
+          "specs": [],
+          "suites": [
+            {
+              "title": "parse - GitHub URLs",
+              "file": "src/lib/git-url-parser.test.ts",
+              "line": 5,
+              "column": 8,
+              "specs": [
+                {
+                  "title": "should parse GitHub URL with path",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 30000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 4,
+                          "parallelIndex": 4,
+                          "status": "passed",
+                          "duration": 1,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-04-04T15:17:31.578Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "c69c4d8b4cb58d1e0812-d12037619b8325d25243",
+                  "file": "src/lib/git-url-parser.test.ts",
+                  "line": 6,
+                  "column": 5
+                },
+                {
+                  "title": "should parse GitHub URL without path (root)",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 30000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 1,
+                          "parallelIndex": 1,
+                          "status": "passed",
+                          "duration": 3,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-04-04T15:17:31.579Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "c69c4d8b4cb58d1e0812-a46730956e164d2c3341",
+                  "file": "src/lib/git-url-parser.test.ts",
+                  "line": 20,
+                  "column": 5
+                },
+                {
+                  "title": "should parse GitHub URL with nested path",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 30000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 3,
+                          "parallelIndex": 3,
+                          "status": "passed",
+                          "duration": 3,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-04-04T15:17:31.583Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "c69c4d8b4cb58d1e0812-af29438e05680b228cee",
+                  "file": "src/lib/git-url-parser.test.ts",
+                  "line": 34,
+                  "column": 5
+                },
+                {
+                  "title": "should parse GitHub URL with branch containing slashes",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 30000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 2,
+                          "parallelIndex": 2,
+                          "status": "passed",
+                          "duration": 2,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-04-04T15:17:31.585Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "c69c4d8b4cb58d1e0812-82a5f938f0be4d9da1de",
+                  "file": "src/lib/git-url-parser.test.ts",
+                  "line": 48,
+                  "column": 5
+                },
+                {
+                  "title": "should parse GitHub URL with URL-encoded characters",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 30000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 4,
+                          "parallelIndex": 4,
+                          "status": "passed",
+                          "duration": 1,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-04-04T15:17:31.590Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "c69c4d8b4cb58d1e0812-5198679d61e8ee8dc9d2",
+                  "file": "src/lib/git-url-parser.test.ts",
+                  "line": 67,
+                  "column": 5
+                },
+                {
+                  "title": "should parse GitHub URL with version tag as branch",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 30000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 3,
+                          "parallelIndex": 3,
+                          "status": "passed",
+                          "duration": 1,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-04-04T15:17:31.597Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "c69c4d8b4cb58d1e0812-7cb1a8986af9079068c0",
+                  "file": "src/lib/git-url-parser.test.ts",
+                  "line": 74,
+                  "column": 5
+                }
+              ]
+            },
+            {
+              "title": "parse - GitLab URLs",
+              "file": "src/lib/git-url-parser.test.ts",
+              "line": 89,
+              "column": 8,
+              "specs": [
+                {
+                  "title": "should parse GitLab URL with path",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 30000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 2,
+                          "parallelIndex": 2,
+                          "status": "passed",
+                          "duration": 1,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-04-04T15:17:31.600Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "c69c4d8b4cb58d1e0812-52d21e9e35eac7113706",
+                  "file": "src/lib/git-url-parser.test.ts",
+                  "line": 90,
+                  "column": 5
+                },
+                {
+                  "title": "should parse GitLab URL without path (root)",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 30000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 0,
+                          "parallelIndex": 0,
+                          "status": "passed",
+                          "duration": 1,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-04-04T15:17:31.610Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "c69c4d8b4cb58d1e0812-fe93cbaa248650f1c4f6",
+                  "file": "src/lib/git-url-parser.test.ts",
+                  "line": 104,
+                  "column": 5
+                },
+                {
+                  "title": "should parse GitLab URL with nested namespace",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 30000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 1,
+                          "parallelIndex": 1,
+                          "status": "passed",
+                          "duration": 1,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-04-04T15:17:31.605Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "c69c4d8b4cb58d1e0812-3cac72617255d10a5252",
+                  "file": "src/lib/git-url-parser.test.ts",
+                  "line": 118,
+                  "column": 5
+                },
+                {
+                  "title": "should parse GitLab URL with nested path",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 30000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 4,
+                          "parallelIndex": 4,
+                          "status": "passed",
+                          "duration": 1,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-04-04T15:17:31.608Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "c69c4d8b4cb58d1e0812-65d1ecc6ecee050455c7",
+                  "file": "src/lib/git-url-parser.test.ts",
+                  "line": 132,
+                  "column": 5
+                },
+                {
+                  "title": "should parse GitLab URL with URL-encoded characters",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 30000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 3,
+                          "parallelIndex": 3,
+                          "status": "passed",
+                          "duration": 1,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-04-04T15:17:31.610Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "c69c4d8b4cb58d1e0812-9a61b98b0a414a963280",
+                  "file": "src/lib/git-url-parser.test.ts",
+                  "line": 146,
+                  "column": 5
+                },
+                {
+                  "title": "should parse GitLab URL with deeply nested namespace",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 30000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 2,
+                          "parallelIndex": 2,
+                          "status": "passed",
+                          "duration": 1,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-04-04T15:17:31.613Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "c69c4d8b4cb58d1e0812-94352e722b6f0dccb1b1",
+                  "file": "src/lib/git-url-parser.test.ts",
+                  "line": 153,
+                  "column": 5
+                }
+              ]
+            },
+            {
+              "title": "parse - Invalid URLs",
+              "file": "src/lib/git-url-parser.test.ts",
+              "line": 168,
+              "column": 8,
+              "specs": [
+                {
+                  "title": "should throw error for empty string",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 30000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 4,
+                          "parallelIndex": 4,
+                          "status": "passed",
+                          "duration": 3,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-04-04T15:17:31.629Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "c69c4d8b4cb58d1e0812-2e8ad969349fd5854b3b",
+                  "file": "src/lib/git-url-parser.test.ts",
+                  "line": 169,
+                  "column": 5
+                },
+                {
+                  "title": "should throw error for non-string input",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 30000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 3,
+                          "parallelIndex": 3,
+                          "status": "passed",
+                          "duration": 1,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-04-04T15:17:31.632Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "c69c4d8b4cb58d1e0812-d33d9df9ea88b3f9dd1b",
+                  "file": "src/lib/git-url-parser.test.ts",
+                  "line": 173,
+                  "column": 5
+                },
+                {
+                  "title": "should throw error for GitHub URL without tree segment",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 30000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 2,
+                          "parallelIndex": 2,
+                          "status": "passed",
+                          "duration": 1,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-04-04T15:17:31.636Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "c69c4d8b4cb58d1e0812-aca392d1548a34f1f177",
+                  "file": "src/lib/git-url-parser.test.ts",
+                  "line": 178,
+                  "column": 5
+                },
+                {
+                  "title": "should throw error for GitLab URL without tree segment",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 30000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 1,
+                          "parallelIndex": 1,
+                          "status": "passed",
+                          "duration": 2,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-04-04T15:17:31.647Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "c69c4d8b4cb58d1e0812-7aa6bcf58a31ce14bc89",
+                  "file": "src/lib/git-url-parser.test.ts",
+                  "line": 183,
+                  "column": 5
+                },
+                {
+                  "title": "should throw error for unsupported provider",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 30000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 0,
+                          "parallelIndex": 0,
+                          "status": "passed",
+                          "duration": 2,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-04-04T15:17:31.649Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "c69c4d8b4cb58d1e0812-1bcbd4cd5e29028ffc8c",
+                  "file": "src/lib/git-url-parser.test.ts",
+                  "line": 188,
+                  "column": 5
+                },
+                {
+                  "title": "should throw error for GitHub URL with wrong format",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 30000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 4,
+                          "parallelIndex": 4,
+                          "status": "passed",
+                          "duration": 0,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-04-04T15:17:31.652Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "c69c4d8b4cb58d1e0812-3d9b12792b258f4c9da3",
+                  "file": "src/lib/git-url-parser.test.ts",
+                  "line": 193,
+                  "column": 5
+                },
+                {
+                  "title": "should throw error for GitLab URL with wrong format",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 30000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 3,
+                          "parallelIndex": 3,
+                          "status": "passed",
+                          "duration": 1,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-04-04T15:17:31.655Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "c69c4d8b4cb58d1e0812-279c37b89f6ee206d0bf",
+                  "file": "src/lib/git-url-parser.test.ts",
+                  "line": 198,
+                  "column": 5
+                },
+                {
+                  "title": "should throw error for malformed URL",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 30000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 2,
+                          "parallelIndex": 2,
+                          "status": "passed",
+                          "duration": 0,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-04-04T15:17:31.657Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "c69c4d8b4cb58d1e0812-e49b5a2ebc0b0b83daa3",
+                  "file": "src/lib/git-url-parser.test.ts",
+                  "line": 203,
+                  "column": 5
+                },
+                {
+                  "title": "should throw error for HTTP (non-HTTPS) URL",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 30000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 1,
+                          "parallelIndex": 1,
+                          "status": "passed",
+                          "duration": 0,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-04-04T15:17:31.661Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "c69c4d8b4cb58d1e0812-bb68b910566a3df0759b",
+                  "file": "src/lib/git-url-parser.test.ts",
+                  "line": 208,
+                  "column": 5
+                }
+              ]
+            },
+            {
+              "title": "validate",
+              "file": "src/lib/git-url-parser.test.ts",
+              "line": 214,
+              "column": 8,
+              "specs": [
+                {
+                  "title": "should return true for valid GitHub URL",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 30000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 4,
+                          "parallelIndex": 4,
+                          "status": "passed",
+                          "duration": 1,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-04-04T15:17:31.664Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "c69c4d8b4cb58d1e0812-3bae921bdb9e283e6ed0",
+                  "file": "src/lib/git-url-parser.test.ts",
+                  "line": 215,
+                  "column": 5
+                },
+                {
+                  "title": "should return true for valid GitLab URL",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 30000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 3,
+                          "parallelIndex": 3,
+                          "status": "passed",
+                          "duration": 1,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-04-04T15:17:31.667Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "c69c4d8b4cb58d1e0812-9597725113d7a63e02ab",
+                  "file": "src/lib/git-url-parser.test.ts",
+                  "line": 220,
+                  "column": 5
+                },
+                {
+                  "title": "should return false for invalid URL",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 30000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 2,
+                          "parallelIndex": 2,
+                          "status": "passed",
+                          "duration": 0,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-04-04T15:17:31.670Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "c69c4d8b4cb58d1e0812-1b3193f313794c42ff66",
+                  "file": "src/lib/git-url-parser.test.ts",
+                  "line": 225,
+                  "column": 5
+                },
+                {
+                  "title": "should return false for empty string",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 30000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 0,
+                          "parallelIndex": 0,
+                          "status": "passed",
+                          "duration": 0,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-04-04T15:17:31.672Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "c69c4d8b4cb58d1e0812-33c90e28147a442d6689",
+                  "file": "src/lib/git-url-parser.test.ts",
+                  "line": 230,
+                  "column": 5
+                },
+                {
+                  "title": "should return false for unsupported provider",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 30000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 4,
+                          "parallelIndex": 4,
+                          "status": "passed",
+                          "duration": 0,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-04-04T15:17:31.675Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "c69c4d8b4cb58d1e0812-def6c2a27dffab79b20b",
+                  "file": "src/lib/git-url-parser.test.ts",
+                  "line": 234,
+                  "column": 5
+                }
+              ]
+            },
+            {
+              "title": "reconstruct",
+              "file": "src/lib/git-url-parser.test.ts",
+              "line": 240,
+              "column": 8,
+              "specs": [
+                {
+                  "title": "should reconstruct GitHub URL with path",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 30000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 3,
+                          "parallelIndex": 3,
+                          "status": "passed",
+                          "duration": 0,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-04-04T15:17:31.677Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "c69c4d8b4cb58d1e0812-7a737629caed62b8a1af",
+                  "file": "src/lib/git-url-parser.test.ts",
+                  "line": 241,
+                  "column": 5
+                },
+                {
+                  "title": "should reconstruct GitHub URL without path",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 30000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 2,
+                          "parallelIndex": 2,
+                          "status": "passed",
+                          "duration": 0,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-04-04T15:17:31.679Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "c69c4d8b4cb58d1e0812-484a0d564566a800ebf3",
+                  "file": "src/lib/git-url-parser.test.ts",
+                  "line": 255,
+                  "column": 5
+                },
+                {
+                  "title": "should reconstruct GitLab URL with path",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 30000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 1,
+                          "parallelIndex": 1,
+                          "status": "passed",
+                          "duration": 1,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-04-04T15:17:31.682Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "c69c4d8b4cb58d1e0812-abfed44ab15f07bdc6c8",
+                  "file": "src/lib/git-url-parser.test.ts",
+                  "line": 269,
+                  "column": 5
+                },
+                {
+                  "title": "should reconstruct GitLab URL without path",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 30000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 4,
+                          "parallelIndex": 4,
+                          "status": "passed",
+                          "duration": 1,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-04-04T15:17:31.684Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "c69c4d8b4cb58d1e0812-67bcade7aac7fce9c910",
+                  "file": "src/lib/git-url-parser.test.ts",
+                  "line": 283,
+                  "column": 5
+                },
+                {
+                  "title": "should reconstruct GitLab URL with nested namespace",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 30000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 3,
+                          "parallelIndex": 3,
+                          "status": "passed",
+                          "duration": 0,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-04-04T15:17:31.687Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "c69c4d8b4cb58d1e0812-f674a94960d64ee4c195",
+                  "file": "src/lib/git-url-parser.test.ts",
+                  "line": 297,
+                  "column": 5
+                },
+                {
+                  "title": "should handle URL encoding in reconstruction",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 30000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 2,
+                          "parallelIndex": 2,
+                          "status": "passed",
+                          "duration": 0,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-04-04T15:17:31.690Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "c69c4d8b4cb58d1e0812-225a367e8101bd5c049c",
+                  "file": "src/lib/git-url-parser.test.ts",
+                  "line": 311,
+                  "column": 5
+                },
+                {
+                  "title": "should throw error for unsupported provider",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 30000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 0,
+                          "parallelIndex": 0,
+                          "status": "passed",
+                          "duration": 0,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-04-04T15:17:31.692Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "c69c4d8b4cb58d1e0812-bb15e9ece7dde5f24487",
+                  "file": "src/lib/git-url-parser.test.ts",
+                  "line": 326,
+                  "column": 5
+                }
+              ]
+            },
+            {
+              "title": "round-trip parsing and reconstruction",
+              "file": "src/lib/git-url-parser.test.ts",
+              "line": 340,
+              "column": 8,
+              "specs": [
+                {
+                  "title": "should maintain GitHub URL through parse and reconstruct",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 30000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 4,
+                          "parallelIndex": 4,
+                          "status": "passed",
+                          "duration": 0,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-04-04T15:17:31.695Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "c69c4d8b4cb58d1e0812-eb48533a851d18a981f5",
+                  "file": "src/lib/git-url-parser.test.ts",
+                  "line": 341,
+                  "column": 5
+                },
+                {
+                  "title": "should maintain GitLab URL through parse and reconstruct",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 30000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 3,
+                          "parallelIndex": 3,
+                          "status": "passed",
+                          "duration": 0,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-04-04T15:17:31.697Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "c69c4d8b4cb58d1e0812-6a80992f03b6937aa1bc",
+                  "file": "src/lib/git-url-parser.test.ts",
+                  "line": 349,
+                  "column": 5
+                },
+                {
+                  "title": "should maintain GitHub URL without path through round-trip",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 30000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 2,
+                          "parallelIndex": 2,
+                          "status": "passed",
+                          "duration": 0,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-04-04T15:17:31.699Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "c69c4d8b4cb58d1e0812-fa500a0d2ec4ef4aff88",
+                  "file": "src/lib/git-url-parser.test.ts",
+                  "line": 357,
+                  "column": 5
+                },
+                {
+                  "title": "should maintain GitLab URL with nested namespace through round-trip",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 30000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 1,
+                          "parallelIndex": 1,
+                          "status": "passed",
+                          "duration": 0,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-04-04T15:17:31.702Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "c69c4d8b4cb58d1e0812-2cb2c7d61a8089ae922f",
+                  "file": "src/lib/git-url-parser.test.ts",
+                  "line": 365,
+                  "column": 5
+                }
+              ]
+            },
+            {
+              "title": "edge cases",
+              "file": "src/lib/git-url-parser.test.ts",
+              "line": 374,
+              "column": 8,
+              "specs": [
+                {
+                  "title": "should handle whitespace in URL",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 30000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 4,
+                          "parallelIndex": 4,
+                          "status": "passed",
+                          "duration": 0,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-04-04T15:17:31.704Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "c69c4d8b4cb58d1e0812-9bf504305f71a5379626",
+                  "file": "src/lib/git-url-parser.test.ts",
+                  "line": 375,
+                  "column": 5
+                },
+                {
+                  "title": "should handle special characters in branch name",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 30000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 3,
+                          "parallelIndex": 3,
+                          "status": "passed",
+                          "duration": 0,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-04-04T15:17:31.707Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "c69c4d8b4cb58d1e0812-afddd12f3e7e843ccaf9",
+                  "file": "src/lib/git-url-parser.test.ts",
+                  "line": 383,
+                  "column": 5
+                },
+                {
+                  "title": "should handle numeric branch names",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 30000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 2,
+                          "parallelIndex": 2,
+                          "status": "passed",
+                          "duration": 0,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-04-04T15:17:31.709Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "c69c4d8b4cb58d1e0812-c92fe9dafe204228fe32",
+                  "file": "src/lib/git-url-parser.test.ts",
+                  "line": 390,
+                  "column": 5
+                },
+                {
+                  "title": "should handle path with dots",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 30000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 0,
+                          "parallelIndex": 0,
+                          "status": "passed",
+                          "duration": 0,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-04-04T15:17:31.711Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "c69c4d8b4cb58d1e0812-a42fd238470934be1511",
+                  "file": "src/lib/git-url-parser.test.ts",
+                  "line": 397,
+                  "column": 5
+                },
+                {
+                  "title": "should handle path with hyphens and underscores",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 30000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 4,
+                          "parallelIndex": 4,
+                          "status": "passed",
+                          "duration": 0,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-04-04T15:17:31.713Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "c69c4d8b4cb58d1e0812-76baa6a8b186d8cecbd7",
+                  "file": "src/lib/git-url-parser.test.ts",
+                  "line": 404,
+                  "column": 5
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "src/routes/file-api.test.ts",
+      "file": "src/routes/file-api.test.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "File API - Git Push Integration",
+          "file": "src/routes/file-api.test.ts",
+          "line": 10,
+          "column": 6,
+          "specs": [],
+          "suites": [
+            {
+              "title": "PUT /apis/project/:projectId/files/content - Request Validation",
+              "file": "src/routes/file-api.test.ts",
+              "line": 11,
+              "column": 8,
+              "specs": [
+                {
+                  "title": "should accept content without commitMessage (local save only)",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 30000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 3,
+                          "parallelIndex": 3,
+                          "status": "passed",
+                          "duration": 0,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-04-04T15:17:31.723Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "bba20c1081cbda19cf5d-3d2a1c8aea575d7cfc17",
+                  "file": "src/routes/file-api.test.ts",
+                  "line": 12,
+                  "column": 5
+                },
+                {
+                  "title": "should accept content with commitMessage (local save + Git push)",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 30000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 2,
+                          "parallelIndex": 2,
+                          "status": "passed",
+                          "duration": 1,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-04-04T15:17:31.725Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "bba20c1081cbda19cf5d-7cf163a5caf47d39e62f",
+                  "file": "src/routes/file-api.test.ts",
+                  "line": 21,
+                  "column": 5
+                },
+                {
+                  "title": "should handle empty commitMessage (treated as no message)",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 30000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 1,
+                          "parallelIndex": 1,
+                          "status": "passed",
+                          "duration": 0,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-04-04T15:17:31.728Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "bba20c1081cbda19cf5d-971337c703b025385da7",
+                  "file": "src/routes/file-api.test.ts",
+                  "line": 32,
+                  "column": 5
+                }
+              ]
+            },
+            {
+              "title": "Response Format Validation",
+              "file": "src/routes/file-api.test.ts",
+              "line": 43,
+              "column": 8,
+              "specs": [
+                {
+                  "title": "should return success with gitPushed false when no commitMessage",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 30000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 4,
+                          "parallelIndex": 4,
+                          "status": "passed",
+                          "duration": 1,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-04-04T15:17:31.729Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "bba20c1081cbda19cf5d-01ebfda96522ea8b2f22",
+                  "file": "src/routes/file-api.test.ts",
+                  "line": 44,
+                  "column": 5
+                },
+                {
+                  "title": "should return success with gitPushed true when Git push succeeds",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 30000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 0,
+                          "parallelIndex": 0,
+                          "status": "passed",
+                          "duration": 1,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-04-04T15:17:31.733Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "bba20c1081cbda19cf5d-70000a5e645249da6bb7",
+                  "file": "src/routes/file-api.test.ts",
+                  "line": 56,
+                  "column": 5
+                },
+                {
+                  "title": "should return success with gitPushed false and error when Git push fails",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 30000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 3,
+                          "parallelIndex": 3,
+                          "status": "passed",
+                          "duration": 1,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-04-04T15:17:31.730Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "bba20c1081cbda19cf5d-e4f2413e8e30aa251d16",
+                  "file": "src/routes/file-api.test.ts",
+                  "line": 68,
+                  "column": 5
+                },
+                {
+                  "title": "should return success with gitPushed false when project has no Git config",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 30000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 2,
+                          "parallelIndex": 2,
+                          "status": "passed",
+                          "duration": 0,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-04-04T15:17:31.733Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "bba20c1081cbda19cf5d-76aa3cd4850848a1413f",
+                  "file": "src/routes/file-api.test.ts",
+                  "line": 81,
+                  "column": 5
+                }
+              ]
+            },
+            {
+              "title": "Git Push Conditions",
+              "file": "src/routes/file-api.test.ts",
+              "line": 93,
+              "column": 8,
+              "specs": [
+                {
+                  "title": "should not push when commitMessage is not provided",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 30000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 1,
+                          "parallelIndex": 1,
+                          "status": "passed",
+                          "duration": 0,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-04-04T15:17:31.739Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "bba20c1081cbda19cf5d-8486a8aacf96035a3f2c",
+                  "file": "src/routes/file-api.test.ts",
+                  "line": 94,
+                  "column": 5
+                },
+                {
+                  "title": "should not push when project has no Git config",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 30000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 4,
+                          "parallelIndex": 4,
+                          "status": "passed",
+                          "duration": 0,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-04-04T15:17:31.741Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "bba20c1081cbda19cf5d-968a4b1af5fc5288a721",
+                  "file": "src/routes/file-api.test.ts",
+                  "line": 102,
+                  "column": 5
+                },
+                {
+                  "title": "should push when commitMessage provided and project has Git config",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 30000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 3,
+                          "parallelIndex": 3,
+                          "status": "passed",
+                          "duration": 0,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-04-04T15:17:31.743Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "bba20c1081cbda19cf5d-c8eb907bb5689678595d",
+                  "file": "src/routes/file-api.test.ts",
+                  "line": 110,
+                  "column": 5
+                },
+                {
+                  "title": "should check both repoUrl and gitRepoId for Git config",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 30000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 1,
+                          "parallelIndex": 1,
+                          "status": "passed",
+                          "duration": 0,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-04-04T15:17:31.747Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "bba20c1081cbda19cf5d-bb6b42632b762f1c4b1e",
+                  "file": "src/routes/file-api.test.ts",
+                  "line": 118,
+                  "column": 5
+                }
+              ]
+            },
+            {
+              "title": "Local Save Priority",
+              "file": "src/routes/file-api.test.ts",
+              "line": 129,
+              "column": 8,
+              "specs": [
+                {
+                  "title": "should always save file locally first before Git push",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 30000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 2,
+                          "parallelIndex": 2,
+                          "status": "passed",
+                          "duration": 1,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-04-04T15:17:31.749Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "bba20c1081cbda19cf5d-f0e5bdea805cfef214f5",
+                  "file": "src/routes/file-api.test.ts",
+                  "line": 130,
+                  "column": 5
+                },
+                {
+                  "title": "should return success even if Git push fails",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 30000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 0,
+                          "parallelIndex": 0,
+                          "status": "passed",
+                          "duration": 0,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-04-04T15:17:31.752Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "bba20c1081cbda19cf5d-8be389ef0dba31d68f4c",
+                  "file": "src/routes/file-api.test.ts",
+                  "line": 147,
+                  "column": 5
+                }
+              ]
+            },
+            {
+              "title": "Error Handling",
+              "file": "src/routes/file-api.test.ts",
+              "line": 159,
+              "column": 8,
+              "specs": [
+                {
+                  "title": "should handle Git push authentication errors gracefully",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 30000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 3,
+                          "parallelIndex": 3,
+                          "status": "passed",
+                          "duration": 0,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-04-04T15:17:31.757Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "bba20c1081cbda19cf5d-3ad29dabc6d24bec9475",
+                  "file": "src/routes/file-api.test.ts",
+                  "line": 160,
+                  "column": 5
+                },
+                {
+                  "title": "should handle Git push permission errors gracefully",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 30000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 1,
+                          "parallelIndex": 1,
+                          "status": "passed",
+                          "duration": 0,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-04-04T15:17:31.759Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "bba20c1081cbda19cf5d-5b4fc32b46939b876eef",
+                  "file": "src/routes/file-api.test.ts",
+                  "line": 173,
+                  "column": 5
+                },
+                {
+                  "title": "should handle Git push rate limit errors gracefully",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 30000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 2,
+                          "parallelIndex": 2,
+                          "status": "passed",
+                          "duration": 1,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-04-04T15:17:31.764Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "bba20c1081cbda19cf5d-6c82157165cb814e7c92",
+                  "file": "src/routes/file-api.test.ts",
+                  "line": 186,
+                  "column": 5
+                },
+                {
+                  "title": "should handle missing OAuth token gracefully",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 30000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 0,
+                          "parallelIndex": 0,
+                          "status": "passed",
+                          "duration": 1,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-04-04T15:17:31.768Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "bba20c1081cbda19cf5d-6998bb0b4509f6f72423",
+                  "file": "src/routes/file-api.test.ts",
+                  "line": 199,
+                  "column": 5
+                }
+              ]
+            },
+            {
+              "title": "File Path Handling",
+              "file": "src/routes/file-api.test.ts",
+              "line": 213,
+              "column": 8,
+              "specs": [
+                {
+                  "title": "should pass file path to Git push service",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 30000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 4,
+                          "parallelIndex": 4,
+                          "status": "passed",
+                          "duration": 1,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-04-04T15:17:31.783Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "bba20c1081cbda19cf5d-18d12217ede5b9fefc88",
+                  "file": "src/routes/file-api.test.ts",
+                  "line": 214,
+                  "column": 5
+                },
+                {
+                  "title": "should handle nested file paths",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 30000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 3,
+                          "parallelIndex": 3,
+                          "status": "passed",
+                          "duration": 0,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-04-04T15:17:31.786Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "bba20c1081cbda19cf5d-45c6b70394b972822cb9",
+                  "file": "src/routes/file-api.test.ts",
+                  "line": 227,
+                  "column": 5
+                },
+                {
+                  "title": "should handle root-level files",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 30000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 1,
+                          "parallelIndex": 1,
+                          "status": "passed",
+                          "duration": 0,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-04-04T15:17:31.788Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "bba20c1081cbda19cf5d-2e3151843a478d6fd390",
+                  "file": "src/routes/file-api.test.ts",
+                  "line": 234,
+                  "column": 5
+                }
+              ]
+            },
+            {
+              "title": "Integration with GitPushService",
+              "file": "src/routes/file-api.test.ts",
+              "line": 241,
+              "column": 8,
+              "specs": [
+                {
+                  "title": "should call GitPushService with correct parameters",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 30000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 2,
+                          "parallelIndex": 2,
+                          "status": "passed",
+                          "duration": 1,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-04-04T15:17:31.790Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "bba20c1081cbda19cf5d-ecf0dce82865400742f8",
+                  "file": "src/routes/file-api.test.ts",
+                  "line": 242,
+                  "column": 5
+                },
+                {
+                  "title": "should handle GitPushService success result",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 30000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 0,
+                          "parallelIndex": 0,
+                          "status": "passed",
+                          "duration": 0,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-04-04T15:17:31.792Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "bba20c1081cbda19cf5d-4380c5694ad754ba1e8e",
+                  "file": "src/routes/file-api.test.ts",
+                  "line": 258,
+                  "column": 5
+                },
+                {
+                  "title": "should handle GitPushService failure result",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 30000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 3,
+                          "parallelIndex": 3,
+                          "status": "passed",
+                          "duration": 0,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-04-04T15:17:31.794Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "bba20c1081cbda19cf5d-ab5fdfbc0ef6ae44aa47",
+                  "file": "src/routes/file-api.test.ts",
+                  "line": 269,
+                  "column": 5
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "src/routes/project-api.test.ts",
+      "file": "src/routes/project-api.test.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Project API - Git Integration",
+          "file": "src/routes/project-api.test.ts",
+          "line": 13,
+          "column": 6,
+          "specs": [],
+          "suites": [
+            {
+              "title": "POST /apis/auth/projects - Git URL Validation",
+              "file": "src/routes/project-api.test.ts",
+              "line": 14,
+              "column": 8,
+              "specs": [
+                {
+                  "title": "should validate GitHub URL format",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 30000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 1,
+                          "parallelIndex": 1,
+                          "status": "passed",
+                          "duration": 0,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-04-04T15:17:31.802Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "88c689322430037505ac-dd4cebf206894699270c",
+                  "file": "src/routes/project-api.test.ts",
+                  "line": 15,
+                  "column": 5
+                },
+                {
+                  "title": "should validate GitLab URL format",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 30000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 2,
+                          "parallelIndex": 2,
+                          "status": "passed",
+                          "duration": 0,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-04-04T15:17:31.804Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "88c689322430037505ac-89527046b794c484d50c",
+                  "file": "src/routes/project-api.test.ts",
+                  "line": 20,
+                  "column": 5
+                },
+                {
+                  "title": "should reject invalid Git URL format",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 30000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 4,
+                          "parallelIndex": 4,
+                          "status": "passed",
+                          "duration": 0,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-04-04T15:17:31.806Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "88c689322430037505ac-4d09ef4195ca11733c6d",
+                  "file": "src/routes/project-api.test.ts",
+                  "line": 25,
+                  "column": 5
+                },
+                {
+                  "title": "should reject empty Git URL",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 30000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 3,
+                          "parallelIndex": 3,
+                          "status": "passed",
+                          "duration": 0,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-04-04T15:17:31.809Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "88c689322430037505ac-123021cc880f92da4c9c",
+                  "file": "src/routes/project-api.test.ts",
+                  "line": 30,
+                  "column": 5
+                },
+                {
+                  "title": "should reject non-string Git URL",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 30000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 0,
+                          "parallelIndex": 0,
+                          "status": "passed",
+                          "duration": 0,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-04-04T15:17:31.810Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "88c689322430037505ac-44b94efd566aabd7c52a",
+                  "file": "src/routes/project-api.test.ts",
+                  "line": 34,
+                  "column": 5
+                }
+              ]
+            },
+            {
+              "title": "Git URL Parsing for Project Creation",
+              "file": "src/routes/project-api.test.ts",
+              "line": 39,
+              "column": 8,
+              "specs": [
+                {
+                  "title": "should parse GitHub URL and extract components",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 30000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 1,
+                          "parallelIndex": 1,
+                          "status": "passed",
+                          "duration": 1,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-04-04T15:17:31.808Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "88c689322430037505ac-157c8eb194dc8b470c5f",
+                  "file": "src/routes/project-api.test.ts",
+                  "line": 40,
+                  "column": 5
+                },
+                {
+                  "title": "should parse GitLab URL and extract components",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 30000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 2,
+                          "parallelIndex": 2,
+                          "status": "passed",
+                          "duration": 2,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-04-04T15:17:31.810Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "88c689322430037505ac-f1a266a52b6f9b0628b6",
+                  "file": "src/routes/project-api.test.ts",
+                  "line": 52,
+                  "column": 5
+                },
+                {
+                  "title": "should handle GitHub URL without folder path",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 30000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 4,
+                          "parallelIndex": 4,
+                          "status": "passed",
+                          "duration": 0,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-04-04T15:17:31.814Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "88c689322430037505ac-851002a5c6e95a467483",
+                  "file": "src/routes/project-api.test.ts",
+                  "line": 64,
+                  "column": 5
+                },
+                {
+                  "title": "should handle GitLab URL without folder path",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 30000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 3,
+                          "parallelIndex": 3,
+                          "status": "passed",
+                          "duration": 0,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-04-04T15:17:31.816Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "88c689322430037505ac-0805668f55534dd8e180",
+                  "file": "src/routes/project-api.test.ts",
+                  "line": 72,
+                  "column": 5
+                }
+              ]
+            },
+            {
+              "title": "Git Repo ID Resolution",
+              "file": "src/routes/project-api.test.ts",
+              "line": 81,
+              "column": 8,
+              "specs": [
+                {
+                  "title": "should format GitHub repo ID as owner/repo",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 30000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 1,
+                          "parallelIndex": 1,
+                          "status": "passed",
+                          "duration": 0,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-04-04T15:17:31.817Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "88c689322430037505ac-8c983fe13e2209b66ee8",
+                  "file": "src/routes/project-api.test.ts",
+                  "line": 82,
+                  "column": 5
+                },
+                {
+                  "title": "should handle GitLab namespace format",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 30000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 0,
+                          "parallelIndex": 0,
+                          "status": "passed",
+                          "duration": 0,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-04-04T15:17:31.821Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "88c689322430037505ac-bebd838331e8f6da3d07",
+                  "file": "src/routes/project-api.test.ts",
+                  "line": 90,
+                  "column": 5
+                },
+                {
+                  "title": "should handle nested GitLab namespaces",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 30000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 2,
+                          "parallelIndex": 2,
+                          "status": "passed",
+                          "duration": 0,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-04-04T15:17:31.823Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "88c689322430037505ac-b0f5c1a1f19dbb7dd54b",
+                  "file": "src/routes/project-api.test.ts",
+                  "line": 98,
+                  "column": 5
+                }
+              ]
+            },
+            {
+              "title": "PATCH /apis/project/:projectId/git-config - URL Validation",
+              "file": "src/routes/project-api.test.ts",
+              "line": 107,
+              "column": 8,
+              "specs": [
+                {
+                  "title": "should validate new Git URL before update",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 30000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 1,
+                          "parallelIndex": 1,
+                          "status": "passed",
+                          "duration": 0,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-04-04T15:17:31.826Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "88c689322430037505ac-c74e29e988c79db60bd7",
+                  "file": "src/routes/project-api.test.ts",
+                  "line": 108,
+                  "column": 5
+                },
+                {
+                  "title": "should reject invalid Git URL for update",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 30000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 4,
+                          "parallelIndex": 4,
+                          "status": "passed",
+                          "duration": 0,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-04-04T15:17:31.827Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "88c689322430037505ac-66ef1d6f8939b69162e7",
+                  "file": "src/routes/project-api.test.ts",
+                  "line": 113,
+                  "column": 5
+                },
+                {
+                  "title": "should parse updated Git URL correctly",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 30000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 0,
+                          "parallelIndex": 0,
+                          "status": "passed",
+                          "duration": 3,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-04-04T15:17:31.830Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "88c689322430037505ac-c23b4f809495f48b012f",
+                  "file": "src/routes/project-api.test.ts",
+                  "line": 118,
+                  "column": 5
+                }
+              ]
+            },
+            {
+              "title": "Error Message Validation",
+              "file": "src/routes/project-api.test.ts",
+              "line": 130,
+              "column": 8,
+              "specs": [
+                {
+                  "title": "should provide descriptive error for invalid URL format",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 30000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 3,
+                          "parallelIndex": 3,
+                          "status": "passed",
+                          "duration": 1,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-04-04T15:17:31.832Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "88c689322430037505ac-1412be22a694ace39369",
+                  "file": "src/routes/project-api.test.ts",
+                  "line": 131,
+                  "column": 5
+                },
+                {
+                  "title": "should provide descriptive error for empty URL",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 30000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 1,
+                          "parallelIndex": 1,
+                          "status": "passed",
+                          "duration": 1,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-04-04T15:17:31.837Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "88c689322430037505ac-fc1633c1cdf809a5acce",
+                  "file": "src/routes/project-api.test.ts",
+                  "line": 144,
+                  "column": 5
+                }
+              ]
+            },
+            {
+              "title": "URL Reconstruction for Display",
+              "file": "src/routes/project-api.test.ts",
+              "line": 155,
+              "column": 8,
+              "specs": [
+                {
+                  "title": "should reconstruct GitHub URL from parsed components",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 30000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 4,
+                          "parallelIndex": 4,
+                          "status": "passed",
+                          "duration": 0,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-04-04T15:17:31.839Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "88c689322430037505ac-cc644d27eadefd826b7c",
+                  "file": "src/routes/project-api.test.ts",
+                  "line": 156,
+                  "column": 5
+                },
+                {
+                  "title": "should reconstruct GitLab URL from parsed components",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 30000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 0,
+                          "parallelIndex": 0,
+                          "status": "passed",
+                          "duration": 0,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-04-04T15:17:31.841Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "88c689322430037505ac-3c83f413022db2a83c9f",
+                  "file": "src/routes/project-api.test.ts",
+                  "line": 164,
+                  "column": 5
+                },
+                {
+                  "title": "should reconstruct URL without folder path",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 30000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 2,
+                          "parallelIndex": 2,
+                          "status": "passed",
+                          "duration": 0,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-04-04T15:17:31.844Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "88c689322430037505ac-e18cc69cfc34c54feeb2",
+                  "file": "src/routes/project-api.test.ts",
+                  "line": 172,
+                  "column": 5
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2026-04-04T15:17:30.549Z",
+    "duration": 1327.536,
+    "expected": 98,
+    "skipped": 0,
+    "unexpected": 0,
+    "flaky": 0
+  }
+}

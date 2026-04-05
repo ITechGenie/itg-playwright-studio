@@ -28,6 +28,7 @@ export default function App() {
             <AuthProvider>
               <Routes>
                 <Route path="/" element={<Navigate to="/app/login" replace />} />
+                <Route path="/app" element={<Navigate to="/app/projects" replace />} />
                 <Route path="/app/login" element={<Login />} />
                 <Route path="/app/projects" element={<Projects />} />
                 <Route path="/app/projects/new" element={<NewProject />} />

@@ -18,7 +18,7 @@ const PROVIDERS_CONFIG = {
     userUrl: process.env.GITLAB_USER_URL || 'https://gitlab.com/api/v4/user',
     clientId: process.env.GITLAB_CLIENT_ID,
     clientSecret: process.env.GITLAB_CLIENT_SECRET,
-    scope: process.env.GITLAB_OAUTH_SCOPE || 'read_user openid email profile',
+    scope: process.env.GITLAB_OAUTH_SCOPE || 'api read_api read_user openid email profile read_repository write_repository',
   },
   github: {
     authorizeUrl: process.env.GITHUB_AUTHORIZE_URL || 'https://github.com/login/oauth/authorize',
@@ -26,7 +26,7 @@ const PROVIDERS_CONFIG = {
     userUrl: process.env.GITHUB_USER_URL || 'https://api.github.com/user',
     clientId: process.env.GITHUB_CLIENT_ID,
     clientSecret: process.env.GITHUB_CLIENT_SECRET,
-    scope: process.env.GITHUB_OAUTH_SCOPE || 'read:user user:email',
+    scope: process.env.GITHUB_OAUTH_SCOPE || 'read:user user:email repo',
   },
   google: {
     authorizeUrl: process.env.GOOGLE_AUTHORIZE_URL || 'https://accounts.google.com/o/oauth2/v2/auth',

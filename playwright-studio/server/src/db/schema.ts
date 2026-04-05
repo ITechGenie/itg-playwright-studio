@@ -44,6 +44,7 @@ export const projects = sqliteTable('projects', {
   id: text('id').primaryKey(), // short-uuid
   name: text('name').notNull().unique(), // folder name
   repoUrl: text('repo_url'),
+  gitRepoId: text('git_repo_id'),
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
   updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull(),
 });
