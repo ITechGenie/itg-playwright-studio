@@ -38,3 +38,4 @@ vite.config.ts.timestamp-*
 /playwright-studio/server/dist
 *.db
 *.kiro
+*.DS_Store
