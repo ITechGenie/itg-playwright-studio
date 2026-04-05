@@ -143,14 +143,45 @@ Fine-tune project-level Playwright settings from the UI.
    EXECUTIONS_BASE_PATH=D:/tmp/playwright-studio/executions
    ```
 
-4. **Initialize Database**:
+4. **Configure OAuth (Optional)**:
+   To enable Git integration and OAuth login, configure OAuth providers in your `.env` file:
+   
+   **GitLab OAuth**:
+   ```env
+   GITLAB_CLIENT_ID=your_gitlab_client_id
+   GITLAB_CLIENT_SECRET=your_gitlab_client_secret
+   GITLAB_OAUTH_SCOPE="api read_user openid email profile read_repository write_repository"
+   ```
+   
+   **GitHub OAuth**:
+   ```env
+   GITHUB_CLIENT_ID=your_github_client_id
+   GITHUB_CLIENT_SECRET=your_github_client_secret
+   GITHUB_OAUTH_SCOPE="read:user user:email repo"
+   ```
+   
+   **Required OAuth Scopes**:
+   - **GitLab**: `read_user openid email profile read_repository write_repository`
+     - `api`, `read_repository` and `write_repository` are required for Git operations (import projects, sync files, push changes)
+   - **GitHub**: `read:user user:email repo`
+     - `repo` scope is required for full repository access (read and write operations)
+   
+   **Setting up OAuth Apps**:
+   - **GitLab**: Create an OAuth application at `https://gitlab.com/-/profile/applications`
+     - Set redirect URI to: `http://localhost:5173/apis/auth/callback/gitlab` (adjust for production)
+     - Select the required scopes listed above
+   - **GitHub**: Create an OAuth app at `https://github.com/settings/developers`
+     - Set authorization callback URL to: `http://localhost:5173/apis/auth/callback/github` (adjust for production)
+     - Request the required scopes listed above
+
+5. **Initialize Database**:
    The server automatically applies migrations on startup, but you can manually sync the schema:
    ```bash
    cd playwright-studio/server
    npm run db:push
    ```
 
-5. **Start Development**:
+6. **Start Development**:
    From the root:
    ```bash
    npm run dev
@@ -168,6 +199,63 @@ Fine-tune project-level Playwright settings from the UI.
 ├── playwright-studio-extension/ # Chrome Recorder Extension
 └── tests/                # Core test suite
 ```
+
+---
+
+## 🔗 Git Integration
+
+Playwright Studio supports importing projects directly from GitLab or GitHub repositories, syncing files on demand, and pushing edits back with a commit message — all without needing a local `git` binary.
+
+### Tested Providers
+
+| Provider | Status |
+|----------|--------|
+| GitLab   | ✅ Tested |
+| GitHub   | 🧪 Implemented, community testing welcome |
+
+> **Note:** Git integration has been primarily tested with **GitLab**. If you run into issues with GitHub or any other edge cases, please [open a ticket here](https://github.com/ITechGenie/playwright-studio/issues/new) with steps to reproduce.
+
+### Required OAuth Scopes
+
+**GitLab** — your OAuth app must have these scopes:
+```
+api read_api read_user openid email profile read_repository write_repository
+```
+
+**GitHub** — your OAuth app must have:
+```
+read:user user:email repo
+```
+
+### Setup
+
+Add these to your `playwright-studio/server/.env`:
+
+```env
+# GitLab
+GITLAB_CLIENT_ID=your_client_id
+GITLAB_CLIENT_SECRET=your_client_secret
+
+# GitHub
+GITHUB_CLIENT_ID=your_client_id
+GITHUB_CLIENT_SECRET=your_client_secret
+```
+
+Create your OAuth apps:
+- **GitLab**: `https://gitlab.com/-/profile/applications` — set redirect URI to `http://localhost:5173/apis/auth/callback/gitlab`
+- **GitHub**: `https://github.com/settings/developers` — set callback URL to `http://localhost:5173/apis/auth/callback/github`
+
+> If you re-configure scopes on an existing OAuth app, you must **log out and log back in** to get a new token with the updated scopes.
+
+---
+
+## 🐛 Reporting Issues
+
+Found a bug or something not working as expected? Please [open an issue](https://github.com/ITechGenie/playwright-studio/issues/new) and include:
+- Steps to reproduce
+- Expected vs actual behaviour
+- Browser and OS
+- Any relevant server/console logs
 
 ---
 

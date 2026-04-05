@@ -46,8 +46,8 @@ class SchedulerService {
       if (month !== '*') rule.month = parseInt(month) - 1;
       if (dayOfWeek !== '*') rule.dayOfWeek = dayOfWeek.split(',').map(Number);
     }
-    // Start from now — skips all past missed ticks
-    rule.start = new Date();
+    // Start from now — skips all past missed ticks (cast to any since typings omit start)
+    (rule as any).start = new Date();
 
     const job = nodeSchedule.scheduleJob(rule, async () => {
       await this._triggerRun(schedule);

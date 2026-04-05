@@ -8,7 +8,6 @@ import {
     Folder,
     File,
     Home,
-    UploadIcon,
     FolderPlus,
     ChevronDownIcon,
     ChevronRightIcon,
@@ -17,15 +16,14 @@ import {
     XIcon,
     Edit3Icon,
     FolderOpenIcon,
-    Trash2Icon,
     DownloadIcon,
-    EyeIcon
+    EyeIcon,
+    GitBranchIcon,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Switch } from "@/components/ui/switch";
 import {
     Breadcrumb,
     BreadcrumbItem,
@@ -39,6 +37,14 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+    DialogFooter,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
@@ -186,7 +192,6 @@ export function FileManager({ basePath = "", title = "File Manager", actions, on
     const [isReviewingDiff, setIsReviewingDiff] = useState(false);
     const [originalContent, setOriginalContent] = useState("");
     const [currentContent, setCurrentContent] = useState("");
-    const [saveMessage, setSaveMessage] = useState("");
     const editorRef = useRef<any>(null);
 
     const currentPath = splatPath;
@@ -285,6 +290,21 @@ export function FileManager({ basePath = "", title = "File Manager", actions, on
     };
 
     const [isLoadingEditor, setIsLoadingEditor] = useState(false);
+    const [projectRepoUrl, setProjectRepoUrl] = useState<string | null>(null);
+
+    // Commit message dialog state
+    const [commitDialogOpen, setCommitDialogOpen] = useState(false);
+    const [commitMessage, setCommitMessage] = useState("");
+    const [gitPushStatus, setGitPushStatus] = useState<{ pushed: boolean; error?: string } | null>(null);
+
+    // Fetch project Git config
+    useEffect(() => {
+        if (!projectId) return;
+        apiClient.getProjects().then((projects: any[]) => {
+            const proj = projects.find((p: any) => p.id === projectId);
+            setProjectRepoUrl(proj?.repoUrl ?? null);
+        }).catch(() => {});
+    }, [projectId]);
 
     const openEditor = async (item: FileItem) => {
         setSelectedFile(item);
@@ -303,7 +323,7 @@ export function FileManager({ basePath = "", title = "File Manager", actions, on
         }
         
         setIsReviewingDiff(false);
-        setSaveMessage("");
+        setGitPushStatus(null);
         setIsLoadingEditor(false);
     };
 
@@ -324,7 +344,7 @@ export function FileManager({ basePath = "", title = "File Manager", actions, on
         }
         
         setIsReviewingDiff(false);
-        setSaveMessage("");
+        setGitPushStatus(null);
         setIsLoadingEditor(false);
     };
 
@@ -409,69 +429,144 @@ export function FileManager({ basePath = "", title = "File Manager", actions, on
     );
 
     if (isEditing && selectedFile) {
+        const doSave = async (msg?: string) => {
+            try {
+                const result = await apiClient.updateFileContent(projectId, selectedFile.id, currentContent, msg);
+                setOriginalContent(currentContent);
+                setIsReviewingDiff(false);
+                setIsEditing(false);
+                if (result?.gitPushed !== undefined) {
+                    setGitPushStatus({ pushed: result.gitPushed, error: result.gitError });
+                    setTimeout(() => setGitPushStatus(null), 5000);
+                }
+            } catch (e) {
+                console.error("Failed to save", e);
+                alert("Failed to save file");
+            }
+        };
+
+        const handleConfirmSave = () => {
+            if (projectRepoUrl) {
+                setCommitMessage("");
+                setCommitDialogOpen(true);
+            } else {
+                doSave();
+            }
+        };
+
         if (isReviewingDiff) {
             return (
-                <div className="flex flex-col h-[calc(100vh-14rem)] min-h-[500px] w-full bg-background rounded-lg border shadow-sm">
-                    <div className="flex items-center justify-between border-b px-4 py-3 bg-muted/30">
-                        <div className="flex items-center gap-3">
-                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setIsReviewingDiff(false)}>
-                                <XIcon className="h-4 w-4" />
-                            </Button>
-                            <h2 className="text-sm font-semibold">Review Changes: {selectedFile.name}</h2>
+                <>
+                    <div className="flex flex-col h-[calc(100vh-14rem)] min-h-[500px] w-full bg-background rounded-lg border shadow-sm">
+                        <div className="flex items-center justify-between border-b px-4 py-3 bg-muted/30">
+                            <div className="flex items-center gap-3">
+                                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setIsReviewingDiff(false)}>
+                                    <XIcon className="h-4 w-4" />
+                                </Button>
+                                <h2 className="text-sm font-semibold">Review Changes: {selectedFile.name}</h2>
+                            </div>
+                            <div className="flex items-center gap-3">
+                                <Button size="sm" variant="ghost" onClick={() => { setIsReviewingDiff(false); setIsEditing(false); }}>Cancel</Button>
+                                <Button size="sm" onClick={handleConfirmSave}>
+                                    {projectRepoUrl ? <><GitBranchIcon className="h-3.5 w-3.5 mr-1.5" />Save & Push</> : "Confirm Save"}
+                                </Button>
+                            </div>
                         </div>
-                        <div className="flex items-center gap-3">
-                            <Input value={saveMessage} onChange={(e) => setSaveMessage(e.target.value)} placeholder="Commit message (Optional)..." className="h-8 w-64 text-sm" />
-                            <Button size="sm" variant="ghost" onClick={() => { setIsReviewingDiff(false); setIsEditing(false); }}>Cancel</Button>
-                            <Button size="sm" onClick={async () => {
-                                try {
-                                    await apiClient.updateFileContent(projectId, selectedFile.id, currentContent);
-                                    setOriginalContent(currentContent);
-                                    setIsReviewingDiff(false);
-                                    setIsEditing(false);
-                                } catch (e) {
-                                    console.error("Failed to save", e);
-                                    alert("Failed to save file");
-                                }
-                            }}>Confirm Save</Button>
+                        <div className="flex-1 overflow-hidden bg-[#1e1e1e]">
+                            <DiffEditor height="100%" language={selectedFile.name.endsWith(".ts") ? "typescript" : "javascript"} original={originalContent} modified={currentContent} theme="vs-dark" options={{ renderSideBySide: true, minimap: { enabled: false }, fontSize: 14, padding: { top: 16 } }} />
                         </div>
                     </div>
-                    <div className="flex-1 overflow-hidden bg-[#1e1e1e]">
-                        <DiffEditor height="100%" language={selectedFile.name.endsWith(".ts") ? "typescript" : "javascript"} original={originalContent} modified={currentContent} theme="vs-dark" options={{ renderSideBySide: true, minimap: { enabled: false }, fontSize: 14, padding: { top: 16 } }} />
-                    </div>
-                </div>
+                    <Dialog open={commitDialogOpen} onOpenChange={setCommitDialogOpen}>
+                        <DialogContent className="sm:max-w-md">
+                            <DialogHeader>
+                                <DialogTitle>Push to Git</DialogTitle>
+                            </DialogHeader>
+                            <div className="space-y-3 py-2">
+                                <Label htmlFor="commit-msg" className="text-xs font-bold uppercase text-zinc-400">Commit Message</Label>
+                                <Input
+                                    id="commit-msg"
+                                    placeholder="e.g. Update test spec"
+                                    value={commitMessage}
+                                    onChange={(e) => setCommitMessage(e.target.value)}
+                                    autoFocus
+                                />
+                            </div>
+                            <DialogFooter className="gap-2">
+                                <Button variant="outline" onClick={() => { setCommitDialogOpen(false); doSave(); }}>
+                                    Save Locally Only
+                                </Button>
+                                <Button disabled={!commitMessage.trim()} onClick={() => { setCommitDialogOpen(false); doSave(commitMessage.trim()); }}>
+                                    <GitBranchIcon className="h-3.5 w-3.5 mr-1.5" /> Save & Push
+                                </Button>
+                            </DialogFooter>
+                        </DialogContent>
+                    </Dialog>
+                </>
             );
         }
 
         return (
-            <div className="flex flex-col h-[calc(100vh-14rem)] min-h-[500px] w-full bg-background rounded-lg border shadow-sm">
-                <div className="flex items-center justify-between border-b px-4 py-3 bg-muted/30">
-                    <div className="flex items-center gap-3">
-                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setIsEditing(false)}>
-                            <XIcon className="h-4 w-4" />
-                        </Button>
-                        <div className="flex flex-col min-w-0">
-                            <span className="text-sm font-semibold truncate">
-                                {isViewingMode ? "Viewing: " : "Editing: "}{selectedFile.name}
-                            </span>
-                            <span className="text-xs text-muted-foreground">{currentPath ? `/${currentPath}` : "/"}</span>
+            <>
+                <div className="flex flex-col h-[calc(100vh-14rem)] min-h-[500px] w-full bg-background rounded-lg border shadow-sm">
+                    <div className="flex items-center justify-between border-b px-4 py-3 bg-muted/30">
+                        <div className="flex items-center gap-3">
+                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setIsEditing(false)}>
+                                <XIcon className="h-4 w-4" />
+                            </Button>
+                            <div className="flex flex-col min-w-0">
+                                <span className="text-sm font-semibold truncate">
+                                    {isViewingMode ? "Viewing: " : "Editing: "}{selectedFile.name}
+                                </span>
+                                <span className="text-xs text-muted-foreground">{currentPath ? `/${currentPath}` : "/"}</span>
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            {gitPushStatus && (
+                                <span className={cn("text-xs font-medium", gitPushStatus.pushed ? "text-green-500" : "text-zinc-400")}>
+                                    {gitPushStatus.pushed ? "✓ Pushed to Git" : gitPushStatus.error ? `Git: ${gitPushStatus.error}` : "Saved locally"}
+                                </span>
+                            )}
+                            <Button variant="outline" size="sm" onClick={handleFormat}>Format</Button>
+                            <Button variant="ghost" size="sm" onClick={() => setIsEditing(false)}>Close</Button>
+                            {!isViewingMode && (
+                                <Button size="sm" onClick={() => setIsReviewingDiff(true)}>Save</Button>
+                            )}
                         </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                        <Button variant="outline" size="sm" onClick={handleFormat}>Format</Button>
-                        <Button variant="ghost" size="sm" onClick={() => setIsEditing(false)}>Close</Button>
-                        {!isViewingMode && (
-                            <Button size="sm" onClick={() => setIsReviewingDiff(true)}>Save</Button>
+                    <div className="flex-1 overflow-hidden bg-[#1e1e1e]">
+                        {isLoadingEditor ? (
+                            <div className="flex items-center justify-center h-full text-zinc-500">Loading editor...</div>
+                        ) : (
+                            <Editor height="100%" defaultLanguage={selectedFile.name.endsWith(".ts") ? "typescript" : "javascript"} value={currentContent} onChange={(val) => setCurrentContent(val || "")} onMount={handleEditorDidMount} theme="vs-dark" options={{ minimap: { enabled: false }, fontSize: 14, padding: { top: 16 }, readOnly: isViewingMode }} />
                         )}
                     </div>
                 </div>
-                <div className="flex-1 overflow-hidden bg-[#1e1e1e]">
-                    {isLoadingEditor ? (
-                        <div className="flex items-center justify-center h-full text-zinc-500">Loading editor...</div>
-                    ) : (
-                        <Editor height="100%" defaultLanguage={selectedFile.name.endsWith(".ts") ? "typescript" : "javascript"} value={currentContent} onChange={(val) => setCurrentContent(val || "")} onMount={handleEditorDidMount} theme="vs-dark" options={{ minimap: { enabled: false }, fontSize: 14, padding: { top: 16 }, readOnly: isViewingMode }} />
-                    )}
-                </div>
-            </div>
+                <Dialog open={commitDialogOpen} onOpenChange={setCommitDialogOpen}>
+                    <DialogContent className="sm:max-w-md">
+                        <DialogHeader>
+                            <DialogTitle>Push to Git</DialogTitle>
+                        </DialogHeader>
+                        <div className="space-y-3 py-2">
+                            <Label htmlFor="commit-msg" className="text-xs font-bold uppercase text-zinc-400">Commit Message</Label>
+                            <Input
+                                id="commit-msg"
+                                placeholder="e.g. Update test spec"
+                                value={commitMessage}
+                                onChange={(e) => setCommitMessage(e.target.value)}
+                                autoFocus
+                            />
+                        </div>
+                        <DialogFooter className="gap-2">
+                            <Button variant="outline" onClick={() => { setCommitDialogOpen(false); doSave(); }}>
+                                Save Locally Only
+                            </Button>
+                            <Button disabled={!commitMessage.trim()} onClick={() => { setCommitDialogOpen(false); doSave(commitMessage.trim()); }}>
+                                <GitBranchIcon className="h-3.5 w-3.5 mr-1.5" /> Save & Push
+                            </Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
+            </>
         );
     }
 

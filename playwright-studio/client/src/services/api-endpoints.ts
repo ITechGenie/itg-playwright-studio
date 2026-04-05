@@ -13,6 +13,7 @@ export const ENDPOINTS = {
   PROJECT_RUNS: (projectId: string) => `${APIS_BASE}/project/${projectId}/runs`,
   RUN_DETAILS: (projectId: string, runId: string) => `${APIS_BASE}/project/${projectId}/run/${runId}`,
   PROJECT_CONFIG: (projectId: string) => `${APIS_BASE}/project/${projectId}/config`,
+  PROJECT_GIT_SYNC: (projectId: string) => `${APIS_BASE}/project/${projectId}/git-sync`,
   
   // Data Manager Routes
   DATA_TEMPLATES: (projectId: string) => `${APIS_BASE}/project/${projectId}/data/templates`,

@@ -6,11 +6,12 @@ import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { SaveIcon, PlusIcon, XIcon, Loader2Icon, CheckCircleIcon } from "lucide-react"
+import { SaveIcon, PlusIcon, XIcon, Loader2Icon, CheckCircleIcon, RefreshCwIcon, GitBranchIcon, FolderIcon, Edit2Icon } from "lucide-react"
 import { apiClient } from "@/services/api-client"
 import { PageHeader } from "@/components/page-header"
 import { cn } from "@/lib/utils"
 import { PLAYWRIGHT_CLI_OPTIONS, BROWSER_OPTIONS } from "@/lib/playwright-options"
+import { GitUrlParser } from "@/lib/git-url-parser"
 
 interface ExtraArg {
   flag: string;
@@ -23,6 +24,19 @@ export default function ProjectSettings() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
+
+  // Project data
+  const [repoUrl, setRepoUrl] = useState<string | null>(null)
+
+  // Git config state
+  const [gitEditMode, setGitEditMode] = useState(false)
+  const [gitRepoUrl, setGitRepoUrl] = useState("")
+  const [gitBranch, setGitBranch] = useState("")
+  const [gitPath, setGitPath] = useState("")
+  const [gitProvider, setGitProvider] = useState<'github' | 'gitlab'>('github')
+  const [gitError, setGitError] = useState<string | null>(null)
+  const [syncing, setSyncing] = useState(false)
+  const [syncResult, setSyncResult] = useState<{ success: boolean; filesDownloaded?: number; error?: string } | null>(null)
 
   // Run config state
   const [browsers, setBrowsers] = useState<string[]>(["chromium"])
@@ -40,17 +54,34 @@ export default function ProjectSettings() {
     setLoading(true)
     apiClient.getProjects().then((projects: any[]) => {
       const proj = projects.find(p => p.id === projectId)
-      if (proj?.config) {
-        const c = proj.config
-        setBrowsers(c.browsers ? (typeof c.browsers === 'string' ? JSON.parse(c.browsers) : c.browsers) : [c.browser || "chromium"])
-        setHeadless(c.headless !== undefined ? !!c.headless : true)
-        setWorkers(String(c.workers || 1))
-        setWidth(String(c.viewportWidth || 1280))
-        setHeight(String(c.viewportHeight || 720))
-        setVideo(c.video || "retain-on-failure")
-        setScreenshot(c.screenshot || "only-on-failure")
-        setTimeout_(String(c.timeout || 30000))
-        setExtraArgs(c.extraArgs ? (typeof c.extraArgs === 'string' ? JSON.parse(c.extraArgs) : c.extraArgs) : [])
+      if (proj) {
+        setRepoUrl(proj.repoUrl || null)
+        
+        // Parse Git URL if present
+        if (proj.repoUrl) {
+          try {
+            const parsed = GitUrlParser.parse(proj.repoUrl)
+            setGitProvider(parsed.provider)
+            setGitRepoUrl(parsed.repoUrl)
+            setGitBranch(parsed.branch)
+            setGitPath(parsed.folderPath)
+          } catch (err) {
+            console.error("Failed to parse Git URL:", err)
+          }
+        }
+
+        if (proj.config) {
+          const c = proj.config
+          setBrowsers(c.browsers ? (typeof c.browsers === 'string' ? JSON.parse(c.browsers) : c.browsers) : [c.browser || "chromium"])
+          setHeadless(c.headless !== undefined ? !!c.headless : true)
+          setWorkers(String(c.workers || 1))
+          setWidth(String(c.viewportWidth || 1280))
+          setHeight(String(c.viewportHeight || 720))
+          setVideo(c.video || "retain-on-failure")
+          setScreenshot(c.screenshot || "only-on-failure")
+          setTimeout_(String(c.timeout || 30000))
+          setExtraArgs(c.extraArgs ? (typeof c.extraArgs === 'string' ? JSON.parse(c.extraArgs) : c.extraArgs) : [])
+        }
       }
     }).finally(() => setLoading(false))
   }, [projectId])
@@ -103,6 +134,81 @@ export default function ProjectSettings() {
     }
   }
 
+  const handleEditGitConfig = () => {
+    setGitEditMode(true)
+    setGitError(null)
+  }
+
+  const handleCancelGitEdit = () => {
+    setGitEditMode(false)
+    setGitError(null)
+    // Reset to original values
+    if (repoUrl) {
+      try {
+        const parsed = GitUrlParser.parse(repoUrl)
+        setGitProvider(parsed.provider)
+        setGitRepoUrl(parsed.repoUrl)
+        setGitBranch(parsed.branch)
+        setGitPath(parsed.folderPath)
+      } catch (err) {
+        console.error("Failed to parse Git URL:", err)
+      }
+    }
+  }
+
+  const handleSaveGitConfig = async () => {
+    if (!projectId) return
+    setGitError(null)
+
+    try {
+      // Reconstruct URL from parts
+      const reconstructed = GitUrlParser.reconstruct({
+        provider: gitProvider,
+        repoOwner: gitRepoUrl.split('/').slice(-2, -1)[0] || '',
+        repoName: gitRepoUrl.split('/').slice(-1)[0] || '',
+        branch: gitBranch,
+        folderPath: gitPath,
+        repoUrl: gitRepoUrl,
+      })
+
+      // Validate reconstructed URL
+      if (!GitUrlParser.validate(reconstructed)) {
+        setGitError('Invalid Git URL configuration')
+        return
+      }
+
+      await apiClient.updateProjectGitConfig(projectId, reconstructed)
+      setRepoUrl(reconstructed)
+      setGitEditMode(false)
+      setSaved(true)
+      window.setTimeout(() => setSaved(false), 3000)
+    } catch (err: any) {
+      setGitError(err.message || 'Failed to update Git configuration')
+    }
+  }
+
+  const handleSyncFromGit = async () => {
+    if (!projectId) return
+    setSyncing(true)
+    setSyncResult(null)
+
+    try {
+      const result = await apiClient.syncProjectFromGit(projectId)
+      setSyncResult({
+        success: true,
+        filesDownloaded: result.filesDownloaded || 0,
+      })
+      window.setTimeout(() => setSyncResult(null), 5000)
+    } catch (err: any) {
+      setSyncResult({
+        success: false,
+        error: err.message || 'Failed to sync from Git',
+      })
+    } finally {
+      setSyncing(false)
+    }
+  }
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-full">
@@ -120,6 +226,171 @@ export default function ProjectSettings() {
       
       <div className="flex-1 overflow-auto">
         <div className="max-w-4xl w-full mx-auto p-6 space-y-6">
+          {/* Git Repository */}
+          <Card className="border-zinc-800 bg-zinc-950/50">
+            <CardHeader className="pb-3 flex-row items-center justify-between">
+              <div>
+                <CardTitle className="text-sm font-bold uppercase tracking-wider text-zinc-400">Git Repository</CardTitle>
+                <CardDescription className="text-xs">Configure Git integration for this project</CardDescription>
+              </div>
+              {repoUrl && !gitEditMode && (
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="h-8 border-zinc-700 hover:bg-zinc-800"
+                  onClick={handleEditGitConfig}
+                >
+                  <Edit2Icon className="h-3.5 w-3.5 mr-1" /> Edit
+                </Button>
+              )}
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {!repoUrl && !gitEditMode ? (
+                <div className="text-center py-8 text-zinc-500 text-sm">
+                  <GitBranchIcon className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                  <p>No Git repository configured</p>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="mt-4 border-zinc-700 hover:bg-zinc-800"
+                    onClick={handleEditGitConfig}
+                  >
+                    <PlusIcon className="h-3.5 w-3.5 mr-1" /> Add Git Configuration
+                  </Button>
+                </div>
+              ) : gitEditMode ? (
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label className="text-xs font-bold uppercase text-zinc-400">Provider</Label>
+                    <Select value={gitProvider} onValueChange={(val: 'github' | 'gitlab') => setGitProvider(val)}>
+                      <SelectTrigger className="h-10 bg-zinc-900 border-zinc-800 text-sm">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="github">GitHub</SelectItem>
+                        <SelectItem value="gitlab">GitLab</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-xs font-bold uppercase text-zinc-400">Repository URL</Label>
+                    <Input 
+                      placeholder="https://github.com/owner/repo" 
+                      value={gitRepoUrl} 
+                      onChange={e => setGitRepoUrl(e.target.value)}
+                      className="h-10 bg-zinc-900 border-zinc-800 text-sm"
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label className="text-xs font-bold uppercase text-zinc-400">
+                        <GitBranchIcon className="h-3 w-3 inline mr-1" />
+                        Branch
+                      </Label>
+                      <Input 
+                        placeholder="main" 
+                        value={gitBranch} 
+                        onChange={e => setGitBranch(e.target.value)}
+                        className="h-10 bg-zinc-900 border-zinc-800 text-sm"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-xs font-bold uppercase text-zinc-400">
+                        <FolderIcon className="h-3 w-3 inline mr-1" />
+                        Folder Path
+                      </Label>
+                      <Input 
+                        placeholder="tests (optional)" 
+                        value={gitPath} 
+                        onChange={e => setGitPath(e.target.value)}
+                        className="h-10 bg-zinc-900 border-zinc-800 text-sm"
+                      />
+                    </div>
+                  </div>
+                  {gitError && (
+                    <div className="text-red-400 text-xs bg-red-500/10 border border-red-500/20 rounded p-3">
+                      {gitError}
+                    </div>
+                  )}
+                  <div className="flex gap-2 pt-2">
+                    <Button 
+                      size="sm" 
+                      className="bg-blue-600 hover:bg-blue-500"
+                      onClick={handleSaveGitConfig}
+                    >
+                      <SaveIcon className="h-3.5 w-3.5 mr-1" /> Save Git Config
+                    </Button>
+                    <Button 
+                      size="sm" 
+                      variant="outline"
+                      className="border-zinc-700 hover:bg-zinc-800"
+                      onClick={handleCancelGitEdit}
+                    >
+                      Cancel
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex-1 space-y-2">
+                      <div className="text-xs text-zinc-500 uppercase font-bold">Repository</div>
+                      <div className="text-sm text-zinc-300 font-mono bg-zinc-900/50 px-3 py-2 rounded border border-zinc-800">
+                        {gitRepoUrl}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <div className="text-xs text-zinc-500 uppercase font-bold mb-1">
+                        <GitBranchIcon className="h-3 w-3 inline mr-1" />
+                        Branch
+                      </div>
+                      <div className="text-sm text-zinc-300 font-mono bg-zinc-900/50 px-3 py-2 rounded border border-zinc-800">
+                        {gitBranch}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-xs text-zinc-500 uppercase font-bold mb-1">
+                        <FolderIcon className="h-3 w-3 inline mr-1" />
+                        Folder Path
+                      </div>
+                      <div className="text-sm text-zinc-300 font-mono bg-zinc-900/50 px-3 py-2 rounded border border-zinc-800">
+                        {gitPath || '/'}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="pt-2">
+                    <Button 
+                      size="sm" 
+                      variant="outline"
+                      className="border-zinc-700 hover:bg-zinc-800"
+                      onClick={handleSyncFromGit}
+                      disabled={syncing}
+                    >
+                      {syncing ? (
+                        <><Loader2Icon className="h-3.5 w-3.5 mr-1 animate-spin" /> Syncing...</>
+                      ) : (
+                        <><RefreshCwIcon className="h-3.5 w-3.5 mr-1" /> Sync from Git</>
+                      )}
+                    </Button>
+                    {syncResult && (
+                      <span className={cn(
+                        "ml-3 text-xs font-bold",
+                        syncResult.success ? "text-green-500" : "text-red-400"
+                      )}>
+                        {syncResult.success 
+                          ? `✓ Synced ${syncResult.filesDownloaded} files`
+                          : `✗ ${syncResult.error}`
+                        }
+                      </span>
+                    )}
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
           {/* Browsers */}
           <Card className="border-zinc-800 bg-zinc-950/50">
             <CardHeader className="pb-3">

@@ -1,16 +1,18 @@
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { useNavigate } from "react-router-dom"
 import { useState, useEffect } from "react"
 import { apiClient } from "@/services/api-client"
-import { Settings2Icon, ExternalLinkIcon, PlusIcon, RefreshCwIcon } from "lucide-react"
+import { Settings2Icon, ExternalLinkIcon, PlusIcon, RefreshCwIcon, GitBranchIcon, FolderIcon } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 export default function Projects() {
   const navigate = useNavigate();
   const [projects, setProjects] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [userName, setUserName] = useState("Developer");
 
   const fetchProjects = async () => {
     setLoading(true);
@@ -40,6 +42,10 @@ export default function Projects() {
       return;
     }
 
+    apiClient.getMe().then((data: any) => {
+      if (data?.user?.name) setUserName(data.user.name);
+    }).catch(() => {});
+
     fetchProjects();
   }, []);
 
@@ -47,7 +53,7 @@ export default function Projects() {
     <div className="min-h-screen bg-background flex flex-col items-center">
       <div className="w-full max-w-6xl px-6 py-12 space-y-8">
         <div className="flex flex-col items-center space-y-4">
-          <h1 className="text-3xl font-semibold tracking-tight text-white">Welcome, Developer!</h1>
+          <h1 className="text-3xl font-semibold tracking-tight text-white">Welcome, {userName}!</h1>
           <p className="text-muted-foreground text-sm">Select a project workspace or create a new one to get started</p>
           <div className="flex items-center gap-3 mt-6">
             <Button 
@@ -87,6 +93,7 @@ export default function Projects() {
             <TableHeader className="bg-muted/50">
               <TableRow>
                 <TableHead>Workspace Path</TableHead>
+                <TableHead>Type</TableHead>
                 <TableHead>Default Browser</TableHead>
                 <TableHead>Viewport</TableHead>
                 <TableHead>Status</TableHead>
@@ -96,7 +103,7 @@ export default function Projects() {
             <TableBody>
               {!loading && projects.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center h-24 text-muted-foreground">
+                  <TableCell colSpan={6} className="text-center h-24 text-muted-foreground">
                     No workspaces found in environment path.
                   </TableCell>
                 </TableRow>
@@ -108,6 +115,17 @@ export default function Projects() {
                       <span>{proj.name}</span>
                       <span className="text-[10px] text-muted-foreground font-mono">{proj.id}</span>
                     </div>
+                  </TableCell>
+                  <TableCell>
+                    {proj.repoUrl ? (
+                      <Badge variant="outline" className="gap-1.5 border-blue-800 text-blue-400 text-[10px]">
+                        <GitBranchIcon className="h-3 w-3" /> Git
+                      </Badge>
+                    ) : (
+                      <Badge variant="outline" className="gap-1.5 border-zinc-700 text-zinc-500 text-[10px]">
+                        <FolderIcon className="h-3 w-3" /> Local
+                      </Badge>
+                    )}
                   </TableCell>
                   <TableCell className="capitalize text-zinc-400 text-xs">
                     {proj.config?.browser || 'chromium'}

@@ -51,11 +51,11 @@ export const apiClient = {
     window.location.href = '/';
   },
 
-  async createProject(name: string) {
+  async createProject(name: string, gitUrl?: string) {
     const res = await apiFetch(ENDPOINTS.PROJECTS, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', ...authHeaders() },
-      body: JSON.stringify({ name }),
+      body: JSON.stringify({ name, gitUrl }),
     });
     if (!res.ok) {
       const err = await res.json();
@@ -77,6 +77,31 @@ export const apiClient = {
       body: JSON.stringify(config),
     });
     if (!res.ok) throw new Error('Failed to update project config');
+    return res.json();
+  },
+
+  async updateProjectGitConfig(projectId: string, repoUrl: string) {
+    const res = await apiFetch(ENDPOINTS.PROJECTS + '/' + projectId, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', ...authHeaders() },
+      body: JSON.stringify({ repoUrl }),
+    });
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.error || 'Failed to update Git config');
+    }
+    return res.json();
+  },
+
+  async syncProjectFromGit(projectId: string) {
+    const res = await apiFetch(ENDPOINTS.PROJECT_GIT_SYNC(projectId), {
+      method: 'POST',
+      headers: authHeaders(),
+    });
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.error || 'Failed to sync from Git');
+    }
     return res.json();
   },
 
@@ -138,13 +163,13 @@ export const apiClient = {
     return res.json();
   },
 
-  async updateFileContent(projectId: string, path: string, content: string) {
+  async updateFileContent(projectId: string, path: string, content: string, commitMessage?: string) {
     const url = new URL(window.location.origin + ENDPOINTS.PROJECT_FILES(projectId) + '/content');
     url.searchParams.set('path', path);
     const res = await apiFetch(url, { 
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', ...authHeaders() },
-        body: JSON.stringify({ content })
+        body: JSON.stringify({ content, ...(commitMessage ? { commitMessage } : {}) })
     });
     if (!res.ok) throw new Error('Failed to save file content');
     return res.json();
