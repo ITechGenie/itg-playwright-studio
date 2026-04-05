@@ -15,7 +15,7 @@ COPY playwright-studio/server/ ./
 RUN npm run build
 
 # Stage 3: Production Image
-FROM mcr.microsoft.com/playwright:v1.48.0-focal AS runner
+FROM mcr.microsoft.com/playwright:v1.58.2-noble AS runner
 WORKDIR /app
 
 # Set environment defaults

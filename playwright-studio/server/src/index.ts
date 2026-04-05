@@ -364,6 +364,24 @@ app.post('/apis/auth/projects', authMiddleware, requireProjectRole('user'), asyn
       projectId: projectId,
     });
 
+    // 7. Assign creator as admin of this project
+    const creator = (req as any).user;
+    if (creator?.id) {
+      // Ensure the admin role exists
+      let [adminRole] = await db.select().from(roles).where(eq(roles.name, 'admin'));
+      if (!adminRole) {
+        await db.insert(roles).values({ id: 'role_admin', name: 'admin', scope: 'global' });
+        adminRole = { id: 'role_admin', name: 'admin', scope: 'global' } as any;
+      }
+      await db.insert(memberships).values({
+        id: generateId(),
+        userId: creator.id,
+        roleId: adminRole.id,
+        projectId: projectId,
+        createdAt: new Date(),
+      });
+    }
+
     res.status(201).json({ id: projectId, name, repoUrl: gitUrl || null, gitRepoId: gitRepoId || null });
   } catch (err) {
     console.error('API Error:', err);
