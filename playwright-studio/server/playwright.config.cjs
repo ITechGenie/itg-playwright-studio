@@ -35,12 +35,12 @@ const screenshot = process.env.SCREENSHOT || 'only-on-failure';
 const reportDir = process.env.REPORT_DIR || path.join(__dirname, 'playwright-report');
 const resultsDir = process.env.RESULTS_DIR || path.join(__dirname, 'test-results');
 
-const htmlReportDir = process.env.REPORT_DIR 
-  ? path.join(process.env.REPORT_DIR, 'html') 
+const htmlReportDir = process.env.REPORT_DIR
+  ? path.join(process.env.REPORT_DIR, 'html')
   : path.join(__dirname, 'html-report');
 
-const monocartReportDir = process.env.REPORT_DIR 
-  ? path.join(process.env.REPORT_DIR, 'monocart') 
+const monocartReportDir = process.env.REPORT_DIR
+  ? path.join(process.env.REPORT_DIR, 'monocart')
   : path.join(__dirname, 'monocart-report');
 
 // Map browser names to device configs
@@ -72,7 +72,7 @@ const getBrowserConfig = (browserName) => {
 const getExtraUseOptions = () => {
   /** @type {any} */
   const options = {};
-  
+
   if (process.env.PW_STUDIO_ARG_SAVE_HAR) {
     const val = process.env.PW_STUDIO_ARG_SAVE_HAR || 'true';
     options.har = {
@@ -81,13 +81,13 @@ const getExtraUseOptions = () => {
       content: 'attach', // Attach actual content to HAR for better inspection
     };
   }
-  
+
   if (process.env.PW_STUDIO_ARG_DEVICE) {
     const devName = process.env.PW_STUDIO_ARG_DEVICE;
     // Fuzzy matching for device names (e.g. "iphone" -> "iPhone 12")
-    const match = Object.keys(devices).find(k => k.toLowerCase().includes(devName.toLowerCase())); 
+    const match = Object.keys(devices).find(k => k.toLowerCase().includes(devName.toLowerCase()));
     if (match) {
-       Object.assign(options, devices[match]);
+      Object.assign(options, devices[match]);
     }
   }
 
@@ -104,23 +104,23 @@ const getExtraUseOptions = () => {
   if (process.env.PW_STUDIO_ARG_HAS_TOUCH) {
     options.hasTouch = process.env.PW_STUDIO_ARG_HAS_TOUCH === 'true';
   }
-  
+
   if (process.env.PW_STUDIO_ARG_IGNORE_HTTPS_ERRORS) {
     options.ignoreHTTPSErrors = process.env.PW_STUDIO_ARG_IGNORE_HTTPS_ERRORS === 'true';
   }
-  
+
   if (process.env.PW_STUDIO_ARG_BLOCK_SERVICE_WORKERS) {
     options.serviceWorkers = process.env.PW_STUDIO_ARG_BLOCK_SERVICE_WORKERS === 'true' ? 'block' : 'allow';
   }
-  
+
   if (process.env.PW_STUDIO_ARG_LOAD_STORAGE) {
     options.storageState = process.env.PW_STUDIO_ARG_LOAD_STORAGE;
   }
-  
+
   if (process.env.PW_STUDIO_ARG_COLOR_SCHEME) {
     options.colorScheme = process.env.PW_STUDIO_ARG_COLOR_SCHEME;
   }
-  
+
   if (process.env.PW_STUDIO_ARG_CHANNEL) {
     options.channel = process.env.PW_STUDIO_ARG_CHANNEL;
   }
@@ -128,15 +128,15 @@ const getExtraUseOptions = () => {
   if (process.env.PW_STUDIO_ARG_USER_AGENT) {
     options.userAgent = process.env.PW_STUDIO_ARG_USER_AGENT;
   }
-  
+
   if (process.env.PW_STUDIO_ARG_LANG) {
     options.locale = process.env.PW_STUDIO_ARG_LANG;
   }
-  
+
   if (process.env.PW_STUDIO_ARG_TIMEZONE) {
     options.timezoneId = process.env.PW_STUDIO_ARG_TIMEZONE;
   }
-  
+
   if (process.env.PW_STUDIO_ARG_GEOLOCATION) {
     try {
       options.geolocation = JSON.parse(process.env.PW_STUDIO_ARG_GEOLOCATION);
@@ -145,7 +145,7 @@ const getExtraUseOptions = () => {
       // ignore invalid json
     }
   }
-  
+
   if (process.env.PW_STUDIO_ARG_PROXY_SERVER) {
     options.proxy = {
       server: process.env.PW_STUDIO_ARG_PROXY_SERVER,
@@ -165,44 +165,44 @@ if (Object.keys(extraOptions).length > 0) {
 module.exports = defineConfig({
   // Test directory set via environment variable (absolute path)
   testDir: process.env.TEST_PROJECT_DIR || './',
-  
+
   // Test file patterns
   testMatch: [
     '**/*.spec.ts',
-    '**/*.spec.js', 
+    '**/*.spec.js',
     '**/*.test.ts',
     '**/*.test.js',
   ],
-  
+
   // Timeout per test
   timeout: parseInt(process.env.TIMEOUT || '30000'),
-  
+
   // Expect timeout
   expect: {
     timeout: 5000,
   },
-  
+
   // Run tests in files in parallel
   fullyParallel: true,
-  
+
   // Fail the build on CI if you accidentally left test.only
   forbidOnly: !!process.env.CI,
-  
+
   // Retry on CI only
   retries: process.env.CI ? 2 : 0,
-  
+
   // Workers controlled via CLI args
   workers: undefined,
-  
+
   // Reporter configuration
   reporter: [
     ['list'],
-    ['html', { 
+    ['html', {
       outputFolder: htmlReportDir,
-      open: 'never' 
+      open: 'never'
     }],
     ['monocart-reporter', {
-      name: 'Playwright Studio Report',
+      name: 'ITG Playwright Studio Report',
       outputFile: path.join(monocartReportDir, 'index.html'),
       tags: {
         smoke: { style: { background: '#6366f1' } },
@@ -217,11 +217,11 @@ module.exports = defineConfig({
       },
       groupBy: ['project'],
     }],
-    ['json', { 
+    ['json', {
       outputFile: path.join(reportDir, 'results.json')
     }],
   ],
-  
+
   // Shared settings for all projects
   use: {
     baseURL: process.env.BASE_URL || 'http://localhost:5173',
@@ -232,7 +232,7 @@ module.exports = defineConfig({
     viewport: { width, height },
     ...getExtraUseOptions(),
   },
-  
+
   // Output directory for test artifacts
   outputDir: resultsDir,
 
@@ -240,16 +240,16 @@ module.exports = defineConfig({
   projects: [
     {
       name: 'chromium',
-      use: { 
-        ...devices['Desktop Chrome'], 
+      use: {
+        ...devices['Desktop Chrome'],
         viewport: { width, height },
         ...getExtraUseOptions(),
       },
     },
     {
       name: 'firefox',
-      use: { 
-        ...devices['Desktop Firefox'], 
+      use: {
+        ...devices['Desktop Firefox'],
         viewport: { width, height },
         // Only apply compatible extra options (omit chrome-only things like channel/har)
         ...(() => {
@@ -260,8 +260,8 @@ module.exports = defineConfig({
     },
     {
       name: 'webkit',
-      use: { 
-        ...devices['Desktop Safari'], 
+      use: {
+        ...devices['Desktop Safari'],
         viewport: { width, height },
         ...(() => {
           const { channel, har, ...rest } = getExtraUseOptions();
@@ -271,18 +271,18 @@ module.exports = defineConfig({
     },
     {
       name: 'chrome',
-      use: { 
-        ...devices['Desktop Chrome'], 
-        channel: 'chrome', 
+      use: {
+        ...devices['Desktop Chrome'],
+        channel: 'chrome',
         viewport: { width, height },
         ...getExtraUseOptions(),
       },
     },
     {
       name: 'msedge',
-      use: { 
-        ...devices['Desktop Edge'], 
-        channel: 'msedge', 
+      use: {
+        ...devices['Desktop Edge'],
+        channel: 'msedge',
         viewport: { width, height },
         ...getExtraUseOptions(),
       },

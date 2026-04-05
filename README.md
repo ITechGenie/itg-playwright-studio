@@ -1,8 +1,8 @@
 <p align="center">
-  <img src="screenshots/logo.png" width="200" alt="Playwright Studio Logo">
+  <img src="screenshots/logo.png" width="200" alt="ITG Playwright Studio Logo">
 </p>
 
-# 🎭 Playwright Studio
+# 🎭 ITG Playwright Studio
 
 > **The ultimate web-based control plane for Playwright tests.**
 
@@ -12,7 +12,7 @@ Playwright Studio is a centralized testing platform designed to simplify the rec
 
 ## 🏗️ Architecture
 
-Playwright Studio follows a distributed architecture consisting of a centralized control plane (The Studio), specialized recorder tools, and local execution bridges.
+ITG Playwright Studio follows a distributed architecture consisting of a centralized control plane (The Studio), specialized recorder tools, and local execution bridges.
 
 ```mermaid
 flowchart TD
@@ -204,7 +204,7 @@ Fine-tune project-level Playwright settings from the UI.
 
 ## 🔗 Git Integration
 
-Playwright Studio supports importing projects directly from GitLab or GitHub repositories, syncing files on demand, and pushing edits back with a commit message — all without needing a local `git` binary.
+ITG Playwright Studio supports importing projects directly from GitLab or GitHub repositories, syncing files on demand, and pushing edits back with a commit message — all without needing a local `git` binary.
 
 ### Tested Providers
 

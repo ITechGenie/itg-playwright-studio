@@ -717,7 +717,7 @@ app.get('/app', (req, res) => {
 
 // WebSocket setup
 wss.on('connection', (ws) => {
-  ws.send(JSON.stringify({ type: 'connected', message: 'Welcome to Playwright Studio' }));
+  ws.send(JSON.stringify({ type: 'connected', message: 'Welcome to ITG Playwright Studio' }));
 });
 
 // Share WSS with the internal trigger-run module
