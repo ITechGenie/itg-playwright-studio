@@ -1,4 +1,5 @@
 import { sqliteTable, text, integer, real } from 'drizzle-orm/sqlite-core';
+import { sql } from 'drizzle-orm';
 
 export const users = sqliteTable('users', {
   id: text('id').primaryKey(),
@@ -12,7 +13,7 @@ export const users = sqliteTable('users', {
   providerToken: text('provider_token'),
   providerTokenExpiresAt: integer('provider_token_expires_at', { mode: 'timestamp' }),
 
-  createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull().default(sql`(unixepoch())`),
 });
 
 export const roles = sqliteTable('roles', {
@@ -26,7 +27,7 @@ export const memberships = sqliteTable('memberships', {
   userId: text('user_id').notNull().references(() => users.id),
   roleId: text('role_id').notNull().references(() => roles.id),
   projectId: text('project_id').references(() => projects.id),
-  createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull().default(sql`(unixepoch())`),
 });
 
 export const accessTokens = sqliteTable('access_tokens', {
@@ -36,7 +37,7 @@ export const accessTokens = sqliteTable('access_tokens', {
   tokenHash: text('token_hash').notNull(),
   expiresAt: integer('expires_at', { mode: 'timestamp' }),
   revoked: integer('revoked').notNull().default(0),
-  createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull().default(sql`(unixepoch())`),
   lastUsedAt: integer('last_used_at', { mode: 'timestamp' }),
 });
 
@@ -121,7 +122,7 @@ export const schedules = sqliteTable('schedules', {
   pattern: text('pattern').notNull(),                          // JSON SchedulePattern
   cronExpression: text('cron_expression').notNull(),
   enabled: integer('enabled').notNull().default(1),            // 0 | 1
-  createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull().default(sql`(unixepoch())`),
   lastRunAt: integer('last_run_at', { mode: 'timestamp' }),
   lastRunId: text('last_run_id'),
   nextRunAt: integer('next_run_at', { mode: 'timestamp' }),

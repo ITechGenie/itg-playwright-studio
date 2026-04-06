@@ -118,6 +118,26 @@ Fine-tune project-level Playwright settings from the UI.
 
 ## 🚀 Getting Started
 
+### Quick Start with Docker
+
+The fastest way to try ITG Playwright Studio is via Docker:
+
+```bash
+docker pull ghcr.io/itechgenie/itg-playwright-studio:latest
+
+docker run -d \
+  -p 3000:3000 \
+  -v $(pwd)/data:/app/data \
+  --name itg-playwright-studio \
+  ghcr.io/itechgenie/itg-playwright-studio:latest
+```
+
+Then open [http://localhost:3000](http://localhost:3000) in your browser.
+
+> **Note:** The `-v $(pwd)/data:/app/data` mount persists your projects, executions, and database across container restarts.
+
+---
+
 ### Prerequisites
 
 - **Node.js**: v18 or later.
