@@ -21,7 +21,7 @@ RUN npm run build
 #RUN npx -y playwright@1.58.2 install --with-deps chromium firefox
 
 # Stage 3: Production Image
-FROM mcr.microsoft.com/playwright:v1.58.2-noble AS runner
+FROM mcr.microsoft.com/playwright:v1.59.1-noble AS runner
 WORKDIR /app
 
 # Set environment defaults
