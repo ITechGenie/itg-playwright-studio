@@ -1,9 +1,4 @@
-/**
- * Git Provider Client
- * 
- * Abstracts GitLab and GitHub REST API operations for fetching repository
- * trees, file contents, and pushing file changes.
- */
+import { getGitlabApiUrl, getGithubApiUrl } from './git-config.js';
 
 export interface GitFile {
   path: string;
@@ -49,7 +44,7 @@ export interface GitProviderClient {
  * GitLab-specific provider client implementation
  */
 export class GitLabProviderClient implements GitProviderClient {
-  private readonly baseUrl = 'https://gitlab.com/api/v4';
+  private readonly baseUrl = getGitlabApiUrl();
 
   /**
    * Resolve GitLab numeric project ID from namespace/path
@@ -207,7 +202,7 @@ export class GitLabProviderClient implements GitProviderClient {
  * GitHub-specific provider client implementation
  */
 export class GitHubProviderClient implements GitProviderClient {
-  private readonly baseUrl = 'https://api.github.com';
+  private readonly baseUrl = getGithubApiUrl();
 
   async fetchTree(
     repoId: string,

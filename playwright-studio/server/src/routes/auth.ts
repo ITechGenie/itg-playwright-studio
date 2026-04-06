@@ -100,6 +100,8 @@ async function fetchToken(provider: string, code: string) {
   return data;
 }
 
+import { getGithubEmailsUrl } from '../lib/git-config.js';
+
 async function fetchUser(provider: string, accessToken: string) {
   const cfg = PROVIDERS_CONFIG[provider as keyof typeof PROVIDERS_CONFIG];
   if (!cfg) throw new Error('Unsupported provider');
@@ -121,7 +123,7 @@ async function fetchUser(provider: string, accessToken: string) {
   // GitHub may return null email if the user has set it to private.
   // Fall back to the /user/emails endpoint to get the primary verified email.
   if (provider === 'github' && !data.email) {
-    const emailsRes = await fetch('https://api.github.com/user/emails', {
+    const emailsRes = await fetch(getGithubEmailsUrl(), {
       headers: {
         Authorization: `Bearer ${accessToken}`,
         Accept: 'application/json',

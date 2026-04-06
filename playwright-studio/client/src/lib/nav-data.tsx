@@ -47,7 +47,8 @@ export const getNavData = (projectId: string) => ({
       icon: <Database className="size-4" />,
       items: [
         { title: "Templates", url: `/app/project/${projectId}/data/templates` },
-        { title: "Environments & Sets", url: `/app/project/${projectId}/data/environments` },
+        { title: "Environments", url: `/app/project/${projectId}/data/environments` },
+        { title: "Data Sets", url: `/app/project/${projectId}/data/datasets` },
       ]
     },
     {

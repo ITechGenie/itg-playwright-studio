@@ -39,3 +39,6 @@ vite.config.ts.timestamp-*
 *.db
 *.kiro
 *.DS_Store
+/playwright-studio/server/playwright-report
+/playwright-studio/server/monocart-report
+/playwright-studio/server/html-report

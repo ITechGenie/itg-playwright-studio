@@ -94,6 +94,7 @@ export const templateAttributes = sqliteTable('template_attributes', {
   type: text('type').notNull(), // 'text', 'number', 'boolean', 'secret'
   scope: text('scope').notNull(), // 'environment', 'dataset'
   description: text('description'),
+  defaultValue: text('default_value'), // optional fallback when env/dataset doesn't set this key
 });
 
 export const environments = sqliteTable('environments', {
@@ -107,10 +108,18 @@ export const environments = sqliteTable('environments', {
 
 export const dataSets = sqliteTable('data_sets', {
   id: text('id').primaryKey(),
-  environmentId: text('environment_id').notNull().references(() => environments.id),
+  projectId: text('project_id').notNull().references(() => projects.id),
+  templateId: text('template_id').notNull().references(() => dataTemplates.id),
   name: text('name').notNull(),
   variables: text('variables'), // JSON string of dataset-scoped values
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
+});
+
+// Many-to-many: a dataset can be linked to multiple environments
+export const environmentDatasets = sqliteTable('environment_datasets', {
+  id: text('id').primaryKey(),
+  environmentId: text('environment_id').notNull().references(() => environments.id),
+  datasetId: text('dataset_id').notNull().references(() => dataSets.id),
 });
 
 export const schedules = sqliteTable('schedules', {

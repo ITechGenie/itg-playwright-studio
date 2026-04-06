@@ -193,6 +193,50 @@ async function applyMigrations() {
       next_run_at INTEGER
     )`);
 
+    // Data manager: default value support on template attributes
+    await ensureColumn('template_attributes', 'default_value', 'TEXT');
+
+    // Data manager: migrate datasets to project-level (many-to-many with environments)
+    // Add project_id and template_id columns to data_sets if missing (for existing data)
+    await ensureColumn('data_sets', 'project_id', 'TEXT');
+    await ensureColumn('data_sets', 'template_id', 'TEXT');
+    // Create the join table
+    await sqliteDb.execute(`CREATE TABLE IF NOT EXISTS environment_datasets (
+      id TEXT PRIMARY KEY NOT NULL,
+      environment_id TEXT NOT NULL,
+      dataset_id TEXT NOT NULL
+    )`);
+    // Backfill: for existing datasets that have environment_id, create join records and set project_id
+    try {
+      const existingDs = await sqliteDb.execute(`SELECT ds.id, ds.environment_id, e.project_id, e.template_id FROM data_sets ds JOIN environments e ON ds.environment_id = e.id WHERE ds.project_id IS NULL`);
+      for (const row of existingDs.rows as any[]) {
+        await sqliteDb.execute(`UPDATE data_sets SET project_id = '${row.project_id}', template_id = '${row.template_id}' WHERE id = '${row.id}'`);
+        const linkId = row.id + '_link';
+        await sqliteDb.execute(`INSERT OR IGNORE INTO environment_datasets (id, environment_id, dataset_id) VALUES ('${linkId}', '${row.environment_id}', '${row.id}')`);
+      }
+    } catch (e) { /* non-fatal backfill */ }
+    // Recreate data_sets without the NOT NULL constraint on environment_id
+    // SQLite doesn't support DROP COLUMN, so we rename+recreate
+    try {
+      const tableInfo = await sqliteDb.execute(`PRAGMA table_info(data_sets)`);
+      const hasEnvIdNotNull = (tableInfo.rows as any[]).some(r => r.name === 'environment_id' && r.notnull === 1);
+      if (hasEnvIdNotNull) {
+        await sqliteDb.execute(`ALTER TABLE data_sets RENAME TO data_sets_old`);
+        await sqliteDb.execute(`CREATE TABLE data_sets (
+          id TEXT PRIMARY KEY NOT NULL,
+          project_id TEXT,
+          template_id TEXT,
+          name TEXT NOT NULL,
+          variables TEXT,
+          created_at INTEGER NOT NULL,
+          environment_id TEXT
+        )`);
+        await sqliteDb.execute(`INSERT INTO data_sets SELECT id, project_id, template_id, name, variables, created_at, environment_id FROM data_sets_old`);
+        await sqliteDb.execute(`DROP TABLE data_sets_old`);
+        console.log('[Migration] Recreated data_sets table without NOT NULL on environment_id');
+      }
+    } catch (e: any) { console.warn('[Migration] data_sets recreate skipped:', e?.message); }
+
     // Backfill existing mandatory role with safe fallback
     const result = await sqliteDb.execute("SELECT COUNT(*) as cnt FROM roles WHERE name='user' AND scope='global'");
     const count = Number(result.rows[0]?.cnt ?? 0);

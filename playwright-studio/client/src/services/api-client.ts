@@ -213,6 +213,15 @@ export const apiClient = {
     return res.json();
   },
 
+  async deleteDataTemplate(projectId: string, templateId: string) {
+    const res = await apiFetch(ENDPOINTS.DATA_TEMPLATES(projectId) + '/' + templateId, {
+      method: 'DELETE',
+      headers: authHeaders(),
+    });
+    if (!res.ok) throw new Error('Failed to delete data template');
+    return res.json();
+  },
+
   async getDataEnvironments(projectId: string) {
     const res = await apiFetch(ENDPOINTS.DATA_ENVIRONMENTS(projectId), { headers: authHeaders() });
     if (!res.ok) throw new Error('Failed to fetch data environments');
@@ -245,6 +254,15 @@ export const apiClient = {
     return res.json();
   },
 
+  async deleteDataEnvironment(projectId: string, envId: string) {
+    const res = await apiFetch(ENDPOINTS.DATA_ENVIRONMENTS(projectId) + '/' + envId, {
+      method: 'DELETE',
+      headers: authHeaders(),
+    });
+    if (!res.ok) throw new Error('Failed to delete data environment');
+    return res.json();
+  },
+
   async createDataSet(projectId: string, envId: string, payload: any) {
     const res = await apiFetch(ENDPOINTS.DATA_DATASETS(projectId, envId), {
       method: 'POST',
@@ -268,6 +286,88 @@ export const apiClient = {
       body: JSON.stringify(payload)
     });
     if (!res.ok) throw new Error('Failed to update data set');
+    return res.json();
+  },
+
+  async deleteDataSet(projectId: string, envId: string, datasetId: string) {
+    const res = await apiFetch(ENDPOINTS.DATA_DATASETS(projectId, envId) + '/' + datasetId, {
+      method: 'DELETE',
+      headers: authHeaders(),
+    });
+    if (!res.ok) throw new Error('Failed to delete data set');
+    return res.json();
+  },
+
+  async bulkCreateDataSets(projectId: string, envId: string, datasets: { name: string; variables: Record<string, string> }[]) {
+    const res = await apiFetch(ENDPOINTS.DATA_DATASETS(projectId, envId) + '/bulk', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...authHeaders() },
+      body: JSON.stringify({ datasets }),
+    });
+    if (!res.ok) throw new Error('Failed to bulk create data sets');
+    return res.json();
+  },
+
+  // Dataset V2 — template-scoped, multi-env linking
+  async getDataSets(projectId: string, templateId?: string) {
+    const url = ENDPOINTS.DATA_DATASETS_V2(projectId) + (templateId ? `?templateId=${templateId}` : '');
+    const res = await apiFetch(url, { headers: authHeaders() });
+    if (!res.ok) throw new Error('Failed to fetch datasets');
+    return res.json();
+  },
+
+  async getDataSetV2(projectId: string, datasetId: string) {
+    const res = await apiFetch(ENDPOINTS.DATA_DATASETS_V2(projectId) + '/' + datasetId, { headers: authHeaders() });
+    if (!res.ok) throw new Error('Failed to fetch dataset');
+    return res.json();
+  },
+
+  async createDataSetV2(projectId: string, payload: { templateId: string; name: string; variables: Record<string, string>; environmentIds?: string[] }) {
+    const res = await apiFetch(ENDPOINTS.DATA_DATASETS_V2(projectId), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...authHeaders() },
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) throw new Error('Failed to create dataset');
+    return res.json();
+  },
+
+  async updateDataSetV2(projectId: string, datasetId: string, payload: { name: string; variables: Record<string, string>; environmentIds?: string[] }) {
+    const res = await apiFetch(ENDPOINTS.DATA_DATASETS_V2(projectId) + '/' + datasetId, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...authHeaders() },
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) throw new Error('Failed to update dataset');
+    return res.json();
+  },
+
+  async deleteDataSetV2(projectId: string, datasetId: string) {
+    const res = await apiFetch(ENDPOINTS.DATA_DATASETS_V2(projectId) + '/' + datasetId, {
+      method: 'DELETE',
+      headers: authHeaders(),
+    });
+    if (!res.ok) throw new Error('Failed to delete dataset');
+    return res.json();
+  },
+
+  async bulkCreateDataSetsV2(projectId: string, payload: { templateId: string; datasets: { name: string; variables: Record<string, string> }[]; environmentIds?: string[] }) {
+    const res = await apiFetch(ENDPOINTS.DATA_DATASETS_V2(projectId) + '/bulk', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...authHeaders() },
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) throw new Error('Failed to bulk create datasets');
+    return res.json();
+  },
+
+  async updateEnvDatasetLinks(projectId: string, envId: string, datasetIds: string[]) {
+    const res = await apiFetch(ENDPOINTS.DATA_ENVIRONMENTS(projectId) + '/' + envId + '/links', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...authHeaders() },
+      body: JSON.stringify({ datasetIds }),
+    });
+    if (!res.ok) throw new Error('Failed to update dataset links');
     return res.json();
   },
 

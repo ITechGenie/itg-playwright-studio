@@ -9,6 +9,8 @@
  * - GitLab: https://gitlab.com/{namespace}/{repo}/-/tree/{branch}/{path}
  */
 
+import { getGithubBaseUrl, getGitlabBaseUrl, getGithubDomain, getGitlabDomain } from './git-config.js';
+
 export interface ParsedGitUrl {
   provider: 'github' | 'gitlab';
   repoOwner: string;
@@ -18,13 +20,29 @@ export interface ParsedGitUrl {
   repoUrl: string; // Base repo URL without tree/branch
 }
 
+// Utility to escape domain for regex
+const escapeRegExp = (str: string) => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
 export class GitUrlParser {
-  // GitHub URL pattern: https://github.com/{owner}/{repo}/tree/{branch}/{path}
-  private static readonly GITHUB_PATTERN = /^https:\/\/github\.com\/([^\/]+)\/([^\/]+)\/tree\/([^\/]+)(?:\/(.*))?$/;
+  /**
+   * Get regex for GitHub URL
+   * https://{domain}/{owner}/{repo}/tree/{branch}/{path}
+   */
+  private static getGithubPattern() {
+    return new RegExp(
+      `^https:\\/\\/${escapeRegExp(getGithubDomain())}\\/([^\\/]+)\\/([^\\/]+)\\/tree\\/([^\\/]+)(?:\\/(.*))?$`
+    );
+  }
   
-  // GitLab URL pattern: https://gitlab.com/{namespace}/{repo}/-/tree/{branch}/{path}
-  // Supports nested namespaces like: gitlab.com/group/subgroup/repo
-  private static readonly GITLAB_PATTERN = /^https:\/\/gitlab\.com\/((?:[^\/]+\/)+)([^\/]+)\/-\/tree\/([^\/]+)(?:\/(.*))?$/;
+  /**
+   * Get regex for GitLab URL
+   * https://{domain}/{namespace}/{repo}/-/tree/{branch}/{path}
+   */
+  private static getGitlabPattern() {
+    return new RegExp(
+      `^https:\\/\\/${escapeRegExp(getGitlabDomain())}\\/((?:[^\\/]+\\/)+)([^\\/]+)\\/-\\/tree\\/([^\\/]+)(?:\\/(.*))?$`
+    );
+  }
 
   /**
    * Parse a Git repository tree URL into its components.
@@ -41,7 +59,7 @@ export class GitUrlParser {
     const trimmedUrl = url.trim();
 
     // Try GitHub pattern
-    const githubMatch = trimmedUrl.match(this.GITHUB_PATTERN);
+    const githubMatch = trimmedUrl.match(this.getGithubPattern());
     if (githubMatch) {
       const [, owner, repo, branch, path] = githubMatch;
       return {
@@ -50,12 +68,12 @@ export class GitUrlParser {
         repoName: this.decodeUrlComponent(repo),
         branch: this.decodeUrlComponent(branch),
         folderPath: path ? this.decodeUrlComponent(path) : '',
-        repoUrl: `https://github.com/${owner}/${repo}`,
+        repoUrl: `${getGithubBaseUrl()}/${owner}/${repo}`,
       };
     }
 
     // Try GitLab pattern
-    const gitlabMatch = trimmedUrl.match(this.GITLAB_PATTERN);
+    const gitlabMatch = trimmedUrl.match(this.getGitlabPattern());
     if (gitlabMatch) {
       const [, namespace, repo, branch, path] = gitlabMatch;
       // Remove trailing slash from namespace
@@ -66,7 +84,7 @@ export class GitUrlParser {
         repoName: this.decodeUrlComponent(repo),
         branch: this.decodeUrlComponent(branch),
         folderPath: path ? this.decodeUrlComponent(path) : '',
-        repoUrl: `https://gitlab.com/${cleanNamespace}/${repo}`,
+        repoUrl: `${getGitlabBaseUrl()}/${cleanNamespace}/${repo}`,
       };
     }
 
@@ -74,8 +92,8 @@ export class GitUrlParser {
     throw new Error(
       'Invalid Git URL format. Expected GitHub or GitLab tree URL. ' +
       'Examples: ' +
-      'https://github.com/owner/repo/tree/branch/path or ' +
-      'https://gitlab.com/namespace/repo/-/tree/branch/path'
+      `${getGithubBaseUrl()}/owner/repo/tree/branch/path or ` +
+      `${getGitlabBaseUrl()}/namespace/repo/-/tree/branch/path`
     );
   }
 
@@ -111,13 +129,13 @@ export class GitUrlParser {
       const encodedOwner = this.encodePathComponent(repoOwner);
       const encodedRepo = this.encodePathComponent(repoName);
       const pathSegment = encodedPath ? `/${encodedPath}` : '';
-      return `https://github.com/${encodedOwner}/${encodedRepo}/tree/${encodedBranch}${pathSegment}`;
+      return `${getGithubBaseUrl()}/${encodedOwner}/${encodedRepo}/tree/${encodedBranch}${pathSegment}`;
     } else if (provider === 'gitlab') {
       // For GitLab, namespace can contain slashes, so don't encode them
       const encodedNamespace = this.encodePathComponent(repoOwner);
       const encodedRepo = this.encodePathComponent(repoName);
       const pathSegment = encodedPath ? `/${encodedPath}` : '';
-      return `https://gitlab.com/${encodedNamespace}/${encodedRepo}/-/tree/${encodedBranch}${pathSegment}`;
+      return `${getGitlabBaseUrl()}/${encodedNamespace}/${encodedRepo}/-/tree/${encodedBranch}${pathSegment}`;
     } else {
       throw new Error(`Unsupported provider: ${provider}`);
     }
