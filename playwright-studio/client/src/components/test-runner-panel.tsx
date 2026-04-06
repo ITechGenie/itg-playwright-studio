@@ -15,6 +15,7 @@ import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuChe
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
 import { Loader2Icon, CheckCircleIcon, XCircleIcon, ExternalLinkIcon, PlusIcon } from "lucide-react"
 import { PLAYWRIGHT_CLI_OPTIONS } from "@/lib/playwright-options"
+import { ViewportPicker } from "@/components/viewport-picker"
 
 // Simple ANSI to HTML converter
 function ansiToHtml(text: string): string {
@@ -469,9 +470,46 @@ export function TestRunnerPanel({
                 onChange={(e) => setLocalConfig({ ...localConfig, height: parseInt(e.target.value) || 720 })}
                 className="h-6 w-12 px-1 text-[10px] bg-zinc-950 border-zinc-800 text-zinc-300"
               />
+              <ViewportPicker size="compact" currentW={localConfig.width} currentH={localConfig.height}
+                onSelect={(w, h) => setLocalConfig({ ...localConfig, width: w, height: h })} />
             </div>
           </div>
-          <div className="space-y-1.5 col-span-1">
+          <div className="space-y-1.5">
+            <Label className="text-[10px] uppercase font-bold text-zinc-500">Timeout (ms)</Label>
+            <Input
+              type="number"
+              value={localConfig.timeout}
+              onChange={(e) => setLocalConfig({ ...localConfig, timeout: parseInt(e.target.value) || 30000 })}
+              className="h-6 w-24 px-1.5 text-[10px] bg-zinc-950 border-zinc-800 text-zinc-300"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-[10px] uppercase font-bold text-zinc-500">Video</Label>
+            <Select value={localConfig.video} onValueChange={v => setLocalConfig({ ...localConfig, video: v })}>
+              <SelectTrigger className="h-6 w-36 text-[10px] bg-zinc-950 border-zinc-800 text-zinc-300">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="bg-zinc-900 border-zinc-800 text-white">
+                <SelectItem value="off" className="text-[10px]">Off</SelectItem>
+                <SelectItem value="on" className="text-[10px]">On</SelectItem>
+                <SelectItem value="retain-on-failure" className="text-[10px]">On Failure</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-[10px] uppercase font-bold text-zinc-500">Screenshot</Label>
+            <Select value={localConfig.screenshot} onValueChange={v => setLocalConfig({ ...localConfig, screenshot: v })}>
+              <SelectTrigger className="h-6 w-36 text-[10px] bg-zinc-950 border-zinc-800 text-zinc-300">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="bg-zinc-900 border-zinc-800 text-white">
+                <SelectItem value="off" className="text-[10px]">Off</SelectItem>
+                <SelectItem value="on" className="text-[10px]">On</SelectItem>
+                <SelectItem value="only-on-failure" className="text-[10px]">On Failure</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1.5 col-span-2">
             <div className="flex items-center justify-between mb-0.5">
               <Label className="text-[10px] uppercase font-bold text-zinc-500">Extra Args</Label>
               <Button

@@ -12,6 +12,7 @@ import { PageHeader } from "@/components/page-header"
 import { cn } from "@/lib/utils"
 import { PLAYWRIGHT_CLI_OPTIONS, BROWSER_OPTIONS } from "@/lib/playwright-options"
 import { GitUrlParser } from "@/lib/git-url-parser"
+import { ViewportPicker } from "@/components/viewport-picker"
 
 interface ExtraArg {
   flag: string;
@@ -436,14 +437,17 @@ export default function ProjectSettings() {
                   <Input type="number" min="1" max="16" value={workers} onChange={e => setWorkers(e.target.value)} className="h-10 bg-zinc-900 border-zinc-800 text-sm focus:ring-blue-500" />
                 </div>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <Label className="text-xs font-bold uppercase text-zinc-400">Viewport Width</Label>
-                  <Input type="number" value={width} onChange={e => setWidth(e.target.value)} className="h-10 bg-zinc-900 border-zinc-800 text-sm" />
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label className="text-xs font-bold uppercase text-zinc-400">Viewport</Label>
+                  <ViewportPicker size="full" currentW={parseInt(width)} currentH={parseInt(height)}
+                    onSelect={(w, h) => { setWidth(String(w)); setHeight(String(h)) }} />
                 </div>
-                <div className="space-y-2">
-                  <Label className="text-xs font-bold uppercase text-zinc-400">Viewport Height</Label>
-                  <Input type="number" value={height} onChange={e => setHeight(e.target.value)} className="h-10 bg-zinc-900 border-zinc-800 text-sm" />
+                <div className="grid grid-cols-2 gap-6">
+                  <Input type="number" value={width} onChange={e => setWidth(e.target.value)}
+                    className="h-10 bg-zinc-900 border-zinc-800 text-sm" placeholder="Width" />
+                  <Input type="number" value={height} onChange={e => setHeight(e.target.value)}
+                    className="h-10 bg-zinc-900 border-zinc-800 text-sm" placeholder="Height" />
                 </div>
               </div>
               <div className="space-y-2">

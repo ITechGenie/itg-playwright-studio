@@ -4,6 +4,7 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Switch } from "@/components/ui/switch"
 import { cn } from "@/lib/utils"
+import { ViewportPicker } from "@/components/viewport-picker"
 
 export type RunConfig = {
   browsers: string[]
@@ -150,7 +151,11 @@ export function ConfigPanel({ value, onChange, disabled = false, compact = false
 
       {/* Viewport */}
       <div className="space-y-2">
-        <Label className={labelCls}>Viewport</Label>
+        <div className="flex items-center justify-between">
+          <Label className={labelCls}>Viewport</Label>
+          <ViewportPicker size="full" currentW={value.width} currentH={value.height}
+            onSelect={(w, h) => { set('width', w); set('height', h) }} />
+        </div>
         <div className="flex items-center gap-2">
           <Input
             type="number" placeholder="Width"

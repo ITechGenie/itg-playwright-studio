@@ -19,6 +19,7 @@ export const ENDPOINTS = {
   DATA_TEMPLATES: (projectId: string) => `${APIS_BASE}/project/${projectId}/data/templates`,
   DATA_ENVIRONMENTS: (projectId: string) => `${APIS_BASE}/project/${projectId}/data/environments`,
   DATA_DATASETS: (projectId: string, envId: string) => `${APIS_BASE}/project/${projectId}/data/environments/${envId}/datasets`,
+  DATA_DATASETS_V2: (projectId: string) => `${APIS_BASE}/project/${projectId}/data/datasets`,
 
   // Scheduler Routes
   PROJECT_SCHEDULES: (projectId: string) => `${APIS_BASE}/project/${projectId}/schedules`,

@@ -125,7 +125,9 @@ export async function triggerRun(opts: TriggerRunOptions): Promise<TriggerRunRes
     RESULTS_DIR: resultsDir,
     HEADED: config.headless ? 'false' : 'true',
     TIMEOUT: String(config.timeout ?? 30000),
-    NODE_PATH: path.join(workspaceRoot, 'node_modules'),
+    NODE_PATH: process.env.NODE_PATH_OVERRIDE
+      ? process.env.NODE_PATH_OVERRIDE
+      : path.join(workspaceRoot, 'node_modules'),
     FORCE_COLOR: '1',
     BROWSER: browsers[0],                          // primary browser for config defaults
     WIDTH: String(config.width ?? 1280),
