@@ -30,6 +30,7 @@ ENV PORT=3000
 ENV PROJECTS_BASE_PATH=/app/data/projects
 ENV EXECUTIONS_BASE_PATH=/app/data/executions
 ENV DATABASE_PATH=/app/data/sqlite.db
+ENV NODE_PATH_OVERRIDE=/app/server/node_modules
 
 # Install server production dependencies
 WORKDIR /app/server

@@ -4,7 +4,7 @@ import { apiClient } from "@/services/api-client"
 import { PageHeader } from "@/components/page-header"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Plus, Database, Trash2, ArrowLeft, Search, Copy, Eye } from "lucide-react"
+import { Plus, Database, Trash2, ArrowLeft, Search, Copy, Eye, Pencil } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -45,13 +45,17 @@ export default function DataTemplates() {
     }
   }
 
-  async function handleCreateTemplate() {
+  async function handleSaveTemplate() {
     try {
       const payload = { 
         name, 
         attributes: attributes.map(({ _id, ...rest }) => rest)
       }
-      await apiClient.createDataTemplate(projectId!, payload)
+      if (view === "EDIT" && currentTemplate) {
+        await apiClient.updateDataTemplate(projectId!, currentTemplate.id, payload)
+      } else {
+        await apiClient.createDataTemplate(projectId!, payload)
+      }
       resetForm()
       fetchTemplates()
       setView("LIST")
@@ -164,6 +168,15 @@ export default function DataTemplates() {
                           title="Duplicate template structure"
                         >
                           <Copy className="size-3.5" />
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          onClick={() => fetchAndSet(t.id, "EDIT")}
+                          className="h-8 w-8 text-zinc-500 hover:text-white hover:bg-zinc-800"
+                          title="Edit Template"
+                        >
+                          <Pencil className="size-3.5" />
                         </Button>
                         <Button 
                           variant="ghost" 
@@ -340,7 +353,7 @@ export default function DataTemplates() {
                 <div className="flex gap-4 pt-4 border-t border-zinc-800">
                    <Button 
                     size="lg" 
-                    onClick={handleCreateTemplate}
+                    onClick={handleSaveTemplate}
                     disabled={!name || attributes.some(a => !a.key)}
                     className="h-11 bg-blue-600 hover:bg-blue-500 font-bold px-10 shadow-lg shadow-blue-600/10"
                    >

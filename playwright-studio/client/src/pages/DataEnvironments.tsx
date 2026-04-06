@@ -2,7 +2,7 @@ import { useState, useEffect } from "react"
 import { useParams } from "react-router-dom"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Plus, Server, Layers, Key, ArrowLeft, Search, Copy, Eye, Info, ChevronDown, ChevronRight, Loader2 } from "lucide-react"
+import { Plus, Server, Layers, Key, ArrowLeft, Search, Copy, Eye, Info, ChevronDown, ChevronRight, Loader2, Pencil } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -16,7 +16,7 @@ type Template = { id: string; name: string; attributes: Attribute[] }
 type Dataset = { id: string; name: string; variables?: string }
 type Environment = { id: string; name: string; templateId: string; variables: string; datasets: Dataset[] }
 
-type ViewState = "LIST" | "DETAILS" | "CREATE_ENV" | "CREATE_SET"
+type ViewState = "LIST" | "DETAILS" | "CREATE_ENV" | "CREATE_SET" | "EDIT_ENV" | "EDIT_SET"
 
 export default function DataEnvironments() {
   const { id: projectId } = useParams<{ id: string }>()
@@ -28,6 +28,7 @@ export default function DataEnvironments() {
   
   // Selection
   const [selectedEnv, setSelectedEnv] = useState<Environment | null>(null)
+  const [selectedSetId, setSelectedSetId] = useState<string>("")
   const [datasetSearch, setDatasetSearch] = useState("")
   const [expandedDatasets, setExpandedDatasets] = useState<Set<string>>(new Set())
   const [datasetCache, setDatasetCache] = useState<Record<string, string>>({})
@@ -60,31 +61,45 @@ export default function DataEnvironments() {
     }
   }
 
-  async function handleCreateEnv() {
+  async function handleSaveEnv() {
     try {
-      await apiClient.createDataEnvironment(projectId!, { 
-        name: envName, 
-        templateId: selectedTemplateId, 
-        variables: envVars 
-      })
+      if (view === "EDIT_ENV" && selectedEnv) {
+        await apiClient.updateDataEnvironment(projectId!, selectedEnv.id, {
+          name: envName,
+          variables: envVars
+        })
+      } else {
+        await apiClient.createDataEnvironment(projectId!, { 
+          name: envName, 
+          templateId: selectedTemplateId, 
+          variables: envVars 
+        })
+      }
       resetForms(); setView("LIST"); fetchData()
     } catch (e) { console.error(e) }
   }
 
-  async function handleCreateSet() {
+  async function handleSaveSet() {
     if (!selectedEnv) return
     try {
-      await apiClient.createDataSet(projectId!, selectedEnv.id, { 
-        name: setName, 
-        variables: setVars 
-      })
+      if (view === "EDIT_SET" && selectedSetId) {
+        await apiClient.updateDataSet(projectId!, selectedEnv.id, selectedSetId, {
+          name: setName,
+          variables: setVars
+        })
+      } else {
+        await apiClient.createDataSet(projectId!, selectedEnv.id, { 
+          name: setName, 
+          variables: setVars 
+        })
+      }
       resetForms(); setView("DETAILS"); 
       fetchEnvironmentDetails(selectedEnv.id)
     } catch (e) { console.error(e) }
   }
 
   function resetForms() {
-    setEnvName(""); setSelectedTemplateId(""); setEnvVars({}); setSetName(""); setSetVars({})
+    setEnvName(""); setSelectedTemplateId(""); setEnvVars({}); setSetName(""); setSetVars({}); setSelectedSetId("")
   }
 
   const fetchEnvironmentDetails = async (envId: string, nextView: ViewState = "DETAILS", isDuplicate = false) => {
@@ -98,12 +113,39 @@ export default function DataEnvironments() {
       if (isDuplicate) {
         setEnvName(`${details.name} (Copy)`)
         setSelectedTemplateId(details.templateId)
-        setEnvVars(JSON.parse(details.variables || "{}"))
+        const vars = JSON.parse(details.variables || "{}")
+        for (const k in vars) { if (vars[k] === "REDACTED") vars[k] = "" }
+        setEnvVars(vars)
         setView("CREATE_ENV")
+      } else if (nextView === "EDIT_ENV") {
+        setEnvName(details.name)
+        setSelectedTemplateId(details.templateId)
+        const vars = JSON.parse(details.variables || "{}")
+        for (const k in vars) { if (vars[k] === "REDACTED") vars[k] = "" }
+        setEnvVars(vars)
+        setView("EDIT_ENV")
       } else {
         setView(nextView)
       }
     } catch (e) {
+      console.error(e)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleEditSet = async (dsId: string) => {
+    if (!selectedEnv) return
+    try {
+      setLoading(true)
+      const dsDetails = await apiClient.getDataSet(projectId!, selectedEnv.id, dsId)
+      setSelectedSetId(dsId)
+      setSetName(dsDetails.name)
+      const vars = JSON.parse(dsDetails.variables || "{}")
+      for (const k in vars) { if (vars[k] === "REDACTED") vars[k] = "" }
+      setSetVars(vars)
+      setView("EDIT_SET")
+    } catch(e) {
       console.error(e)
     } finally {
       setLoading(false)
@@ -228,6 +270,15 @@ export default function DataEnvironments() {
                          <Button 
                           variant="ghost" 
                           size="icon" 
+                          onClick={() => fetchEnvironmentDetails(env.id, "EDIT_ENV")}
+                          className="h-8 w-8 text-zinc-500 hover:text-white hover:bg-zinc-800"
+                          title="Edit Environment"
+                         >
+                            <Pencil className="size-3.5" />
+                         </Button>
+                         <Button 
+                          variant="ghost" 
+                          size="icon" 
                           onClick={() => fetchEnvironmentDetails(env.id, "DETAILS", true)}
                           className="h-8 w-8 text-zinc-500 hover:text-blue-400 hover:bg-blue-500/10"
                           title="Duplicate environment"
@@ -273,6 +324,9 @@ export default function DataEnvironments() {
                     <h2 className="text-2xl font-bold text-white flex items-center gap-3">
                        <div className="p-2 bg-blue-500/10 rounded-xl"><Server className="size-6 text-blue-500" /></div>
                        {selectedEnv.name}
+                       <Button variant="ghost" size="icon" className="h-8 w-8 text-zinc-500 hover:text-white hover:bg-zinc-800" onClick={() => fetchEnvironmentDetails(selectedEnv.id, "EDIT_ENV")}>
+                         <Pencil className="size-3.5" />
+                       </Button>
                     </h2>
                     <p className="text-sm text-zinc-500 pl-14">
                       Implementing schema: <Badge variant="outline" className="border-zinc-800 text-zinc-400 font-bold ml-1">{selectedEnvTemplate?.name || "Unknown"}</Badge>
@@ -337,8 +391,11 @@ export default function DataEnvironments() {
                                 <div className="p-1.5 bg-zinc-900 rounded-md border border-zinc-800">
                                   <Layers className="size-3.5 text-zinc-400" />
                                 </div>
-                                <div className="flex-1">
+                                <div className="flex-1 flex items-center gap-2">
                                   <h4 className="text-sm font-bold text-zinc-200">{ds.name}</h4>
+                                  <Button variant="ghost" size="icon" className="h-6 w-6 text-zinc-500 hover:text-white hover:bg-zinc-800" onClick={(e) => { e.stopPropagation(); handleEditSet(ds.id); }}>
+                                    <Pencil className="size-3" />
+                                  </Button>
                                 </div>
                                 {isExpanded && isLoading && <Loader2 className="size-4 animate-spin text-blue-500" />}
                               </button>
@@ -363,27 +420,27 @@ export default function DataEnvironments() {
                   </TabsContent>
                 </Tabs>
               </div>
-            ) : (view === "CREATE_ENV" || view === "CREATE_SET") && (
+            ) : (view === "CREATE_ENV" || view === "CREATE_SET" || view === "EDIT_ENV" || view === "EDIT_SET") && (
               <div className="space-y-8 max-w-3xl animate-in fade-in slide-in-from-bottom-4 duration-300">
                 <h2 className="text-2xl font-bold text-white">
-                  {view === "CREATE_ENV" ? "Setup New Environment" : `New Data Set for ${selectedEnv?.name}`}
+                  {view === "CREATE_ENV" ? "Setup New Environment" : view === "EDIT_ENV" ? "Edit Environment" : view === "CREATE_SET" ? `New Data Set for ${selectedEnv?.name}` : `Edit Data Set ${setName}`}
                 </h2>
 
                 <div className="grid gap-8 bg-zinc-950/40 border border-zinc-800 p-8 rounded-3xl">
                   <div className="grid gap-3">
-                    <Label className="text-[10px] font-bold uppercase text-zinc-500 tracking-widest">{view === "CREATE_ENV" ? "Environment Name" : "Data Set Name"}</Label>
+                    <Label className="text-[10px] font-bold uppercase text-zinc-500 tracking-widest">{(view === "CREATE_ENV" || view === "EDIT_ENV") ? "Environment Name" : "Data Set Name"}</Label>
                     <Input 
-                      value={view === "CREATE_ENV" ? envName : setName} 
-                      onChange={(e) => view === "CREATE_ENV" ? setEnvName(e.target.value) : setSetName(e.target.value)} 
-                      placeholder={view === "CREATE_ENV" ? "e.g. Production / QA-North" : "e.g. Premium User / Admin Flow"} 
+                      value={(view === "CREATE_ENV" || view === "EDIT_ENV") ? envName : setName} 
+                      onChange={(e) => (view === "CREATE_ENV" || view === "EDIT_ENV") ? setEnvName(e.target.value) : setSetName(e.target.value)} 
+                      placeholder={(view === "CREATE_ENV" || view === "EDIT_ENV") ? "e.g. Production / QA-North" : "e.g. Premium User / Admin Flow"} 
                       className="bg-zinc-900 border-zinc-800 h-11 text-lg font-bold focus:ring-blue-500"
                     />
                   </div>
 
-                  {view === "CREATE_ENV" && (
+                  {(view === "CREATE_ENV" || view === "EDIT_ENV") && (
                     <div className="grid gap-3">
                       <Label className="text-[10px] font-bold uppercase text-zinc-500 tracking-widest">Base Schema Template</Label>
-                      <Select value={selectedTemplateId} onValueChange={setSelectedTemplateId}>
+                      <Select value={selectedTemplateId} onValueChange={setSelectedTemplateId} disabled={view === "EDIT_ENV"}>
                         <SelectTrigger className="bg-zinc-900 border-zinc-800 h-11 text-lg font-medium">
                           <SelectValue placeholder="Select a schema template" />
                         </SelectTrigger>
@@ -394,15 +451,15 @@ export default function DataEnvironments() {
                     </div>
                   )}
 
-                  {(currentTemplate || (view === "CREATE_SET" && selectedEnvTemplate)) && (
+                  {((view === "CREATE_ENV" || view === "EDIT_ENV" ? currentTemplate : selectedEnvTemplate)) && (
                     <div className="pt-4 space-y-6">
                       <div className="flex items-center gap-3">
                         <Label className="text-[10px] font-bold uppercase text-zinc-500 tracking-widest whitespace-nowrap">Config Variables</Label>
                         <div className="h-px w-full bg-zinc-900" />
                       </div>
                       <div className="space-y-5">
-                       {(view === "CREATE_ENV" ? currentTemplate : selectedEnvTemplate)?.attributes
-                        .filter(a => a.scope === (view === "CREATE_ENV" ? "environment" : "dataset")).map(attr => (
+                       {((view === "CREATE_ENV" || view === "EDIT_ENV") ? currentTemplate : selectedEnvTemplate)?.attributes
+                        .filter(a => a.scope === ((view === "CREATE_ENV" || view === "EDIT_ENV") ? "environment" : "dataset")).map(attr => (
                           <div key={attr.key} className="grid grid-cols-12 gap-4 items-center">
                             <Label className="col-span-12 md:col-span-4 flex items-center gap-2 text-sm font-bold text-zinc-400">
                               <span className="font-mono text-xs">{attr.key}</span>
@@ -411,9 +468,9 @@ export default function DataEnvironments() {
                             <div className="col-span-12 md:col-span-8">
                               <Input 
                                 type={attr.type === "secret" ? "password" : "text"}
-                                placeholder={attr.description || attr.type}
-                                value={(view === "CREATE_ENV" ? envVars[attr.key] : setVars[attr.key]) || ""}
-                                onChange={(e) => view === "CREATE_ENV" 
+                                placeholder={attr.type === "secret" && (view === "EDIT_ENV" || view === "EDIT_SET") ? "Leave blank to keep existing secret" : (attr.description || attr.type)}
+                                value={((view === "CREATE_ENV" || view === "EDIT_ENV") ? envVars[attr.key] : setVars[attr.key]) || ""}
+                                onChange={(e) => (view === "CREATE_ENV" || view === "EDIT_ENV") 
                                   ? setEnvVars({ ...envVars, [attr.key]: e.target.value })
                                   : setSetVars({ ...setVars, [attr.key]: e.target.value })
                                 }
@@ -430,13 +487,13 @@ export default function DataEnvironments() {
                 <div className="flex gap-4 pt-4">
                   <Button 
                     size="lg" 
-                    onClick={view === "CREATE_ENV" ? handleCreateEnv : handleCreateSet}
-                    disabled={view === "CREATE_ENV" ? (!envName || !selectedTemplateId) : !setName}
+                    onClick={(view === "CREATE_ENV" || view === "EDIT_ENV") ? handleSaveEnv : handleSaveSet}
+                    disabled={(view === "CREATE_ENV" || view === "EDIT_ENV") ? (!envName || !selectedTemplateId) : !setName}
                     className="h-11 bg-blue-600 hover:bg-blue-500 font-bold px-10 shadow-lg shadow-blue-600/10"
                   >
-                    {view === "CREATE_ENV" ? "Create Environment" : "Save Data Set"}
+                    {(view === "CREATE_ENV") ? "Create Environment" : view === "EDIT_ENV" ? "Save Changes" : view === "CREATE_SET" ? "Save Data Set" : "Save Changes"}
                   </Button>
-                  <Button variant="ghost" size="lg" onClick={() => setView(view === "CREATE_SET" ? "DETAILS" : "LIST")} className="h-11 text-zinc-500 hover:text-white px-8">Cancel</Button>
+                  <Button variant="ghost" size="lg" onClick={() => setView((view === "CREATE_SET" || view === "EDIT_SET") ? "DETAILS" : "LIST")} className="h-11 text-zinc-500 hover:text-white px-8">Cancel</Button>
                 </div>
               </div>
             )}
