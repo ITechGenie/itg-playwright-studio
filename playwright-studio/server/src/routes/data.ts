@@ -121,6 +121,16 @@ export function createDataRouter() {
         return res.status(404).json({ error: 'Environment not found' });
       }
 
+      const attrs = await db.select().from(templateAttributes).where(eq(templateAttributes.templateId, env.templateId));
+      const secretKeys = new Set(attrs.filter(a => a.type === 'secret').map(a => a.key));
+      
+      const vars = JSON.parse(env.variables || '{}');
+      for (const [key, val] of Object.entries(vars)) {
+        if (secretKeys.has(key)) {
+           vars[key] = 'REDACTED';
+        }
+      }
+
       const sets = await db.select({
         id: dataSets.id,
         environmentId: dataSets.environmentId,
@@ -128,7 +138,7 @@ export function createDataRouter() {
         createdAt: dataSets.createdAt
       }).from(dataSets).where(eq(dataSets.environmentId, env.id));
       
-      res.json({ ...env, datasets: sets });
+      res.json({ ...env, datasets: sets, variables: JSON.stringify(vars) });
     } catch (err) {
       console.error(err);
       res.status(500).json({ error: 'Failed to fetch environment details' });
@@ -148,7 +158,7 @@ export function createDataRouter() {
       const vars = JSON.parse(dataset.variables || '{}');
       for (const [key, val] of Object.entries(vars)) {
         if (typeof val === 'string' && val.includes(':')) {
-           vars[key] = decrypt(val);
+           vars[key] = 'REDACTED';
         }
       }
 
@@ -225,6 +235,114 @@ export function createDataRouter() {
     } catch (err) {
       console.error(err);
       res.status(500).json({ error: 'Failed to create dataset' });
+    }
+  });
+
+  // 4. Update Routes (POST instead of PUT for proxy compatibility)
+  router.post('/:projectId/data/templates/:templateId', async (req, res) => {
+    try {
+      const { templateId } = req.params;
+      const { name, attributes } = req.body;
+      
+      const [existing] = await db.select().from(dataTemplates).where(eq(dataTemplates.id, templateId));
+      if (!existing) return res.status(404).json({ error: 'Template not found' });
+
+      await db.update(dataTemplates)
+        .set({ name })
+        .where(eq(dataTemplates.id, templateId));
+
+      await db.delete(templateAttributes).where(eq(templateAttributes.templateId, templateId));
+
+      if (attributes && Array.isArray(attributes)) {
+        for (const attr of attributes) {
+          await db.insert(templateAttributes).values({
+            id: generateId(),
+            templateId,
+            key: attr.key,
+            type: attr.type,
+            scope: attr.scope,
+            description: attr.description,
+          });
+        }
+      }
+      
+      res.json({ id: templateId, name });
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ error: 'Failed to update template' });
+    }
+  });
+
+  router.post('/:projectId/data/environments/:environmentId', async (req, res) => {
+    try {
+      const { environmentId } = req.params;
+      const { name, variables } = req.body;
+      
+      const [env] = await db.select().from(environments).where(eq(environments.id, environmentId));
+      if (!env) return res.status(404).json({ error: 'Environment not found' });
+
+      const attrs = await db.select().from(templateAttributes).where(eq(templateAttributes.templateId, env.templateId));
+      const secretKeys = new Set(attrs.filter(a => a.type === 'secret').map(a => a.key));
+      
+      const existingVars = JSON.parse(env.variables || '{}');
+      const processedVars = { ...variables };
+      
+      for (const [key, val] of Object.entries(processedVars)) {
+        if (secretKeys.has(key)) {
+          if (val === 'REDACTED' || val === '' || val === null || val === undefined) {
+             processedVars[key] = existingVars[key]; // Keep original encrypted string
+          } else if (typeof val === 'string' && val.trim() !== '') {
+             processedVars[key] = encrypt(val);
+          }
+        }
+      }
+
+      await db.update(environments)
+        .set({ name, variables: JSON.stringify(processedVars) })
+        .where(eq(environments.id, environmentId));
+      
+      res.json({ id: environmentId, name });
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ error: 'Failed to update environment' });
+    }
+  });
+
+  router.post('/:projectId/data/environments/:environmentId/datasets/:datasetId', async (req, res) => {
+    try {
+      const { environmentId, datasetId } = req.params;
+      const { name, variables } = req.body;
+      
+      const [env] = await db.select().from(environments).where(eq(environments.id, environmentId));
+      if (!env) return res.status(404).json({ error: 'Environment not found' });
+      
+      const [dataset] = await db.select().from(dataSets).where(eq(dataSets.id, datasetId));
+      if (!dataset) return res.status(404).json({ error: 'Dataset not found' });
+
+      const attrs = await db.select().from(templateAttributes).where(eq(templateAttributes.templateId, env.templateId));
+      const secretKeys = new Set(attrs.filter(a => a.type === 'secret').map(a => a.key));
+      
+      const existingVars = JSON.parse(dataset.variables || '{}');
+      const processedVars = { ...variables };
+      
+      for (const [key, val] of Object.entries(processedVars)) {
+        if (secretKeys.has(key)) {
+          if (val === 'REDACTED' || val === '' || val === null || val === undefined) {
+             processedVars[key] = existingVars[key]; // Keep original encrypted string
+          } else if (typeof val === 'string' && val.trim() !== '') {
+             processedVars[key] = encrypt(val);
+          }
+        }
+      }
+
+      await db.update(dataSets)
+        .set({ name, variables: JSON.stringify(processedVars) })
+        .where(eq(dataSets.id, datasetId));
+      
+      res.json({ id: datasetId, name });
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ error: 'Failed to update dataset' });
     }
   });
 

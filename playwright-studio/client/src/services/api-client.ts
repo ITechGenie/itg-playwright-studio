@@ -203,6 +203,16 @@ export const apiClient = {
     return res.json();
   },
 
+  async updateDataTemplate(projectId: string, templateId: string, payload: any) {
+    const res = await apiFetch(ENDPOINTS.DATA_TEMPLATES(projectId) + '/' + templateId, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...authHeaders() },
+      body: JSON.stringify(payload)
+    });
+    if (!res.ok) throw new Error('Failed to update data template');
+    return res.json();
+  },
+
   async getDataEnvironments(projectId: string) {
     const res = await apiFetch(ENDPOINTS.DATA_ENVIRONMENTS(projectId), { headers: authHeaders() });
     if (!res.ok) throw new Error('Failed to fetch data environments');
@@ -225,6 +235,16 @@ export const apiClient = {
     return res.json();
   },
 
+  async updateDataEnvironment(projectId: string, envId: string, payload: any) {
+    const res = await apiFetch(ENDPOINTS.DATA_ENVIRONMENTS(projectId) + '/' + envId, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...authHeaders() },
+      body: JSON.stringify(payload)
+    });
+    if (!res.ok) throw new Error('Failed to update data environment');
+    return res.json();
+  },
+
   async createDataSet(projectId: string, envId: string, payload: any) {
     const res = await apiFetch(ENDPOINTS.DATA_DATASETS(projectId, envId), {
       method: 'POST',
@@ -238,6 +258,16 @@ export const apiClient = {
   async getDataSet(projectId: string, envId: string, datasetId: string) {
     const res = await apiFetch(ENDPOINTS.DATA_DATASETS(projectId, envId) + '/' + datasetId, { headers: authHeaders() });
     if (!res.ok) throw new Error('Failed to fetch data set details');
+    return res.json();
+  },
+
+  async updateDataSet(projectId: string, envId: string, datasetId: string, payload: any) {
+    const res = await apiFetch(ENDPOINTS.DATA_DATASETS(projectId, envId) + '/' + datasetId, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...authHeaders() },
+      body: JSON.stringify(payload)
+    });
+    if (!res.ok) throw new Error('Failed to update data set');
     return res.json();
   },
 
