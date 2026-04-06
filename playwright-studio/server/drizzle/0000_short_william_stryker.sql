@@ -5,7 +5,7 @@ CREATE TABLE `access_tokens` (
 	`token_hash` text NOT NULL,
 	`expires_at` integer,
 	`revoked` integer DEFAULT 0 NOT NULL,
-	`created_at` integer DEFAULT 2026-04-01T02:06:25.392Z NOT NULL,
+	`created_at` integer DEFAULT (unixepoch()) NOT NULL,
 	`last_used_at` integer,
 	FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON UPDATE no action ON DELETE no action
 );
@@ -15,7 +15,7 @@ CREATE TABLE `data_sets` (
 	`environment_id` text NOT NULL,
 	`name` text NOT NULL,
 	`variables` text,
-	`created_at` integer DEFAULT 2026-04-01T02:06:25.392Z NOT NULL,
+	`created_at` integer DEFAULT (unixepoch()) NOT NULL,
 	FOREIGN KEY (`environment_id`) REFERENCES `environments`(`id`) ON UPDATE no action ON DELETE no action
 );
 --> statement-breakpoint
@@ -23,7 +23,7 @@ CREATE TABLE `data_templates` (
 	`id` text PRIMARY KEY NOT NULL,
 	`project_id` text NOT NULL,
 	`name` text NOT NULL,
-	`created_at` integer DEFAULT 2026-04-01T02:06:25.392Z NOT NULL,
+	`created_at` integer DEFAULT (unixepoch()) NOT NULL,
 	FOREIGN KEY (`project_id`) REFERENCES `projects`(`id`) ON UPDATE no action ON DELETE no action
 );
 --> statement-breakpoint
@@ -33,7 +33,7 @@ CREATE TABLE `environments` (
 	`template_id` text NOT NULL,
 	`name` text NOT NULL,
 	`variables` text,
-	`created_at` integer DEFAULT 2026-04-01T02:06:25.392Z NOT NULL,
+	`created_at` integer DEFAULT (unixepoch()) NOT NULL,
 	FOREIGN KEY (`project_id`) REFERENCES `projects`(`id`) ON UPDATE no action ON DELETE no action,
 	FOREIGN KEY (`template_id`) REFERENCES `data_templates`(`id`) ON UPDATE no action ON DELETE no action
 );
@@ -58,7 +58,7 @@ CREATE TABLE `memberships` (
 	`user_id` text NOT NULL,
 	`role_id` text NOT NULL,
 	`project_id` text,
-	`created_at` integer DEFAULT 2026-04-01T02:06:25.391Z NOT NULL,
+	`created_at` integer DEFAULT (unixepoch()) NOT NULL,
 	FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON UPDATE no action ON DELETE no action,
 	FOREIGN KEY (`role_id`) REFERENCES `roles`(`id`) ON UPDATE no action ON DELETE no action,
 	FOREIGN KEY (`project_id`) REFERENCES `projects`(`id`) ON UPDATE no action ON DELETE no action
@@ -111,7 +111,7 @@ CREATE TABLE `users` (
 	`provider_username` text,
 	`provider_token` text,
 	`provider_token_expires_at` integer,
-	`created_at` integer DEFAULT 2026-04-01T02:06:25.391Z NOT NULL
+	`created_at` integer DEFAULT (unixepoch()) NOT NULL
 );
 --> statement-breakpoint
 CREATE UNIQUE INDEX `projects_name_unique` ON `projects` (`name`);--> statement-breakpoint
