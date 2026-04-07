@@ -9,7 +9,7 @@ import { authMiddleware, signJwt, encryptAes, sha256 } from '../middleware/auth.
 const router = express.Router();
 
 const CALLBACK_BASE = process.env.AUTH_CALLBACK_BASE || 'http://localhost:5173/apis/auth/callback';
-const APP_BASE = process.env.CLIENT_BASE_URL || 'http://localhost:5173';
+//const APP_BASE = process.env.CLIENT_BASE_URL || 'http://localhost:5173';
 
 const PROVIDERS_CONFIG = {
   gitlab: {
@@ -247,7 +247,7 @@ router.get('/callback/:provider', async (req, res) => {
 
     const jwtToken = signJwt(user.id);
 
-    res.redirect(`${APP_BASE}/app/projects?token=${jwtToken}`);
+    res.redirect(`/app/projects?token=${jwtToken}`);
   } catch (err) {
     console.error('OAuth callback error:', err);
     const message = err instanceof Error ? err.message : 'An unexpected error occurred during authentication.';

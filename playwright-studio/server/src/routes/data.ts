@@ -123,7 +123,7 @@ export function createDataRouter() {
     } catch (err) { console.error(err); res.status(500).json({ error: 'Failed to update template' }); }
   });
 
-  router.delete('/:projectId/data/templates/:templateId', async (req, res) => {
+  router.post('/:projectId/data/templates/:templateId/delete', async (req, res) => {
     try {
       const { templateId } = req.params;
       await db.delete(templateAttributes).where(eq(templateAttributes.templateId, templateId));
@@ -194,10 +194,9 @@ export function createDataRouter() {
     } catch (err) { console.error(err); res.status(500).json({ error: 'Failed to update environment' }); }
   });
 
-  router.delete('/:projectId/data/environments/:environmentId', async (req, res) => {
+  router.post('/:projectId/data/environments/:environmentId/delete', async (req, res) => {
     try {
       const { environmentId } = req.params;
-      // Remove links only — datasets themselves are not deleted (they may be linked to other envs)
       await db.delete(environmentDatasets).where(eq(environmentDatasets.environmentId, environmentId));
       await db.delete(environments).where(eq(environments.id, environmentId));
       res.json({ success: true });
@@ -316,7 +315,7 @@ export function createDataRouter() {
   });
 
   // Delete single
-  router.delete('/:projectId/data/datasets/:datasetId', async (req, res) => {
+  router.post('/:projectId/data/datasets/:datasetId/delete', async (req, res) => {
     try {
       const { datasetId } = req.params;
       await db.delete(environmentDatasets).where(eq(environmentDatasets.datasetId, datasetId));
