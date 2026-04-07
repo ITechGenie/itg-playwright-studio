@@ -525,6 +525,29 @@ app.get('/apis/project/:projectId/files', async (req, res) => {
   }
 });
 
+app.post('/apis/project/:projectId/files/folder', authMiddleware, requireProjectRole('user'), async (req, res) => {
+  try {
+    const { projectId } = req.params;
+    const { path: folderPath } = req.body;
+    if (!folderPath) return res.status(400).json({ error: 'path is required' });
+
+    const [project] = await db.select().from(projects).where(eq(projects.id, projectId));
+    if (!project) return res.status(404).json({ error: 'Project not found' });
+
+    const basePath = process.env.PROJECTS_BASE_PATH || path.join(process.cwd(), 'projects');
+    const projectRoot = path.resolve(basePath, project.name);
+    const targetPath = path.resolve(projectRoot, folderPath);
+
+    if (!targetPath.startsWith(projectRoot)) return res.status(403).json({ error: 'Forbidden' });
+
+    await fs.mkdir(targetPath, { recursive: true });
+    res.status(201).json({ success: true, path: folderPath });
+  } catch (err) {
+    console.error('API Error:', err);
+    res.status(500).json({ error: 'Failed to create folder' });
+  }
+});
+
 app.get('/apis/project/:projectId/files/content', authMiddleware, requireProjectRole('user'), async (req, res) => {
   try {
     const { projectId } = req.params;
@@ -671,7 +694,7 @@ app.post('/apis/project/:projectId/git-sync', authMiddleware, requireProjectRole
 });
 
 // Git Config Update Endpoint
-app.patch('/apis/project/:projectId/git-config', authMiddleware, requireProjectRole('admin'), async (req, res) => {
+app.post('/apis/project/:projectId/git-config', authMiddleware, requireProjectRole('admin'), async (req, res) => {
   try {
     const { projectId } = req.params;
     const { repoUrl } = req.body;

@@ -82,7 +82,7 @@ export const apiClient = {
 
   async updateProjectGitConfig(projectId: string, repoUrl: string) {
     const res = await apiFetch(ENDPOINTS.PROJECTS + '/' + projectId, {
-      method: 'PATCH',
+      method: 'POST',
       headers: { 'Content-Type': 'application/json', ...authHeaders() },
       body: JSON.stringify({ repoUrl }),
     });
@@ -144,6 +144,16 @@ export const apiClient = {
       body: JSON.stringify(options),
     });
     if (!res.ok) throw new Error('Failed to start run');
+    return res.json();
+  },
+
+  async createFolder(projectId: string, folderPath: string) {
+    const res = await apiFetch(`${ENDPOINTS.PROJECT_FILES(projectId)}/folder`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...authHeaders() },
+      body: JSON.stringify({ path: folderPath }),
+    });
+    if (!res.ok) throw new Error('Failed to create folder');
     return res.json();
   },
 
@@ -214,8 +224,8 @@ export const apiClient = {
   },
 
   async deleteDataTemplate(projectId: string, templateId: string) {
-    const res = await apiFetch(ENDPOINTS.DATA_TEMPLATES(projectId) + '/' + templateId, {
-      method: 'DELETE',
+    const res = await apiFetch(ENDPOINTS.DATA_TEMPLATES(projectId) + '/' + templateId + '/delete', {
+      method: 'POST',
       headers: authHeaders(),
     });
     if (!res.ok) throw new Error('Failed to delete data template');
@@ -255,8 +265,8 @@ export const apiClient = {
   },
 
   async deleteDataEnvironment(projectId: string, envId: string) {
-    const res = await apiFetch(ENDPOINTS.DATA_ENVIRONMENTS(projectId) + '/' + envId, {
-      method: 'DELETE',
+    const res = await apiFetch(ENDPOINTS.DATA_ENVIRONMENTS(projectId) + '/' + envId + '/delete', {
+      method: 'POST',
       headers: authHeaders(),
     });
     if (!res.ok) throw new Error('Failed to delete data environment');
@@ -290,8 +300,8 @@ export const apiClient = {
   },
 
   async deleteDataSet(projectId: string, envId: string, datasetId: string) {
-    const res = await apiFetch(ENDPOINTS.DATA_DATASETS(projectId, envId) + '/' + datasetId, {
-      method: 'DELETE',
+    const res = await apiFetch(ENDPOINTS.DATA_DATASETS(projectId, envId) + '/' + datasetId + '/delete', {
+      method: 'POST',
       headers: authHeaders(),
     });
     if (!res.ok) throw new Error('Failed to delete data set');
@@ -343,8 +353,8 @@ export const apiClient = {
   },
 
   async deleteDataSetV2(projectId: string, datasetId: string) {
-    const res = await apiFetch(ENDPOINTS.DATA_DATASETS_V2(projectId) + '/' + datasetId, {
-      method: 'DELETE',
+    const res = await apiFetch(ENDPOINTS.DATA_DATASETS_V2(projectId) + '/' + datasetId + '/delete', {
+      method: 'POST',
       headers: authHeaders(),
     });
     if (!res.ok) throw new Error('Failed to delete dataset');
@@ -393,7 +403,7 @@ export const apiClient = {
 
   async updateSchedule(projectId: string, scheduleId: string, patch: any) {
     const res = await apiFetch(ENDPOINTS.PROJECT_SCHEDULE(projectId, scheduleId), {
-      method: 'PATCH',
+      method: 'POST',
       headers: { 'Content-Type': 'application/json', ...authHeaders() },
       body: JSON.stringify(patch),
     });
@@ -405,8 +415,8 @@ export const apiClient = {
   },
 
   async deleteSchedule(projectId: string, scheduleId: string) {
-    const res = await apiFetch(ENDPOINTS.PROJECT_SCHEDULE(projectId, scheduleId), {
-      method: 'DELETE',
+    const res = await apiFetch(ENDPOINTS.PROJECT_SCHEDULE(projectId, scheduleId) + '/delete', {
+      method: 'POST',
       headers: authHeaders(),
     });
     if (!res.ok) throw new Error('Failed to delete schedule');

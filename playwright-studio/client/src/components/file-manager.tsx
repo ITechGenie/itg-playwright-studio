@@ -19,6 +19,8 @@ import {
     DownloadIcon,
     EyeIcon,
     GitBranchIcon,
+    UserIcon,
+    FolderPlusIcon,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -296,6 +298,30 @@ export function FileManager({ basePath = "", title = "File Manager", actions, on
     const [commitDialogOpen, setCommitDialogOpen] = useState(false);
     const [commitMessage, setCommitMessage] = useState("");
     const [gitPushStatus, setGitPushStatus] = useState<{ pushed: boolean; error?: string } | null>(null);
+
+    // Folder creation state
+    const [newFolderDialogOpen, setNewFolderDialogOpen] = useState(false);
+    const [newFolderName, setNewFolderName] = useState("");
+    const [creatingFolder, setCreatingFolder] = useState(false);
+
+    const handleCreateFolder = async () => {
+        if (!newFolderName.trim()) return;
+        const parentPath = currentPath ? `${currentPath}/${newFolderName.trim()}` : newFolderName.trim();
+        setCreatingFolder(true);
+        try {
+            await apiClient.createFolder(projectId, parentPath);
+            setNewFolderDialogOpen(false);
+            setNewFolderName("");
+            // Refresh current folder
+            const folderPath = pathSegments.join("/");
+            const data = await apiClient.getProjectFiles(projectId, folderPath);
+            setCurrentFolderItems(data);
+        } catch (e) {
+            console.error("Failed to create folder", e);
+        } finally {
+            setCreatingFolder(false);
+        }
+    };
 
     // Fetch project Git config
     useEffect(() => {
@@ -617,6 +643,14 @@ export function FileManager({ basePath = "", title = "File Manager", actions, on
                             <EyeIcon className="mr-2 h-3.5 w-3.5" /> View Spec
                         </Button>
                     )}
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-8 text-xs font-semibold"
+                        onClick={() => { setNewFolderName(""); setNewFolderDialogOpen(true); }}
+                    >
+                        <FolderPlusIcon className="mr-2 h-3.5 w-3.5" /> New Folder
+                    </Button>
                     {actions}
                 </div>
             </div>
@@ -723,8 +757,10 @@ export function FileManager({ basePath = "", title = "File Manager", actions, on
                                         <span className="hidden lg:block w-16 text-right text-xs">{item.date}</span>
                                         <span className="hidden lg:block w-14 text-right text-xs">{item.size}</span>
                                         <Avatar className="h-5 w-5">
-                                            <AvatarImage src={item.owner?.avatar || "/app/playwright-studio.png"} />
-                                            <AvatarFallback className="text-[10px]">{item.owner?.name?.charAt(0)}</AvatarFallback>
+                                            <AvatarImage src={item.owner?.avatar} />
+                                            <AvatarFallback className="bg-zinc-800">
+                                                <UserIcon className="h-3 w-3 text-zinc-400" />
+                                            </AvatarFallback>
                                         </Avatar>
                                         <DropdownMenu>
                                             <DropdownMenuTrigger asChild>
@@ -795,6 +831,33 @@ export function FileManager({ basePath = "", title = "File Manager", actions, on
                     </SheetContent>
                 </Sheet>
             )}
+
+            <Dialog open={newFolderDialogOpen} onOpenChange={setNewFolderDialogOpen}>
+                <DialogContent className="sm:max-w-sm">
+                    <DialogHeader>
+                        <DialogTitle>New Folder</DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-3 py-2">
+                        <Label className="text-xs font-bold uppercase text-zinc-400">
+                            Folder name
+                            {currentPath && <span className="ml-2 font-normal text-zinc-500 normal-case">in /{currentPath}</span>}
+                        </Label>
+                        <Input
+                            placeholder="e.g. auth-tests"
+                            value={newFolderName}
+                            onChange={e => setNewFolderName(e.target.value)}
+                            onKeyDown={e => e.key === 'Enter' && handleCreateFolder()}
+                            autoFocus
+                        />
+                    </div>
+                    <DialogFooter className="gap-2">
+                        <Button variant="outline" onClick={() => setNewFolderDialogOpen(false)}>Cancel</Button>
+                        <Button disabled={!newFolderName.trim() || creatingFolder} onClick={handleCreateFolder}>
+                            {creatingFolder ? "Creating..." : "Create Folder"}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }

@@ -140,8 +140,8 @@ export function createSchedulesRouter() {
     }
   });
 
-  // ── PATCH /:projectId/schedules/:scheduleId ───────────────────────────────
-  router.patch('/:projectId/schedules/:scheduleId', async (req, res) => {
+  // ── POST /:projectId/schedules/:scheduleId (update — replaces PATCH) ────────
+  router.post('/:projectId/schedules/:scheduleId', async (req, res) => {
     const { projectId, scheduleId } = req.params;
     const patch = req.body as Partial<{
       name: string;
@@ -238,7 +238,7 @@ export function createSchedulesRouter() {
       return res.status(500).json({ error: err.message || 'Failed to trigger run' });
     }
   });
-  router.delete('/:projectId/schedules/:scheduleId', async (req, res) => {
+  router.post('/:projectId/schedules/:scheduleId/delete', async (req, res) => {
     const { projectId, scheduleId } = req.params;
 
     const [existing] = await db.select().from(schedules).where(eq(schedules.id, scheduleId));
@@ -248,7 +248,7 @@ export function createSchedulesRouter() {
     try {
       schedulerService.unregisterJob(scheduleId);
       await db.delete(schedules).where(eq(schedules.id, scheduleId));
-      return res.status(204).send();
+      return res.json({ success: true });
     } catch (err) {
       console.error('[Schedules] DELETE error:', err);
       return res.status(500).json({ error: 'Failed to delete schedule' });
