@@ -52,7 +52,7 @@ export class GitPushServiceImpl implements GitPushService {
       // Load project Git config from database
       const project = await this.loadProjectGitConfig(projectId);
       
-      if (!project.repoUrl || !project.gitRepoId) {
+      if (!project.repoBaseUrl || !project.gitRepoId) {
         console.warn(`[GitPushService] Project "${projectId}" has no Git configuration`);
         return {
           success: false,
@@ -60,23 +60,24 @@ export class GitPushServiceImpl implements GitPushService {
         };
       }
 
-      // Parse Git URL to extract repository details
-      const parsedUrl = GitUrlParser.parse(project.repoUrl);
+      // Parse Git base URL to extract repository details
+      const baseParsed = GitUrlParser.parseBaseUrl(project.repoBaseUrl);
       
       // Construct full file path (folder path + file path)
-      const fullFilePath = parsedUrl.folderPath 
-        ? `${parsedUrl.folderPath}/${filePath}`
+      const folderPath = project.repoFolder || '/';
+      const fullFilePath = folderPath && folderPath !== '/'
+        ? `${folderPath}/${filePath}`
         : filePath;
 
       // Create provider-specific client
-      const client = createGitProviderClient(parsedUrl.provider);
+      const client = createGitProviderClient(baseParsed.provider);
 
       // Push file to Git
       await client.pushFile(
         project.gitRepoId,
         fullFilePath,
         content,
-        parsedUrl.branch,
+        project.repoBranch || 'main',
         commitMessage,
         userToken
       );
@@ -100,12 +101,16 @@ export class GitPushServiceImpl implements GitPushService {
    * Load project Git configuration from database
    */
   private async loadProjectGitConfig(projectId: string): Promise<{
-    repoUrl: string | null;
+    repoBaseUrl: string | null;
+    repoBranch: string | null;
+    repoFolder: string | null;
     gitRepoId: string | null;
   }> {
     const result = await db
       .select({
-        repoUrl: projects.repoUrl,
+        repoBaseUrl: projects.repoBaseUrl,
+        repoBranch: projects.repoBranch,
+        repoFolder: projects.repoFolder,
         gitRepoId: projects.gitRepoId,
       })
       .from(projects)

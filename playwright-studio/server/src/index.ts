@@ -165,6 +165,11 @@ async function applyMigrations() {
     await ensureColumn('users', 'provider_token', 'TEXT');
     await ensureColumn('users', 'provider_token_expires_at', 'INTEGER');
 
+    // Ensure new Git config fields are patched into existing databases
+    await ensureColumn('projects', 'repo_base_url', 'TEXT');
+    await ensureColumn('projects', 'repo_branch', 'TEXT');
+    await ensureColumn('projects', 'repo_folder', "TEXT DEFAULT '/'");
+
     // Run configuration columns
     await ensureColumn('project_configs', 'headless', 'INTEGER DEFAULT 1 NOT NULL');
     await ensureColumn('project_configs', 'workers', 'INTEGER DEFAULT 1 NOT NULL');
@@ -271,7 +276,9 @@ app.get('/apis/auth/projects', authMiddleware, requireProjectRole('user'), async
     const allProjects = await db.select({
       id: projects.id,
       name: projects.name,
-      repoUrl: projects.repoUrl,
+      repoBaseUrl: projects.repoBaseUrl,
+      repoBranch: projects.repoBranch,
+      repoFolder: projects.repoFolder,
       gitRepoId: projects.gitRepoId,
       createdAt: projects.createdAt,
       config: {
@@ -293,7 +300,9 @@ app.get('/apis/auth/projects', authMiddleware, requireProjectRole('user'), async
     const formatted = allProjects.map(p => ({
       id: p.id,
       name: p.name,
-      repoUrl: p.repoUrl,
+      repoBaseUrl: p.repoBaseUrl,
+      repoBranch: p.repoBranch,
+      repoFolder: p.repoFolder,
       gitRepoId: p.gitRepoId,
       grouper: "Workspace",
       status: "Active",
@@ -308,20 +317,28 @@ app.get('/apis/auth/projects', authMiddleware, requireProjectRole('user'), async
 });
 
 app.post('/apis/auth/projects', authMiddleware, requireProjectRole('user'), async (req, res) => {
-  const { name, gitUrl } = req.body;
+  const { name, gitConfig } = req.body;
   if (!name) return res.status(400).json({ error: 'Project name is required' });
 
   try {
     const basePath = process.env.PROJECTS_BASE_PATH || path.join(process.cwd(), 'projects');
     const projectPath = path.join(basePath, name);
 
-    // 1. Validate Git URL if provided
-    let parsedGitUrl = null;
+    // 1. Validate Git Configuration if provided
+    let parsedGitUrl: any = null;
     let gitRepoId = null;
-    if (gitUrl) {
+    if (gitConfig && gitConfig.baseUrl) {
       const { GitUrlParser } = await import('./lib/git-url-parser.js');
       try {
-        parsedGitUrl = GitUrlParser.parse(gitUrl);
+        const baseParsed = GitUrlParser.parseBaseUrl(gitConfig.baseUrl);
+        parsedGitUrl = {
+          provider: baseParsed.provider,
+          repoOwner: baseParsed.repoOwner,
+          repoName: baseParsed.repoName,
+          repoBaseUrl: baseParsed.repoBaseUrl,
+          branch: gitConfig.branch || 'main',
+          folderPath: gitConfig.folder || '/'
+        };
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'Invalid Git URL format';
         return res.status(400).json({ error: errorMessage });
@@ -337,8 +354,8 @@ app.post('/apis/auth/projects', authMiddleware, requireProjectRole('user'), asyn
       return res.status(409).json({ error: 'Project already exists in database' });
     }
 
-    // 4. If Git URL provided, sync files from repository
-    if (gitUrl && parsedGitUrl) {
+    // 4. If Git Config provided, sync files from repository
+    if (gitConfig && parsedGitUrl) {
       const { createGitSyncService } = await import('./lib/git-sync-service.js');
       const { createGitProviderClient } = await import('./lib/git-provider-client.js');
 
@@ -373,7 +390,7 @@ app.post('/apis/auth/projects', authMiddleware, requireProjectRole('user'), asyn
 
         // Sync files from Git
         const syncService = createGitSyncService(basePath);
-        const syncResult = await syncService.syncProject(name, gitUrl, rawToken);
+        const syncResult = await syncService.syncProject(name, parsedGitUrl, rawToken);
 
         if (!syncResult.success) {
           // Clean up created directory on sync failure
@@ -396,7 +413,9 @@ app.post('/apis/auth/projects', authMiddleware, requireProjectRole('user'), asyn
     await db.insert(projects).values({
       id: projectId,
       name,
-      repoUrl: gitUrl || null,
+      repoBaseUrl: parsedGitUrl?.repoBaseUrl || null,
+      repoBranch: parsedGitUrl?.branch || null,
+      repoFolder: parsedGitUrl?.folderPath || '/',
       gitRepoId: gitRepoId || null,
       createdAt: new Date(),
       updatedAt: new Date(),
@@ -426,7 +445,7 @@ app.post('/apis/auth/projects', authMiddleware, requireProjectRole('user'), asyn
       });
     }
 
-    res.status(201).json({ id: projectId, name, repoUrl: gitUrl || null, gitRepoId: gitRepoId || null });
+    res.status(201).json({ id: projectId, name, repoBaseUrl: parsedGitUrl?.repoBaseUrl || null, gitRepoId: gitRepoId || null });
   } catch (err) {
     console.error('API Error:', err);
     res.status(500).json({ error: 'Failed to create project' });
@@ -598,7 +617,73 @@ app.put('/apis/project/:projectId/files/content', authMiddleware, requireProject
     let gitPushed = false;
     let gitError: string | undefined;
 
-    if (commitMessage && project.repoUrl && project.gitRepoId) {
+    if (commitMessage && project.repoBaseUrl && project.gitRepoId) {
+      // Get user's OAuth token
+      const user = (req as any).user;
+      if (user && user.providerToken) {
+        const rawToken = decryptAes(user.providerToken);
+        if (rawToken) {
+          try {
+            const { createGitPushService } = await import('./lib/git-push-service.js');
+            const pushService = createGitPushService();
+            const pushResult = await pushService.pushFile(
+              projectId,
+              requestedSubPath,
+              content,
+              commitMessage,
+              rawToken
+            );
+            gitPushed = pushResult.success;
+            gitError = pushResult.error;
+            if (!pushResult.success) {
+              console.error('[Git Push] Failed:', pushResult.error);
+            }
+          } catch (e: any) {
+             console.error('[Git Push] Exception:', e);
+             gitError = e.message;
+          }
+        } else {
+          gitError = "Failed to decrypt provider token";
+        }
+      } else {
+        gitError = "OAuth token not available. Please disconnect and reconnect your Git provider.";
+      }
+    }
+
+    res.json({ success: true, gitPushed, gitError });
+  } catch (err) {
+    console.error('API Error:', err);
+    res.status(500).json({ error: 'Failed to write file' });
+  }
+});
+
+app.post('/apis/project/:projectId/files/content', authMiddleware, requireProjectRole('user'), async (req, res) => {
+  try {
+    const { projectId } = req.params;
+    const requestedSubPath = (req.query.path as string);
+    const { content, commitMessage } = req.body;
+
+    if (!requestedSubPath) return res.status(400).json({ error: 'Path required' });
+
+    const [project] = await db.select().from(projects).where(eq(projects.id, projectId));
+    if (!project) return res.status(404).json({ error: 'Project not found' });
+
+    const folderName = project.name;
+    const basePath = process.env.PROJECTS_BASE_PATH || path.join(process.cwd(), 'projects');
+    const projectRoot = path.resolve(basePath, folderName);
+    const targetPath = path.resolve(projectRoot, requestedSubPath);
+
+    if (!targetPath.startsWith(projectRoot)) return res.status(403).json({ error: 'Forbidden' });
+
+    // ensure parent dir exists
+    await fs.mkdir(path.dirname(targetPath), { recursive: true });
+    await fs.writeFile(targetPath, content, 'utf8');
+
+    // Check if we should push to Git
+    let gitPushed = false;
+    let gitError: string | undefined;
+
+    if (commitMessage && project.repoBaseUrl && project.gitRepoId) {
       // Get user's OAuth token
       const user = (req as any).user;
       if (user && user.providerToken) {
@@ -652,7 +737,7 @@ app.post('/apis/project/:projectId/git-sync', authMiddleware, requireProjectRole
     if (!project) return res.status(404).json({ error: 'Project not found' });
 
     // Check if project has Git config
-    if (!project.repoUrl) {
+    if (!project.repoBaseUrl) {
       return res.status(400).json({ error: 'Project does not have Git configuration' });
     }
 
@@ -669,9 +754,22 @@ app.post('/apis/project/:projectId/git-sync', authMiddleware, requireProjectRole
 
     // Sync files from Git
     const { createGitSyncService } = await import('./lib/git-sync-service.js');
+    const { GitUrlParser } = await import('./lib/git-url-parser.js');
     const basePath = process.env.PROJECTS_BASE_PATH || path.join(process.cwd(), 'projects');
     const syncService = createGitSyncService(basePath);
-    const syncResult = await syncService.syncProject(project.name, project.repoUrl, rawToken);
+    
+    // Construct full parsed object
+    const baseParsed = GitUrlParser.parseBaseUrl(project.repoBaseUrl);
+    const parsedGitUrl = {
+      provider: baseParsed.provider,
+      repoOwner: baseParsed.repoOwner,
+      repoName: baseParsed.repoName,
+      repoBaseUrl: baseParsed.repoBaseUrl,
+      branch: project.repoBranch || 'main',
+      folderPath: project.repoFolder || '/'
+    };
+    
+    const syncResult = await syncService.syncProject(project.name, parsedGitUrl as any, rawToken);
 
     if (!syncResult.success) {
       return res.status(500).json({
@@ -697,17 +795,25 @@ app.post('/apis/project/:projectId/git-sync', authMiddleware, requireProjectRole
 app.post('/apis/project/:projectId/git-config', authMiddleware, requireProjectRole('admin'), async (req, res) => {
   try {
     const { projectId } = req.params;
-    const { repoUrl } = req.body;
+    const { gitConfig } = req.body;
 
-    if (!repoUrl) {
-      return res.status(400).json({ error: 'repoUrl is required' });
+    if (!gitConfig || !gitConfig.baseUrl) {
+      return res.status(400).json({ error: 'gitConfig with baseUrl is required' });
     }
 
     // Validate Git URL
     const { GitUrlParser } = await import('./lib/git-url-parser.js');
     let parsedGitUrl;
     try {
-      parsedGitUrl = GitUrlParser.parse(repoUrl);
+      const baseParsed = GitUrlParser.parseBaseUrl(gitConfig.baseUrl);
+      parsedGitUrl = {
+        provider: baseParsed.provider,
+        repoOwner: baseParsed.repoOwner,
+        repoName: baseParsed.repoName,
+        repoBaseUrl: baseParsed.repoBaseUrl,
+        branch: gitConfig.branch || 'main',
+        folderPath: gitConfig.folder || '/'
+      };
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Invalid Git URL format';
       return res.status(400).json({ error: errorMessage });
@@ -746,7 +852,9 @@ app.post('/apis/project/:projectId/git-config', authMiddleware, requireProjectRo
     // Update project record
     await db.update(projects)
       .set({
-        repoUrl: repoUrl,
+        repoBaseUrl: parsedGitUrl.repoBaseUrl,
+        repoBranch: parsedGitUrl.branch,
+        repoFolder: parsedGitUrl.folderPath,
         gitRepoId: gitRepoId,
         updatedAt: new Date()
       })

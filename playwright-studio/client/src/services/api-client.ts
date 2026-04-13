@@ -51,11 +51,11 @@ export const apiClient = {
     window.location.href = '/';
   },
 
-  async createProject(name: string, gitUrl?: string) {
+  async createProject(name: string, gitConfig?: { baseUrl: string, branch: string, folder: string }) {
     const res = await apiFetch(ENDPOINTS.PROJECTS, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', ...authHeaders() },
-      body: JSON.stringify({ name, gitUrl }),
+      body: JSON.stringify({ name, gitConfig }),
     });
     if (!res.ok) {
       const err = await res.json();
@@ -80,11 +80,11 @@ export const apiClient = {
     return res.json();
   },
 
-  async updateProjectGitConfig(projectId: string, repoUrl: string) {
+  async updateProjectGitConfig(projectId: string, gitConfig: { baseUrl: string, branch: string, folder: string }) {
     const res = await apiFetch(ENDPOINTS.PROJECTS + '/' + projectId, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', ...authHeaders() },
-      body: JSON.stringify({ repoUrl }),
+      body: JSON.stringify({ gitConfig }),
     });
     if (!res.ok) {
       const err = await res.json();
@@ -170,6 +170,18 @@ export const apiClient = {
     url.searchParams.set('path', path);
     const res = await apiFetch(url, { headers: authHeaders() });
     if (!res.ok) throw new Error('Failed to fetch file content');
+    return res.json();
+  },
+
+  async createFileContent(projectId: string, path: string, content: string, commitMessage?: string) {
+    const url = new URL(window.location.origin + ENDPOINTS.PROJECT_FILES(projectId) + '/content');
+    url.searchParams.set('path', path);
+    const res = await apiFetch(url, { 
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...authHeaders() },
+        body: JSON.stringify({ content, commitMessage })
+    });
+    if (!res.ok) throw new Error('Failed to create file content');
     return res.json();
   },
 

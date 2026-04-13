@@ -27,7 +27,7 @@ export default function ProjectSettings() {
   const [saved, setSaved] = useState(false)
 
   // Project data
-  const [repoUrl, setRepoUrl] = useState<string | null>(null)
+  const [originalGitConfig, setOriginalGitConfig] = useState<{ baseUrl: string; branch: string; folder: string } | null>(null)
 
   // Git config state
   const [gitEditMode, setGitEditMode] = useState(false)
@@ -56,18 +56,22 @@ export default function ProjectSettings() {
     apiClient.getProjects().then((projects: any[]) => {
       const proj = projects.find(p => p.id === projectId)
       if (proj) {
-        setRepoUrl(proj.repoUrl || null)
-        
-        // Parse Git URL if present
-        if (proj.repoUrl) {
+        if (proj.repoBaseUrl) {
+          const config = {
+            baseUrl: proj.repoBaseUrl,
+            branch: proj.repoBranch || 'main',
+            folder: proj.repoFolder || '/'
+          };
+          setOriginalGitConfig(config)
+          
           try {
-            const parsed = GitUrlParser.parse(proj.repoUrl)
+            const parsed = GitUrlParser.parseBaseUrl(proj.repoBaseUrl)
             setGitProvider(parsed.provider)
-            setGitRepoUrl(parsed.repoUrl)
-            setGitBranch(parsed.branch)
-            setGitPath(parsed.folderPath)
+            setGitRepoUrl(proj.repoBaseUrl)
+            setGitBranch(proj.repoBranch || 'main')
+            setGitPath(proj.repoFolder || '/')
           } catch (err) {
-            console.error("Failed to parse Git URL:", err)
+            console.error("Failed to parse Git Base URL:", err)
           }
         }
 
@@ -135,6 +139,22 @@ export default function ProjectSettings() {
     }
   }
 
+  const handleGitUrlChange = (value: string) => {
+    if (value.includes('/-/tree/') || value.includes('/tree/')) {
+      try {
+        const parsed = GitUrlParser.parse(value);
+        setGitRepoUrl(parsed.repoBaseUrl);
+        setGitBranch(parsed.branch);
+        setGitPath(parsed.folderPath || '/');
+        setGitError(null);
+        return;
+      } catch (err) {
+        // Fallback to updating string manually
+      }
+    }
+    setGitRepoUrl(value)
+  }
+
   const handleEditGitConfig = () => {
     setGitEditMode(true)
     setGitError(null)
@@ -144,15 +164,15 @@ export default function ProjectSettings() {
     setGitEditMode(false)
     setGitError(null)
     // Reset to original values
-    if (repoUrl) {
+    if (originalGitConfig) {
       try {
-        const parsed = GitUrlParser.parse(repoUrl)
+        const parsed = GitUrlParser.parseBaseUrl(originalGitConfig.baseUrl)
         setGitProvider(parsed.provider)
-        setGitRepoUrl(parsed.repoUrl)
-        setGitBranch(parsed.branch)
-        setGitPath(parsed.folderPath)
+        setGitRepoUrl(originalGitConfig.baseUrl)
+        setGitBranch(originalGitConfig.branch)
+        setGitPath(originalGitConfig.folder)
       } catch (err) {
-        console.error("Failed to parse Git URL:", err)
+        console.error("Failed to parse Git Base URL:", err)
       }
     }
   }
@@ -162,24 +182,20 @@ export default function ProjectSettings() {
     setGitError(null)
 
     try {
-      // Reconstruct URL from parts
-      const reconstructed = GitUrlParser.reconstruct({
-        provider: gitProvider,
-        repoOwner: gitRepoUrl.split('/').slice(-2, -1)[0] || '',
-        repoName: gitRepoUrl.split('/').slice(-1)[0] || '',
-        branch: gitBranch,
-        folderPath: gitPath,
-        repoUrl: gitRepoUrl,
-      })
-
-      // Validate reconstructed URL
-      if (!GitUrlParser.validate(reconstructed)) {
-        setGitError('Invalid Git URL configuration')
+      // Validate Base URL
+      if (!GitUrlParser.validateBaseUrl(gitRepoUrl)) {
+        setGitError('Invalid Git Repository Base URL')
         return
       }
 
-      await apiClient.updateProjectGitConfig(projectId, reconstructed)
-      setRepoUrl(reconstructed)
+      const gitConfig = {
+        baseUrl: gitRepoUrl.trim().replace(/\/+$/, ''),
+        branch: gitBranch.trim().replace(/^\/+|\/+$/g, '') || 'main',
+        folder: gitPath.trim().replace(/^\/+|\/+$/g, '') || '/'
+      };
+
+      await apiClient.updateProjectGitConfig(projectId, gitConfig)
+      setOriginalGitConfig(gitConfig)
       setGitEditMode(false)
       setSaved(true)
       window.setTimeout(() => setSaved(false), 3000)
@@ -234,7 +250,7 @@ export default function ProjectSettings() {
                 <CardTitle className="text-sm font-bold uppercase tracking-wider text-zinc-400">Git Repository</CardTitle>
                 <CardDescription className="text-xs">Configure Git integration for this project</CardDescription>
               </div>
-              {repoUrl && !gitEditMode && (
+              {originalGitConfig && !gitEditMode && (
                 <Button 
                   variant="outline" 
                   size="sm" 
@@ -246,7 +262,7 @@ export default function ProjectSettings() {
               )}
             </CardHeader>
             <CardContent className="space-y-4">
-              {!repoUrl && !gitEditMode ? (
+              {!originalGitConfig && !gitEditMode ? (
                 <div className="text-center py-8 text-zinc-500 text-sm">
                   <GitBranchIcon className="h-8 w-8 mx-auto mb-2 opacity-50" />
                   <p>No Git repository configured</p>
@@ -278,7 +294,7 @@ export default function ProjectSettings() {
                     <Input 
                       placeholder="https://github.com/owner/repo" 
                       value={gitRepoUrl} 
-                      onChange={e => setGitRepoUrl(e.target.value)}
+                      onChange={e => handleGitUrlChange(e.target.value)}
                       className="h-10 bg-zinc-900 border-zinc-800 text-sm"
                     />
                   </div>
