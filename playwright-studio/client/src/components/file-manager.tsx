@@ -95,36 +95,39 @@ interface TreeItemProps {
     projectId: string;
     navigate: (path: string) => void;
     setSelectedFile: (f: FileItem) => void;
+    refreshTrigger?: number;
 }
 
-function LeftTreeItem({ item, depth, pathSegments, BASE, projectId, navigate, setSelectedFile }: TreeItemProps) {
+function LeftTreeItem({ item, depth, pathSegments, BASE, projectId, navigate, setSelectedFile, refreshTrigger = 0 }: TreeItemProps) {
     const isFolder = item.type === "folder";
-    const isExpanded = depth === 0 && pathSegments[0] === item.name;
-    const isActive =
-        (depth === 0 && pathSegments[0] === item.name) ||
-        (depth === 1 && pathSegments[1] === item.name);
+    const isExpanded = pathSegments[depth] === item.name;
+    const isActive = pathSegments.length - 1 === depth && pathSegments[depth] === item.name;
 
     const [children, setChildren] = useState<FileItem[]>(item.children || []);
     const [loading, setLoading] = useState(false);
+    const prevRefreshRef = useRef(refreshTrigger);
 
     useEffect(() => {
-        if (isFolder && isExpanded && children.length === 0 && !loading) {
+        const needsRefresh = prevRefreshRef.current !== refreshTrigger;
+        if (isFolder && isExpanded && (children.length === 0 || needsRefresh) && !loading) {
             setLoading(true);
             apiClient.getProjectFiles(projectId, item.id || item.name)
-                .then(data => setChildren(data))
+                .then(data => {
+                    setChildren(data);
+                    prevRefreshRef.current = refreshTrigger;
+                })
                 .catch(err => console.error(err))
                 .finally(() => setLoading(false));
         }
-    }, [isExpanded, projectId, item.id, item.name]);
+    }, [isExpanded, projectId, item.id, item.name, refreshTrigger]);
 
     const handleClick = (e: React.MouseEvent) => {
         e.stopPropagation();
         if (isFolder) {
-            if (depth === 0) {
-                navigate(isExpanded ? BASE : `${BASE}/${item.name}`);
-            } else {
-                navigate(`${BASE}/${pathSegments[0]}/${item.name}`);
-            }
+            // If clicking the current path folder, we can treat it as toggle or navigate.
+            // Right now it acts as navigate-in for Explorer.
+            const targetPath = depth === 0 ? item.name : `${pathSegments.slice(0, depth).join("/")}/${item.name}`;
+            navigate(`${BASE}/${targetPath}`);
         } else {
             setSelectedFile(item);
         }
@@ -151,17 +154,18 @@ function LeftTreeItem({ item, depth, pathSegments, BASE, projectId, navigate, se
                 {loading ? <span className="animate-spin h-3 w-3 shrink-0 border-2 border-primary border-t-transparent rounded-full" /> : <span className="shrink-0">{getFileIcon(item.icon)}</span>}
                 <span className="truncate">{item.name}</span>
             </div>
-            {isFolder && isExpanded && depth === 0 &&
+            {isFolder && isExpanded &&
                 children.map((child: FileItem) => (
                     <LeftTreeItem
                         key={child.id}
                         item={child}
-                        depth={1}
+                        depth={depth + 1}
                         pathSegments={pathSegments}
                         BASE={BASE}
                         projectId={projectId}
                         navigate={navigate}
                         setSelectedFile={setSelectedFile}
+                        refreshTrigger={refreshTrigger}
                     />
                 ))
             }
@@ -182,6 +186,7 @@ export function FileManager({ basePath = "", title = "File Manager", actions, on
     const [sortBy, setSortBy] = useState<SortOption>("name");
     const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
     const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
+    const [refreshTrigger, setRefreshTrigger] = useState(0);
     
     // Sync selections back to parent
     useEffect(() => {
@@ -218,7 +223,7 @@ export function FileManager({ basePath = "", title = "File Manager", actions, on
             .then(data => setRootItems(data))
             .catch(err => console.error(err))
             .finally(() => setLoadingRoot(false));
-    }, [projectId]);
+    }, [projectId, refreshTrigger]);
 
     // Fetch dynamic path items for right pane
     useEffect(() => {
@@ -232,7 +237,7 @@ export function FileManager({ basePath = "", title = "File Manager", actions, on
 
         setSelectedFile(null);
         setIsEditing(false);
-    }, [currentPath, projectId]);
+    }, [currentPath, projectId, refreshTrigger]);
 
     // ── Helpers ──────────────────────────────────────────────────────────────
     const parseFileSize = (s: string) => {
@@ -312,10 +317,7 @@ export function FileManager({ basePath = "", title = "File Manager", actions, on
             await apiClient.createFolder(projectId, parentPath);
             setNewFolderDialogOpen(false);
             setNewFolderName("");
-            // Refresh current folder
-            const folderPath = pathSegments.join("/");
-            const data = await apiClient.getProjectFiles(projectId, folderPath);
-            setCurrentFolderItems(data);
+            setRefreshTrigger(t => t + 1);
         } catch (e) {
             console.error("Failed to create folder", e);
         } finally {
@@ -674,6 +676,7 @@ export function FileManager({ basePath = "", title = "File Manager", actions, on
                                     projectId={projectId}
                                     navigate={navigate}
                                     setSelectedFile={setSelectedFile}
+                                    refreshTrigger={refreshTrigger}
                                 />
                             ))}
                             {loadingRoot && (

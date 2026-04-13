@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { apiClient } from "@/services/api-client"
+import { GitUrlParser } from "@/lib/git-url-parser"
 import { ArrowLeftIcon, Loader2Icon, SparklesIcon, FolderIcon, GitBranchIcon } from "lucide-react"
 
 type ImportMode = 'empty' | 'git';
@@ -13,29 +14,44 @@ export default function NewProject() {
   const navigate = useNavigate()
   const [name, setName] = useState("")
   const [importMode, setImportMode] = useState<ImportMode>('empty')
-  const [gitUrl, setGitUrl] = useState("")
+  const [gitBaseUrl, setGitBaseUrl] = useState("")
+  const [gitBranch, setGitBranch] = useState("main")
+  const [gitFolder, setGitFolder] = useState("/")
   const [gitUrlError, setGitUrlError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   // Basic client-side Git URL validation
-  const validateGitUrl = (url: string): string | null => {
+  const validateGitBaseUrl = (url: string): string | null => {
     if (!url.trim()) {
-      return "Git URL is required"
+      return "Git Base URL is required"
     }
     
-    const githubPattern = /^https:\/\/github\.com\/[\w-]+\/[\w.-]+\/tree\/[\w.-]+/
-    const gitlabPattern = /^https:\/\/gitlab\.com\/[\w-]+(\/[\w.-]+)*\/-\/tree\/[\w.-]+/
+    // Support standard and custom domains like gitlab.com, github.com, gitlab.prakash.com
+    const gitPattern = /^https:\/\/[a-zA-Z0-9.-]+\/[\w.-]+\/[\w.-]+/
     
-    if (!githubPattern.test(url) && !gitlabPattern.test(url)) {
-      return "Invalid Git URL format. Expected GitHub or GitLab tree URL (e.g., https://github.com/owner/repo/tree/branch/path)"
+    if (!gitPattern.test(url)) {
+      return "Invalid Git URL format. Expected base repository URL (e.g., https://gitlab.com/owner/repo)"
     }
     
     return null
   }
 
   const handleGitUrlChange = (value: string) => {
-    setGitUrl(value)
+    if (value.includes('/-/tree/') || value.includes('/tree/')) {
+      try {
+        const parsed = GitUrlParser.parse(value);
+        setGitBaseUrl(parsed.repoBaseUrl);
+        setGitBranch(parsed.branch);
+        setGitFolder(parsed.folderPath || '/');
+        setGitUrlError(null);
+        setError(null);
+        return;
+      } catch (err) {
+        // Fall back to standard assignment if parsing fails
+      }
+    }
+    setGitBaseUrl(value)
     setGitUrlError(null)
     setError(null)
   }
@@ -46,7 +62,7 @@ export default function NewProject() {
 
     // Validate Git URL if import mode is git
     if (importMode === 'git') {
-      const validationError = validateGitUrl(gitUrl)
+      const validationError = validateGitBaseUrl(gitBaseUrl)
       if (validationError) {
         setGitUrlError(validationError)
         return
@@ -58,9 +74,15 @@ export default function NewProject() {
     setGitUrlError(null)
     
     try {
+      const gitConfig = importMode === 'git' ? {
+        baseUrl: gitBaseUrl.trim().replace(/\/+$/, ''),
+        branch: gitBranch.trim().replace(/^\/+|\/+$/g, '') || 'main',
+        folder: gitFolder.trim().replace(/^\/+|\/+$/g, '') || '/'
+      } : undefined;
+
       const result = await apiClient.createProject(
         name.trim(), 
-        importMode === 'git' ? gitUrl.trim() : undefined
+        gitConfig
       )
       // Redirection to project deep link
       navigate(`/app/project/${result.id}/specs`)
@@ -185,28 +207,57 @@ export default function NewProject() {
                 </div>
               </div>
 
-              {/* Git URL Input (Dynamic) */}
+              {/* Git URL Inputs (Dynamic) */}
               {importMode === 'git' && (
-                <div className="space-y-3 p-5 rounded-2xl bg-indigo-950/20 border border-indigo-900/30 animate-in fade-in zoom-in-95 duration-500">
-                  <Label htmlFor="gitUrl" className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-500/70">
-                    Repository Source
-                  </Label>
-                  <Input
-                    id="gitUrl"
-                    placeholder="https://github.com/org/repo/tree/main"
-                    value={gitUrl}
-                    onChange={(e) => handleGitUrlChange(e.target.value)}
-                    className="h-11 bg-zinc-900/50 border-indigo-900/30 focus:border-indigo-500/50 focus:ring-4 focus:ring-indigo-500/5 text-zinc-100 placeholder:text-zinc-700"
-                    required={importMode === 'git'}
-                  />
-                  <p className="text-[10px] text-indigo-500/50 font-medium">
-                    Supports GitHub or GitLab tree URLs.
-                  </p>
-                  {gitUrlError && (
-                    <div className="mt-2 p-3 rounded-xl bg-red-500/5 border border-red-500/20 text-red-400 text-[11px] font-medium animate-in shake-1 duration-300">
-                      {gitUrlError}
+                <div className="space-y-4 p-5 rounded-2xl bg-indigo-950/20 border border-indigo-900/30 animate-in fade-in zoom-in-95 duration-500">
+                  <div className="space-y-3">
+                    <Label htmlFor="gitBaseUrl" className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-500/70">
+                      Repository Base URL
+                    </Label>
+                    <Input
+                      id="gitBaseUrl"
+                      placeholder="https://github.com/org/repo"
+                      value={gitBaseUrl}
+                      onChange={(e) => handleGitUrlChange(e.target.value)}
+                      className="h-11 bg-zinc-900/50 border-indigo-900/30 focus:border-indigo-500/50 focus:ring-4 focus:ring-indigo-500/5 text-zinc-100 placeholder:text-zinc-700"
+                      required={importMode === 'git'}
+                    />
+                    <p className="text-[10px] text-indigo-500/50 font-medium">
+                      Supports GitHub or GitLab. Self-hosted instances are allowed.
+                    </p>
+                    {gitUrlError && (
+                      <div className="mt-2 p-3 rounded-xl bg-red-500/5 border border-red-500/20 text-red-400 text-[11px] font-medium animate-in shake-1 duration-300">
+                        {gitUrlError}
+                      </div>
+                    )}
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-3">
+                      <Label htmlFor="gitBranch" className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-500/70">
+                        Branch
+                      </Label>
+                      <Input
+                        id="gitBranch"
+                        placeholder="main"
+                        value={gitBranch}
+                        onChange={(e) => setGitBranch(e.target.value)}
+                        className="h-11 bg-zinc-900/50 border-indigo-900/30 focus:border-indigo-500/50 focus:ring-4 focus:ring-indigo-500/5 text-zinc-100 placeholder:text-zinc-700"
+                      />
                     </div>
-                  )}
+                    <div className="space-y-3">
+                      <Label htmlFor="gitFolder" className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-500/70">
+                        Folder Path
+                      </Label>
+                      <Input
+                        id="gitFolder"
+                        placeholder="/"
+                        value={gitFolder}
+                        onChange={(e) => setGitFolder(e.target.value)}
+                        className="h-11 bg-zinc-900/50 border-indigo-900/30 focus:border-indigo-500/50 focus:ring-4 focus:ring-indigo-500/5 text-zinc-100 placeholder:text-zinc-700"
+                      />
+                    </div>
+                  </div>
                 </div>
               )}
 

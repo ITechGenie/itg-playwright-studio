@@ -5,6 +5,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { useNavigate } from "react-router-dom"
 import { useState, useEffect } from "react"
 import { apiClient } from "@/services/api-client"
+import { GitUrlParser } from "@/lib/git-url-parser"
 import { Settings2Icon, ExternalLinkIcon, PlusIcon, RefreshCwIcon, GitBranchIcon, FolderIcon } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -44,7 +45,7 @@ export default function Projects() {
 
     apiClient.getMe().then((data: any) => {
       if (data?.user?.name) setUserName(data.user.name);
-    }).catch(() => {});
+    }).catch(() => { });
 
     fetchProjects();
   }, []);
@@ -56,23 +57,23 @@ export default function Projects() {
           <h1 className="text-3xl font-semibold tracking-tight text-white">Welcome, {userName}!</h1>
           <p className="text-muted-foreground text-sm">Select a project workspace or create a new one to get started</p>
           <div className="flex items-center gap-3 mt-6">
-            <Button 
-                variant="outline" 
-                size="sm" 
-                className="h-10 px-4 border-zinc-800 bg-zinc-950/50 hover:bg-zinc-900"
-                onClick={async () => {
-                   setLoading(true);
-                   try { await apiClient.syncProjects(); await fetchProjects(); }
-                   catch (err) { console.error(err); }
-                   finally { setLoading(false); }
-                }}
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-10 px-4 border-zinc-800 bg-zinc-950/50 hover:bg-zinc-900"
+              onClick={async () => {
+                setLoading(true);
+                try { await apiClient.syncProjects(); await fetchProjects(); }
+                catch (err) { console.error(err); }
+                finally { setLoading(false); }
+              }}
             >
               <RefreshCwIcon className={cn("mr-2 h-4 w-4", loading && "animate-spin")} />
               Sync Folders
             </Button>
-            <Button 
-                className="h-10 px-6 bg-blue-600 hover:bg-blue-500 text-white font-bold shadow-lg shadow-blue-900/10"
-                onClick={() => navigate("/app/projects/new")}
+            <Button
+              className="h-10 px-6 bg-blue-600 hover:bg-blue-500 text-white font-bold shadow-lg shadow-blue-900/10"
+              onClick={() => navigate("/app/projects/new")}
             >
               <PlusIcon className="mr-2 h-4 w-4" />
               New Project
@@ -85,17 +86,16 @@ export default function Projects() {
 
         <div className="rounded-md border bg-card relative overflow-hidden">
           {loading && (
-             <div className="absolute inset-0 bg-background/50 flex items-center justify-center z-10 backdrop-blur-sm">
-                <span className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></span>
-             </div>
+            <div className="absolute inset-0 bg-background/50 flex items-center justify-center z-10 backdrop-blur-sm">
+              <span className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></span>
+            </div>
           )}
           <Table>
             <TableHeader className="bg-muted/50">
               <TableRow>
                 <TableHead>Workspace Path</TableHead>
                 <TableHead>Type</TableHead>
-                <TableHead>Default Browser</TableHead>
-                <TableHead>Viewport</TableHead>
+                <TableHead>Git Project Id</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
@@ -117,7 +117,7 @@ export default function Projects() {
                     </div>
                   </TableCell>
                   <TableCell>
-                    {proj.repoUrl ? (
+                    {proj.repoBaseUrl ? (
                       <Badge variant="outline" className="gap-1.5 border-blue-800 text-blue-400 text-[10px]">
                         <GitBranchIcon className="h-3 w-3" /> Git
                       </Badge>
@@ -127,21 +127,50 @@ export default function Projects() {
                       </Badge>
                     )}
                   </TableCell>
-                  <TableCell className="capitalize text-zinc-400 text-xs">
-                    {proj.config?.browser || 'chromium'}
-                  </TableCell>
                   <TableCell className="text-zinc-400 text-xs">
-                    {proj.config?.viewportWidth}x{proj.config?.viewportHeight}
+                    {proj.repoBaseUrl ? (
+                      <a
+                        href={GitUrlParser.reconstruct({
+                          repoBaseUrl: proj.repoBaseUrl,
+                          branch: proj.repoBranch || 'main',
+                          folderPath: proj.repoFolder || '/',
+                          provider: proj.repoBaseUrl.includes('github') ? 'github' : 'gitlab',
+                          repoOwner: '',
+                          repoName: ''
+                        })}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="hover:underline hover:text-blue-400 transition-colors flex flex-col items-start gap-0.5"
+                      >
+                        <div className="flex items-center gap-1.5 text-[10px] text-zinc-500">
+                          {proj.gitRepoId ? "Project Id: " + proj.gitRepoId : '--'}
+                          <span className="mx-0.5">•</span>
+                          <GitBranchIcon className="h-2.5 w-2.5" />
+                          <span>{proj.repoBranch || 'main'}</span>
+                          {proj.repoFolder && proj.repoFolder !== '/' && (
+                            <>
+                              <span className="mx-0.5">•</span>
+                              <FolderIcon className="h-2.5 w-2.5" />
+                              <span className="truncate max-w-[100px]">/{proj.repoFolder}</span>
+                            </>
+                          )}
+                        </div>
+
+                      </a>
+                    ) : (
+                      <span className="capitalize">{'--'}</span>
+                    )}
                   </TableCell>
+
                   <TableCell>
                     <span className="px-2 py-0.5 rounded-full bg-green-500/10 text-green-500 text-[10px] font-medium uppercase tracking-wider">
                       {proj.status}
                     </span>
                   </TableCell>
                   <TableCell className="text-right space-x-2">
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
+                    <Button
+                      variant="ghost"
+                      size="sm"
                       className="h-8 w-8 p-0 text-zinc-400 hover:text-white"
                       onClick={() => navigate(`/app/project/${proj.id}/settings/run`)}
                       title="Run Configuration"

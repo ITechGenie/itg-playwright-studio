@@ -20,7 +20,7 @@ export interface SyncResult {
 export interface GitSyncService {
   syncProject(
     projectName: string,
-    gitUrl: string,
+    gitUrl: any,
     userToken: string
   ): Promise<SyncResult>;
 }
@@ -42,18 +42,23 @@ export class DefaultGitSyncService implements GitSyncService {
    */
   async syncProject(
     projectName: string,
-    gitUrl: string,
+    gitUrl: any,
     userToken: string
   ): Promise<SyncResult> {
     const errors: string[] = [];
     let filesDownloaded = 0;
     const startTime = Date.now();
 
-    console.log(`[GitSyncService] Starting sync for project "${projectName}" from ${gitUrl}`);
+    console.log(`[GitSyncService] Starting sync for project "${projectName}"`);
 
     try {
-      // Parse the Git URL
-      const parsed = GitUrlParser.parse(gitUrl);
+      // It's actually pre-parsed now, handle if it's already an object
+      let parsed: ParsedGitUrl;
+      if (typeof gitUrl === 'string') {
+         parsed = GitUrlParser.parse(gitUrl);
+      } else {
+         parsed = gitUrl as ParsedGitUrl;
+      }
       
       // Create provider client
       const client = createGitProviderClient(parsed.provider);

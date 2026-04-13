@@ -1,9 +1,8 @@
 /**
  * Client-side Git URL Parser
  * 
- * Mirrors server-side parsing logic for displaying and editing Git configuration.
- * Parses GitHub and GitLab repository tree URLs to extract provider,
- * repository owner/namespace, repository name, branch, and folder path.
+ * Parses GitHub and GitLab repository URLs to extract provider,
+ * repository owner/namespace, repository name.
  */
 
 export interface ParsedGitUrl {
@@ -12,66 +11,56 @@ export interface ParsedGitUrl {
   repoName: string;
   branch: string;
   folderPath: string;
-  repoUrl: string; // Base repo URL without tree/branch
+  repoBaseUrl: string; // Base repo URL without tree/branch
 }
 
 export class GitUrlParser {
-  // GitHub URL pattern: https://github.com/{owner}/{repo}/tree/{branch}/{path}
-  private static readonly GITHUB_PATTERN = /^https:\/\/github\.com\/([^\/]+)\/([^\/]+)\/tree\/([^\/]+)(?:\/(.*))?$/;
-  
-  // GitLab URL pattern: https://gitlab.com/{namespace}/{repo}/-/tree/{branch}/{path}
-  private static readonly GITLAB_PATTERN = /^https:\/\/gitlab\.com\/((?:[^\/]+\/)+)([^\/]+)\/-\/tree\/([^\/]+)(?:\/(.*))?$/;
-
   /**
-   * Parse a Git repository tree URL into its components.
+   * Parse a Git repository base URL into its components.
+   * Supports custom GitLab domains (e.g., gitlab.prakash.com)
+   * 
+   * @param url - The Git repository base URL to parse
+   * @returns Parsed Git URL components
+   * @throws Error if the URL format is invalid
    */
-  static parse(url: string): ParsedGitUrl {
+  static parseBaseUrl(url: string): { provider: 'github' | 'gitlab', repoOwner: string, repoName: string, repoBaseUrl: string } {
     if (!url || typeof url !== 'string') {
       throw new Error('Invalid Git URL: URL must be a non-empty string');
     }
 
-    const trimmedUrl = url.trim();
-
-    // Try GitHub pattern
-    const githubMatch = trimmedUrl.match(this.GITHUB_PATTERN);
-    if (githubMatch) {
-      const [, owner, repo, branch, path] = githubMatch;
-      return {
-        provider: 'github',
-        repoOwner: this.decodeUrlComponent(owner),
-        repoName: this.decodeUrlComponent(repo),
-        branch: this.decodeUrlComponent(branch),
-        folderPath: path ? this.decodeUrlComponent(path) : '',
-        repoUrl: `https://github.com/${owner}/${repo}`,
-      };
+    const trimmedUrl = url.trim().replace(/\.git$/, '').replace(/\/$/, '');
+    const urlObj = new URL(trimmedUrl);
+    const host = urlObj.hostname;
+    
+    let provider: 'github' | 'gitlab' = 'gitlab'; // Default to gitlab for custom domains
+    if (host === 'github.com') {
+      provider = 'github';
     }
 
-    // Try GitLab pattern
-    const gitlabMatch = trimmedUrl.match(this.GITLAB_PATTERN);
-    if (gitlabMatch) {
-      const [, namespace, repo, branch, path] = gitlabMatch;
-      const cleanNamespace = namespace.replace(/\/$/, '');
-      return {
-        provider: 'gitlab',
-        repoOwner: this.decodeUrlComponent(cleanNamespace),
-        repoName: this.decodeUrlComponent(repo),
-        branch: this.decodeUrlComponent(branch),
-        folderPath: path ? this.decodeUrlComponent(path) : '',
-        repoUrl: `https://gitlab.com/${cleanNamespace}/${repo}`,
-      };
+    const parts = urlObj.pathname.split('/').filter(Boolean);
+    if (parts.length < 2) {
+      throw new Error('Invalid repository URL format. Must include owner/namespace and repository name');
     }
 
-    throw new Error(
-      'Invalid Git URL format. Expected GitHub or GitLab tree URL.'
-    );
+    // For GitLab, namespace can contain slashes, so the repository name is always the last part.
+    // For GitHub, it's strictly /owner/repo.
+    const repoName = this.decodeUrlComponent(parts.pop()!);
+    const repoOwner = this.decodeUrlComponent(parts.join('/'));
+
+    return {
+      provider,
+      repoOwner,
+      repoName,
+      repoBaseUrl: trimmedUrl,
+    };
   }
 
   /**
-   * Validate if a URL is a supported Git repository tree URL.
+   * Validate if a URL is a supported Git repository base URL.
    */
-  static validate(url: string): boolean {
+  static validateBaseUrl(url: string): boolean {
     try {
-      this.parse(url);
+      this.parseBaseUrl(url);
       return true;
     } catch {
       return false;
@@ -82,24 +71,79 @@ export class GitUrlParser {
    * Reconstruct a Git tree URL from parsed components.
    */
   static reconstruct(parts: ParsedGitUrl): string {
-    const { provider, repoOwner, repoName, branch, folderPath } = parts;
+    const { repoBaseUrl, branch, folderPath, provider } = parts;
 
     const encodedBranch = this.encodePathComponent(branch);
-    const encodedPath = folderPath ? this.encodePathComponent(folderPath) : '';
+    const encodedPath = folderPath && folderPath !== '/' ? this.encodePathComponent(folderPath) : '';
+    const pathSegment = encodedPath ? `/${encodedPath}` : '';
+    
+    // Trim trailing slashes from baseUrl
+    const base = repoBaseUrl.replace(/\/$/, '');
 
     if (provider === 'github') {
-      const encodedOwner = this.encodePathComponent(repoOwner);
-      const encodedRepo = this.encodePathComponent(repoName);
-      const pathSegment = encodedPath ? `/${encodedPath}` : '';
-      return `https://github.com/${encodedOwner}/${encodedRepo}/tree/${encodedBranch}${pathSegment}`;
+      return `${base}/tree/${encodedBranch}${pathSegment}`;
     } else if (provider === 'gitlab') {
-      const encodedNamespace = this.encodePathComponent(repoOwner);
-      const encodedRepo = this.encodePathComponent(repoName);
-      const pathSegment = encodedPath ? `/${encodedPath}` : '';
-      return `https://gitlab.com/${encodedNamespace}/${encodedRepo}/-/tree/${encodedBranch}${pathSegment}`;
+      return `${base}/-/tree/${encodedBranch}${pathSegment}`;
     } else {
       throw new Error(`Unsupported provider: ${provider}`);
     }
+  }
+
+  /**
+   * Legacy method: Parse a full Git tree URL (for backwards compatibility or pasted URLs)
+   */
+  static parse(url: string): ParsedGitUrl {
+    const trimmedUrl = url.trim();
+    const urlObj = new URL(trimmedUrl);
+    const host = urlObj.hostname;
+    
+    let provider: 'github' | 'gitlab' = 'gitlab';
+    if (host === 'github.com') {
+      provider = 'github';
+    }
+
+    const parts = urlObj.pathname.split('/').filter(Boolean);
+    
+    // Find tree indicator
+    const treeIndex = provider === 'github' ? parts.indexOf('tree') : parts.indexOf('-');
+    
+    if (treeIndex === -1) {
+      // Not a tree URL, treat as base URL with default branch
+      const base = this.parseBaseUrl(trimmedUrl);
+      return {
+        ...base,
+        branch: 'main',
+        folderPath: '',
+      };
+    }
+
+    // Parse the base part
+    const baseParts = parts.slice(0, treeIndex);
+    const repoName = this.decodeUrlComponent(baseParts.pop()!);
+    const repoOwner = this.decodeUrlComponent(baseParts.join('/'));
+    const repoBaseUrl = `${urlObj.protocol}//${urlObj.host}/${baseParts.join('/')}/${repoName}`;
+
+    // Parse the branch and path
+    // IMPORTANT: For GitLab, '-' is followed by 'tree'
+    let startIndex = treeIndex + 1;
+    if (provider === 'gitlab' && parts[startIndex] === 'tree') {
+      startIndex++;
+    }
+
+    // Due to branch names with slashes, this legacy parse cannot perfectly distinguish branch from folder
+    // But we'll do our best: assume the first part is branch, rest is path
+    const branch = parts[startIndex] ? this.decodeUrlComponent(parts[startIndex]) : 'main';
+    const folderParts = parts.slice(startIndex + 1);
+    const folderPath = folderParts.length > 0 ? this.decodeUrlComponent(folderParts.join('/')) : '';
+
+    return {
+      provider,
+      repoOwner,
+      repoName,
+      branch,
+      folderPath,
+      repoBaseUrl
+    };
   }
 
   private static decodeUrlComponent(component: string): string {

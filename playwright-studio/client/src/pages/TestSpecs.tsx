@@ -35,6 +35,8 @@ const DEFAULT_CONFIG: LegacyRunConfig = {
 
 export default function TestSpecs() {
   const { id: projectId } = useParams<{ id: string }>()
+  const params = useParams()
+  const splatPath: string = (params as any)["*"] || ""
   const navigate = useNavigate()
 
   const [runnerTarget, setRunnerTarget] = useState<string | undefined>(undefined)
@@ -44,6 +46,8 @@ export default function TestSpecs() {
   const [projectRepoUrl, setProjectRepoUrl] = useState<string | null>(null)
 
   // Add Spec dialog state
+  const [createSpecDialogOpen, setCreateSpecDialogOpen] = useState(false)
+  const [specFilenameInput, setSpecFilenameInput] = useState("example.spec.ts")
   const [addSpecDialogOpen, setAddSpecDialogOpen] = useState(false)
   const [newSpecName, setNewSpecName] = useState("")
   const [addSpecCommitMsg, setAddSpecCommitMsg] = useState("")
@@ -78,16 +82,26 @@ export default function TestSpecs() {
   const openRunner = (target: string) => setRunnerTarget(target)
   const closeRunner = () => setRunnerTarget(undefined)
 
-  const handleAddSpec = async () => {
-    const filename = window.prompt("Enter new spec file name:", "example.spec.ts")
+  const handleCreateSpecClick = () => {
+    setSpecFilenameInput("example.spec.ts")
+    setCreateSpecDialogOpen(true)
+  }
+
+  const handleCreateSpecProceed = async () => {
+    const filename = specFilenameInput.trim()
     if (!filename) return
+    setCreateSpecDialogOpen(false)
+    
+    // Prefix current sub-directory path
+    const fullPath = splatPath ? `${splatPath}/${filename}` : filename;
+    
     if (projectRepoUrl) {
-      setNewSpecName(filename)
+      setNewSpecName(fullPath)
       setAddSpecCommitMsg("")
       setAddSpecDialogOpen(true)
     } else {
       try {
-        await apiClient.updateFileContent(projectId!, filename, "import { test, expect } from '@playwright/test';\n\ntest('New test', async ({ page }) => {\n  \n});\n")
+        await apiClient.createFileContent(projectId!, fullPath, "import { test, expect } from '@playwright/test';\n\ntest('New test', async ({ page }) => {\n  \n});\n")
         window.location.reload()
       } catch (e) {
         alert("Failed to create spec")
@@ -98,7 +112,7 @@ export default function TestSpecs() {
   const handleAddSpecConfirm = async (commitMsg?: string) => {
     setAddSpecDialogOpen(false)
     try {
-      await apiClient.updateFileContent(
+      await apiClient.createFileContent(
         projectId!,
         newSpecName,
         "import { test, expect } from '@playwright/test';\n\ntest('New test', async ({ page }) => {\n  \n});\n",
@@ -164,7 +178,7 @@ export default function TestSpecs() {
               variant="outline" 
               size="sm" 
               className="h-8 text-xs font-semibold border-zinc-800 bg-zinc-900/50 hover:bg-zinc-800"
-              onClick={handleAddSpec}
+              onClick={handleCreateSpecClick}
             >
               <PlusIcon className="size-3.5 mr-1.5" /> Add Spec
             </Button>
@@ -207,6 +221,32 @@ export default function TestSpecs() {
           initialConfig={runConfig}
         />
       )}
+
+      <Dialog open={createSpecDialogOpen} onOpenChange={setCreateSpecDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Create New Spec</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 py-2">
+            <Label htmlFor="spec-filename" className="text-xs font-bold uppercase text-zinc-400">File Name</Label>
+            <Input
+              id="spec-filename"
+              placeholder="e.g. example.spec.ts"
+              value={specFilenameInput}
+              onChange={(e) => setSpecFilenameInput(e.target.value)}
+              autoFocus
+            />
+          </div>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setCreateSpecDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button disabled={!specFilenameInput.trim()} onClick={handleCreateSpecProceed}>
+              Continue
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={addSpecDialogOpen} onOpenChange={setAddSpecDialogOpen}>
         <DialogContent className="sm:max-w-md">

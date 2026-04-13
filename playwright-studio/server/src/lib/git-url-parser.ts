@@ -1,15 +1,11 @@
 /**
  * Git URL Parser
  * 
- * Parses GitHub and GitLab repository tree URLs to extract provider,
- * repository owner/namespace, repository name, branch, and folder path.
- * 
- * Supported URL formats:
- * - GitHub: https://github.com/{owner}/{repo}/tree/{branch}/{path}
- * - GitLab: https://gitlab.com/{namespace}/{repo}/-/tree/{branch}/{path}
+ * Parses GitHub and GitLab repository URLs to extract provider,
+ * repository owner/namespace, repository name.
  */
 
-import { getGithubBaseUrl, getGitlabBaseUrl, getGithubDomain, getGitlabDomain } from './git-config.js';
+import { getGithubBaseUrl, getGitlabBaseUrl } from './git-config.js';
 
 export interface ParsedGitUrl {
   provider: 'github' | 'gitlab';
@@ -17,95 +13,56 @@ export interface ParsedGitUrl {
   repoName: string;
   branch: string;
   folderPath: string;
-  repoUrl: string; // Base repo URL without tree/branch
+  repoBaseUrl: string; // Base repo URL without tree/branch
 }
-
-// Utility to escape domain for regex
-const escapeRegExp = (str: string) => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 export class GitUrlParser {
   /**
-   * Get regex for GitHub URL
-   * https://{domain}/{owner}/{repo}/tree/{branch}/{path}
-   */
-  private static getGithubPattern() {
-    return new RegExp(
-      `^https:\\/\\/${escapeRegExp(getGithubDomain())}\\/([^\\/]+)\\/([^\\/]+)\\/tree\\/([^\\/]+)(?:\\/(.*))?$`
-    );
-  }
-  
-  /**
-   * Get regex for GitLab URL
-   * https://{domain}/{namespace}/{repo}/-/tree/{branch}/{path}
-   */
-  private static getGitlabPattern() {
-    return new RegExp(
-      `^https:\\/\\/${escapeRegExp(getGitlabDomain())}\\/((?:[^\\/]+\\/)+)([^\\/]+)\\/-\\/tree\\/([^\\/]+)(?:\\/(.*))?$`
-    );
-  }
-
-  /**
-   * Parse a Git repository tree URL into its components.
+   * Parse a Git repository base URL into its components.
+   * Supports custom GitLab domains (e.g., gitlab.prakash.com)
    * 
-   * @param url - The Git repository tree URL to parse
+   * @param url - The Git repository base URL to parse
    * @returns Parsed Git URL components
-   * @throws Error if the URL format is invalid or unsupported
+   * @throws Error if the URL format is invalid
    */
-  static parse(url: string): ParsedGitUrl {
+  static parseBaseUrl(url: string): { provider: 'github' | 'gitlab', repoOwner: string, repoName: string, repoBaseUrl: string } {
     if (!url || typeof url !== 'string') {
       throw new Error('Invalid Git URL: URL must be a non-empty string');
     }
 
-    const trimmedUrl = url.trim();
-
-    // Try GitHub pattern
-    const githubMatch = trimmedUrl.match(this.getGithubPattern());
-    if (githubMatch) {
-      const [, owner, repo, branch, path] = githubMatch;
-      return {
-        provider: 'github',
-        repoOwner: this.decodeUrlComponent(owner),
-        repoName: this.decodeUrlComponent(repo),
-        branch: this.decodeUrlComponent(branch),
-        folderPath: path ? this.decodeUrlComponent(path) : '',
-        repoUrl: `${getGithubBaseUrl()}/${owner}/${repo}`,
-      };
+    const trimmedUrl = url.trim().replace(/\.git$/, '').replace(/\/$/, '');
+    const urlObj = new URL(trimmedUrl);
+    const host = urlObj.hostname;
+    
+    let provider: 'github' | 'gitlab' = 'gitlab'; // Default to gitlab for custom domains
+    if (host === 'github.com') {
+      provider = 'github';
     }
 
-    // Try GitLab pattern
-    const gitlabMatch = trimmedUrl.match(this.getGitlabPattern());
-    if (gitlabMatch) {
-      const [, namespace, repo, branch, path] = gitlabMatch;
-      // Remove trailing slash from namespace
-      const cleanNamespace = namespace.replace(/\/$/, '');
-      return {
-        provider: 'gitlab',
-        repoOwner: this.decodeUrlComponent(cleanNamespace),
-        repoName: this.decodeUrlComponent(repo),
-        branch: this.decodeUrlComponent(branch),
-        folderPath: path ? this.decodeUrlComponent(path) : '',
-        repoUrl: `${getGitlabBaseUrl()}/${cleanNamespace}/${repo}`,
-      };
+    const parts = urlObj.pathname.split('/').filter(Boolean);
+    if (parts.length < 2) {
+      throw new Error('Invalid repository URL format. Must include owner/namespace and repository name');
     }
 
-    // No pattern matched
-    throw new Error(
-      'Invalid Git URL format. Expected GitHub or GitLab tree URL. ' +
-      'Examples: ' +
-      `${getGithubBaseUrl()}/owner/repo/tree/branch/path or ` +
-      `${getGitlabBaseUrl()}/namespace/repo/-/tree/branch/path`
-    );
+    // For GitLab, namespace can contain slashes, so the repository name is always the last part.
+    // For GitHub, it's strictly /owner/repo.
+    const repoName = this.decodeUrlComponent(parts.pop()!);
+    const repoOwner = this.decodeUrlComponent(parts.join('/'));
+
+    return {
+      provider,
+      repoOwner,
+      repoName,
+      repoBaseUrl: trimmedUrl,
+    };
   }
 
   /**
-   * Validate if a URL is a supported Git repository tree URL.
-   * 
-   * @param url - The URL to validate
-   * @returns true if the URL is valid, false otherwise
+   * Validate if a URL is a supported Git repository base URL.
    */
-  static validate(url: string): boolean {
+  static validateBaseUrl(url: string): boolean {
     try {
-      this.parse(url);
+      this.parseBaseUrl(url);
       return true;
     } catch {
       return false;
@@ -114,59 +71,93 @@ export class GitUrlParser {
 
   /**
    * Reconstruct a Git tree URL from parsed components.
-   * 
-   * @param parts - The parsed Git URL components
-   * @returns The reconstructed Git tree URL
    */
   static reconstruct(parts: ParsedGitUrl): string {
-    const { provider, repoOwner, repoName, branch, folderPath } = parts;
+    const { repoBaseUrl, branch, folderPath, provider } = parts;
 
-    // Encode components for URL safety, but preserve path separators
     const encodedBranch = this.encodePathComponent(branch);
-    const encodedPath = folderPath ? this.encodePathComponent(folderPath) : '';
+    const encodedPath = folderPath && folderPath !== '/' ? this.encodePathComponent(folderPath) : '';
+    const pathSegment = encodedPath ? `/${encodedPath}` : '';
+    
+    // Trim trailing slashes from baseUrl
+    const base = repoBaseUrl.replace(/\/$/, '');
 
     if (provider === 'github') {
-      const encodedOwner = this.encodePathComponent(repoOwner);
-      const encodedRepo = this.encodePathComponent(repoName);
-      const pathSegment = encodedPath ? `/${encodedPath}` : '';
-      return `${getGithubBaseUrl()}/${encodedOwner}/${encodedRepo}/tree/${encodedBranch}${pathSegment}`;
+      return `${base}/tree/${encodedBranch}${pathSegment}`;
     } else if (provider === 'gitlab') {
-      // For GitLab, namespace can contain slashes, so don't encode them
-      const encodedNamespace = this.encodePathComponent(repoOwner);
-      const encodedRepo = this.encodePathComponent(repoName);
-      const pathSegment = encodedPath ? `/${encodedPath}` : '';
-      return `${getGitlabBaseUrl()}/${encodedNamespace}/${encodedRepo}/-/tree/${encodedBranch}${pathSegment}`;
+      return `${base}/-/tree/${encodedBranch}${pathSegment}`;
     } else {
       throw new Error(`Unsupported provider: ${provider}`);
     }
   }
 
   /**
-   * Decode URL-encoded component, handling special characters.
+   * Legacy method: Parse a full Git tree URL (for backwards compatibility if needed during migration)
+   * Note: This might still fail on GitLab tree URLs with slashes in branch names.
    */
+  static parse(url: string): ParsedGitUrl {
+    const trimmedUrl = url.trim();
+    const urlObj = new URL(trimmedUrl);
+    const host = urlObj.hostname;
+    
+    let provider: 'github' | 'gitlab' = 'gitlab';
+    if (host === 'github.com') {
+      provider = 'github';
+    }
+
+    const parts = urlObj.pathname.split('/').filter(Boolean);
+    
+    // Find tree indicator
+    const treeIndex = provider === 'github' ? parts.indexOf('tree') : parts.indexOf('-');
+    
+    if (treeIndex === -1) {
+      // Not a tree URL, treat as base URL with default branch
+      const base = this.parseBaseUrl(trimmedUrl);
+      return {
+        ...base,
+        branch: 'main',
+        folderPath: '',
+      };
+    }
+
+    // Parse the base part
+    const baseParts = parts.slice(0, treeIndex);
+    const repoName = this.decodeUrlComponent(baseParts.pop()!);
+    const repoOwner = this.decodeUrlComponent(baseParts.join('/'));
+    const repoBaseUrl = `${urlObj.protocol}//${urlObj.host}/${baseParts.join('/')}/${repoName}`;
+
+    // Parse the branch and path
+    // IMPORTANT: For GitLab, '-' is followed by 'tree'
+    let startIndex = treeIndex + 1;
+    if (provider === 'gitlab' && parts[startIndex] === 'tree') {
+      startIndex++;
+    }
+
+    // Due to branch names with slashes, this legacy parse cannot perfectly distinguish branch from folder
+    // But we'll do our best: assume the first part is branch, rest is path (which is bugged for slashes)
+    const branch = parts[startIndex] ? this.decodeUrlComponent(parts[startIndex]) : 'main';
+    const folderParts = parts.slice(startIndex + 1);
+    const folderPath = folderParts.length > 0 ? this.decodeUrlComponent(folderParts.join('/')) : '';
+
+    return {
+      provider,
+      repoOwner,
+      repoName,
+      branch,
+      folderPath,
+      repoBaseUrl
+    };
+  }
+
   private static decodeUrlComponent(component: string): string {
     try {
       return decodeURIComponent(component);
     } catch {
-      // If decoding fails, return as-is
       return component;
     }
   }
 
-  /**
-   * Encode component for URL, handling special characters.
-   * This is used for simple components that shouldn't contain slashes.
-   */
-  private static encodeUrlComponent(component: string): string {
-    return encodeURIComponent(component);
-  }
-
-  /**
-   * Encode path component for URL, preserving forward slashes.
-   * This is used for paths, branches, and namespaces that may contain slashes.
-   */
   private static encodePathComponent(component: string): string {
-    // Split by slash, encode each part, then rejoin
     return component.split('/').map(part => encodeURIComponent(part)).join('/');
   }
 }
