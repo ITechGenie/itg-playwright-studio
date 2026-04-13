@@ -12,19 +12,19 @@ import { GitUrlParser } from '../lib/git-url-parser.js';
 
 test.describe('Project API - Git Integration', () => {
   test.describe('POST /apis/auth/projects - Git URL Validation', () => {
-    test('should validate GitHub URL format', () => {
+    test('should validateBaseUrl GitHub URL format', () => {
       const validUrl = 'https://github.com/microsoft/playwright/tree/main/tests';
-      expect(GitUrlParser.validate(validUrl)).toBe(true);
+      expect(GitUrlParser.validateBaseUrl(validUrl)).toBe(true);
     });
 
-    test('should validate GitLab URL format', () => {
+    test('should validateBaseUrl GitLab URL format', () => {
       const validUrl = 'https://gitlab.com/gitlab-org/gitlab/-/tree/master/spec';
-      expect(GitUrlParser.validate(validUrl)).toBe(true);
+      expect(GitUrlParser.validateBaseUrl(validUrl)).toBe(true);
     });
 
     test('should reject invalid Git URL format', () => {
       const invalidUrl = 'https://invalid-url.com/repo';
-      expect(GitUrlParser.validate(invalidUrl)).toBe(false);
+      expect(GitUrlParser.validateBaseUrl(invalidUrl)).toBe(false);
     });
 
     test('should reject empty Git URL', () => {
@@ -46,7 +46,7 @@ test.describe('Project API - Git Integration', () => {
       expect(parsed.repoName).toBe('repo');
       expect(parsed.branch).toBe('main');
       expect(parsed.folderPath).toBe('tests');
-      expect(parsed.repoUrl).toBe('https://github.com/owner/repo');
+      expect(parsed.repoBaseUrl).toBe('https://github.com/owner/repo');
     });
 
     test('should parse GitLab URL and extract components', () => {
@@ -58,7 +58,7 @@ test.describe('Project API - Git Integration', () => {
       expect(parsed.repoName).toBe('project');
       expect(parsed.branch).toBe('develop');
       expect(parsed.folderPath).toBe('e2e');
-      expect(parsed.repoUrl).toBe('https://gitlab.com/namespace/project');
+      expect(parsed.repoBaseUrl).toBe('https://gitlab.com/namespace/project');
     });
 
     test('should handle GitHub URL without folder path', () => {
@@ -105,14 +105,14 @@ test.describe('Project API - Git Integration', () => {
   });
 
   test.describe('PATCH /apis/project/:projectId/git-config - URL Validation', () => {
-    test('should validate new Git URL before update', () => {
+    test('should validateBaseUrl new Git URL before update', () => {
       const validUrl = 'https://github.com/owner/new-repo/tree/develop/tests';
-      expect(GitUrlParser.validate(validUrl)).toBe(true);
+      expect(GitUrlParser.validateBaseUrl(validUrl)).toBe(true);
     });
 
     test('should reject invalid Git URL for update', () => {
       const invalidUrl = 'https://bitbucket.org/owner/repo';
-      expect(GitUrlParser.validate(invalidUrl)).toBe(false);
+      expect(GitUrlParser.validateBaseUrl(invalidUrl)).toBe(false);
     });
 
     test('should parse updated Git URL correctly', () => {
@@ -130,7 +130,7 @@ test.describe('Project API - Git Integration', () => {
   test.describe('Error Message Validation', () => {
     test('should provide descriptive error for invalid URL format', () => {
       const invalidUrl = 'https://example.com/repo';
-      
+
       let threw = false;
       try {
         GitUrlParser.parse(invalidUrl);
