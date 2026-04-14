@@ -21,6 +21,9 @@ export const ENDPOINTS = {
   DATA_DATASETS: (projectId: string, envId: string) => `${APIS_BASE}/project/${projectId}/data/environments/${envId}/datasets`,
   DATA_DATASETS_V2: (projectId: string) => `${APIS_BASE}/project/${projectId}/data/datasets`,
 
+  // Execution Reports Routes
+  EXECUTION_REPORTS: (projectId: string) => `${APIS_BASE}/project/${projectId}/reports/summary`,
+
   // Scheduler Routes
   PROJECT_SCHEDULES: (projectId: string) => `${APIS_BASE}/project/${projectId}/schedules`,
   PROJECT_SCHEDULE: (projectId: string, scheduleId: string) => `${APIS_BASE}/project/${projectId}/schedules/${scheduleId}`,

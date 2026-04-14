@@ -22,6 +22,7 @@ const Schedules = lazy(() => import("./pages/Schedules"))
 const StudioSettingsPage = lazy(() => import("./pages/StudioSettingsPage"))
 const ProjectUsersPage = lazy(() => import("./pages/ProjectUsersPage"))
 const ProjectDataTransferPage = lazy(() => import("./pages/ProjectDataTransferPage"))
+const ExecutionReports = lazy(() => import("./pages/ExecutionReports"))
 
 export default function App() {
   return (
@@ -52,6 +53,7 @@ export default function App() {
 
                   <Route path="run/:runId" element={<RunLogPage />} />
                   <Route path="executions/runs" element={<ExecutionsRuns />} />
+                  <Route path="executions/reports" element={<ExecutionReports />} />
                   {/* Data Manager */}
                   <Route path="data" element={<MenuOverview section="Data Manager" />} />
                   <Route path="data/templates" element={<DataTemplates />} />

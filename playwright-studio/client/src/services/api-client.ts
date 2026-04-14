@@ -434,6 +434,24 @@ export const apiClient = {
     if (!res.ok) throw new Error('Failed to delete schedule');
   },
 
+  // --- Execution Reports ---
+  async getExecutionReports(projectId: string, days: 7 | 30 | 90 = 30) {
+    const url = `${ENDPOINTS.EXECUTION_REPORTS(projectId)}?days=${days}`;
+    const res = await apiFetch(url, { headers: authHeaders() });
+    if (!res.ok) throw new Error('Failed to fetch execution reports');
+    return res.json() as Promise<{
+      totalRuns: number;
+      passRate: number;
+      avgDurationMs: number | null;
+      lastRunAt: string | null;
+      statusOverTime: { date: string; completed: number; failed: number; stopped: number }[];
+      durationTrend: { date: string; avgDurationSec: number }[];
+      statusBreakdown: { completed: number; failed: number; stopped: number; running: number };
+      topFailingPaths: { targetPath: string; failCount: number; lastFailed: string }[];
+      runsByTrigger: { trigger: string; count: number }[];
+    }>;
+  },
+
   async runScheduleNow(projectId: string, scheduleId: string) {
     const res = await apiFetch(ENDPOINTS.PROJECT_SCHEDULE_RUN(projectId, scheduleId), {
       method: 'POST',
