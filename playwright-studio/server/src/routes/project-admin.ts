@@ -12,7 +12,7 @@ router.use(authMiddleware, requireProjectRole('admin'));
 // GET /apis/admin/:projectId/users
 router.get('/users', async (req, res) => {
   try {
-    const scope = { projectId: req.params.projectId };
+    const scope = { projectId: (req.params as any).projectId };
     const page = parseInt(req.query.page as string) || 1;
     const limit = parseInt(req.query.limit as string) || 20;
     const email = req.query.email as string | undefined;
@@ -28,8 +28,8 @@ router.get('/users', async (req, res) => {
 // GET /apis/admin/:projectId/users/:userId/roles
 router.get('/users/:userId/roles', async (req, res) => {
   try {
-    const scope = { projectId: req.params.projectId };
-    const memberships = await getUserRoles(scope, req.params.userId);
+    const scope = { projectId: (req.params as any).projectId };
+    const memberships = await getUserRoles(scope, (req.params as any).userId);
     res.json({ projectRoles: memberships });
   } catch (err) {
     console.error('[ProjectAdmin] getUserRoles error:', err);
@@ -42,8 +42,8 @@ router.put('/users/:userId/roles', async (req, res) => {
   const { roleId, roleName } = req.body;
   if (!roleId && !roleName) return res.status(400).json({ error: 'roleId or roleName is required' });
   try {
-    const scope = { projectId: req.params.projectId };
-    const result = await upsertUserRoles(scope, req.params.userId, { roleId, roleName });
+    const scope = { projectId: (req.params as any).projectId };
+    const result = await upsertUserRoles(scope, (req.params as any).userId, { roleId, roleName });
     if (result.error) return res.status(result.status ?? 500).json({ error: result.error });
     res.json({ success: true });
   } catch (err) {
@@ -55,7 +55,7 @@ router.put('/users/:userId/roles', async (req, res) => {
 // GET /apis/admin/:projectId/export
 router.get('/export', async (req, res) => {
   try {
-    const scope = { projectId: req.params.projectId };
+    const scope = { projectId: (req.params as any).projectId };
     const buffer = await exportData(scope);
     const date = new Date().toISOString().split('T')[0];
     res.setHeader('Content-Type', 'application/zip');
@@ -71,7 +71,7 @@ router.get('/export', async (req, res) => {
 router.post('/import', upload.single('file'), async (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
   try {
-    const scope = { projectId: req.params.projectId };
+    const scope = { projectId: (req.params as any).projectId };
     const result = await importData(scope, req.file.buffer);
     res.json(result);
   } catch (err: any) {

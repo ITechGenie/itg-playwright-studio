@@ -43,6 +43,7 @@ if (isPostgres) {
 }
 
 export const db = dbInstance as ReturnType<typeof drizzleSqlite<typeof genericSchema>>;
-export const sqliteDb = isPostgres ? null : createClient({ url, authToken }); // Only used in certain raw paths, keeping interface
+export const sqliteDb = isPostgres ? (null as any as ReturnType<typeof createClient>) : createClient({ url, authToken }); // Only used in certain raw paths, keeping interface
 export type Database = typeof db;
+
 
