@@ -39,6 +39,10 @@ export const getNavData = (projectId: string) => ({
           title: "Runs",
           url: `/app/project/${projectId}/executions/runs`
         },
+        {
+          title: "Reports",
+          url: `/app/project/${projectId}/executions/reports`
+        },
       ],
     },
     {
@@ -57,6 +61,8 @@ export const getNavData = (projectId: string) => ({
       icon: <Settings className="size-4" />,
       items: [
         { title: "Run Configuration", url: `/app/project/${projectId}/settings/run` },
+        { title: "User Management", url: `/app/project/${projectId}/settings/users` },
+        { title: "Export / Import", url: `/app/project/${projectId}/settings/data-transfer` },
       ],
     },
   ]

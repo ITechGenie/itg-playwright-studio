@@ -6,12 +6,14 @@ type AuthUser = {
   email: string;
   name: string;
   avatarUrl?: string;
+  role: string | null;
 };
 
 type AuthContextValue = {
   user: AuthUser | null;
   loading: boolean;
   isAuthenticated: boolean;
+  isSuperAdmin: boolean;
   refresh: () => Promise<void>;
   logout: () => Promise<void>;
 };
@@ -26,7 +28,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     setLoading(true);
     try {
       const data = await apiClient.getMe();
-      setUser(data.user);
+      setUser({ ...data.user, role: data.globalRole ?? null });
     } catch (e) {
       setUser(null);
       localStorage.removeItem('authToken');
@@ -56,6 +58,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       user,
       loading,
       isAuthenticated: !!user,
+      isSuperAdmin: user?.role === 'super_admin',
       refresh,
       logout,
     }),

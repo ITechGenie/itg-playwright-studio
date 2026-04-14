@@ -19,6 +19,10 @@ const DataEnvironments = lazy(() => import("./pages/DataEnvironments"))
 const DataSets = lazy(() => import("./pages/DataSets"))
 const ProjectSettings = lazy(() => import("./pages/ProjectSettings"))
 const Schedules = lazy(() => import("./pages/Schedules"))
+const StudioSettingsPage = lazy(() => import("./pages/StudioSettingsPage"))
+const ProjectUsersPage = lazy(() => import("./pages/ProjectUsersPage"))
+const ProjectDataTransferPage = lazy(() => import("./pages/ProjectDataTransferPage"))
+const ExecutionReports = lazy(() => import("./pages/ExecutionReports"))
 
 export default function App() {
   return (
@@ -33,6 +37,7 @@ export default function App() {
                 <Route path="/app/login" element={<Login />} />
                 <Route path="/app/projects" element={<Projects />} />
                 <Route path="/app/projects/new" element={<NewProject />} />
+                <Route path="/app/admin/settings" element={<StudioSettingsPage />} />
 
                 <Route path="/app/project/:id" element={<DashboardLayout />}>
                   {/* Menu Overviews */}
@@ -48,6 +53,7 @@ export default function App() {
 
                   <Route path="run/:runId" element={<RunLogPage />} />
                   <Route path="executions/runs" element={<ExecutionsRuns />} />
+                  <Route path="executions/reports" element={<ExecutionReports />} />
                   {/* Data Manager */}
                   <Route path="data" element={<MenuOverview section="Data Manager" />} />
                   <Route path="data/templates" element={<DataTemplates />} />
@@ -55,6 +61,8 @@ export default function App() {
                   <Route path="data/datasets" element={<DataSets />} />
                   {/* Settings */}
                   <Route path="settings/run" element={<ProjectSettings />} />
+                  <Route path="settings/users" element={<ProjectUsersPage />} />
+                  <Route path="settings/data-transfer" element={<ProjectDataTransferPage />} />
                   {/* Other nested routes go here */}
                 </Route>
 

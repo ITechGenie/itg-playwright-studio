@@ -161,6 +161,30 @@ export function requireProjectRole(minRole: 'user' | 'admin' | 'super_admin') {
   };
 }
 
+export async function requireSuperAdmin(req: any, res: any, next: any) {
+  try {
+    const userId = req.user?.id;
+    if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+
+    const [globalMembership] = await db.select().from(memberships).where(
+      and(eq(memberships.userId, userId), isNull(memberships.projectId)),
+    );
+
+    if (!globalMembership) return res.status(403).json({ error: 'Forbidden' });
+
+    const roleName = await resolveRoleName(globalMembership.roleId);
+    if (roleName !== 'super_admin') {
+      return res.status(403).json({ error: 'Forbidden' });
+    }
+
+    req.role = 'super_admin';
+    next();
+  } catch (err) {
+    console.error('requireSuperAdmin error:', err);
+    return res.status(500).json({ error: 'RBAC error' });
+  }
+}
+
 export async function requireAdmin(req: any, res: any, next: any) {
   try {
     const userId = req.user?.id;

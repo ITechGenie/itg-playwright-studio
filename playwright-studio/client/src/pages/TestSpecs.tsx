@@ -91,10 +91,10 @@ export default function TestSpecs() {
     const filename = specFilenameInput.trim()
     if (!filename) return
     setCreateSpecDialogOpen(false)
-    
+
     // Prefix current sub-directory path
     const fullPath = splatPath ? `${splatPath}/${filename}` : filename;
-    
+
     if (projectRepoUrl) {
       setNewSpecName(fullPath)
       setAddSpecCommitMsg("")
@@ -138,11 +138,11 @@ export default function TestSpecs() {
               </Badge>
             )}
             <Button
-              variant="outline" 
-              size="lg" 
+              variant="outline"
+              size="lg"
               className="h-11 border-zinc-800 bg-zinc-900 text-zinc-400 font-bold px-4 hover:text-white"
               onClick={() => navigate(`/app/project/${projectId}/settings/run`)}
-              title="Go to Run Configuration settings"
+              title="Go to Run Configuration"
             >
               <Settings2Icon className="mr-2 h-4 w-4" />
               Config
@@ -175,8 +175,8 @@ export default function TestSpecs() {
           onSelectionChange={setSelectedPaths}
           actions={
             <Button
-              variant="outline" 
-              size="sm" 
+              variant="outline"
+              size="sm"
               className="h-8 text-xs font-semibold border-zinc-800 bg-zinc-900/50 hover:bg-zinc-800"
               onClick={handleCreateSpecClick}
             >

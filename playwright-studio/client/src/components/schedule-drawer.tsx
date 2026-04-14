@@ -53,7 +53,7 @@ export function ScheduleDrawer({
     if (!open) return
     apiClient.getDataEnvironments(projectId)
       .then(data => setEnvironments(data))
-      .catch(() => {})
+      .catch(() => { })
   }, [open, projectId])
 
   // Fetch full env (with datasets) when env selection changes
@@ -62,7 +62,7 @@ export function ScheduleDrawer({
     if (selectedEnvId && selectedEnvId !== "none") {
       apiClient.getDataEnvironment(projectId, selectedEnvId)
         .then(fullEnv => setEnvironments(prev => prev.map(e => e.id === fullEnv.id ? fullEnv : e)))
-        .catch(() => {})
+        .catch(() => { })
     }
   }, [selectedEnvId, projectId])
 
