@@ -13,6 +13,7 @@ import { cn } from "@/lib/utils"
 import { PLAYWRIGHT_CLI_OPTIONS, BROWSER_OPTIONS } from "@/lib/playwright-options"
 import { GitUrlParser } from "@/lib/git-url-parser"
 import { ViewportPicker } from "@/components/viewport-picker"
+import { DataTransferControls } from "@/components/data-transfer-controls"
 
 interface ExtraArg {
   flag: string;
@@ -21,7 +22,7 @@ interface ExtraArg {
 
 export default function ProjectSettings() {
   const { id: projectId } = useParams<{ id: string }>()
-  
+
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
@@ -63,7 +64,7 @@ export default function ProjectSettings() {
             folder: proj.repoFolder || '/'
           };
           setOriginalGitConfig(config)
-          
+
           try {
             const parsed = GitUrlParser.parseBaseUrl(proj.repoBaseUrl)
             setGitProvider(parsed.provider)
@@ -236,11 +237,11 @@ export default function ProjectSettings() {
 
   return (
     <div className="flex flex-col h-full bg-background overflow-hidden font-sans">
-      <PageHeader 
-        title="Run Configuration" 
+      <PageHeader
+        title="Run Configuration"
         description="Default execution settings for this project. These can be overridden per-run in the runner panel."
       />
-      
+
       <div className="flex-1 overflow-auto">
         <div className="max-w-4xl w-full mx-auto p-6 space-y-6">
           {/* Git Repository */}
@@ -251,9 +252,9 @@ export default function ProjectSettings() {
                 <CardDescription className="text-xs">Configure Git integration for this project</CardDescription>
               </div>
               {originalGitConfig && !gitEditMode && (
-                <Button 
-                  variant="outline" 
-                  size="sm" 
+                <Button
+                  variant="outline"
+                  size="sm"
                   className="h-8 border-zinc-700 hover:bg-zinc-800"
                   onClick={handleEditGitConfig}
                 >
@@ -266,9 +267,9 @@ export default function ProjectSettings() {
                 <div className="text-center py-8 text-zinc-500 text-sm">
                   <GitBranchIcon className="h-8 w-8 mx-auto mb-2 opacity-50" />
                   <p>No Git repository configured</p>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
+                  <Button
+                    variant="outline"
+                    size="sm"
                     className="mt-4 border-zinc-700 hover:bg-zinc-800"
                     onClick={handleEditGitConfig}
                   >
@@ -291,9 +292,9 @@ export default function ProjectSettings() {
                   </div>
                   <div className="space-y-2">
                     <Label className="text-xs font-bold uppercase text-zinc-400">Repository URL</Label>
-                    <Input 
-                      placeholder="https://github.com/owner/repo" 
-                      value={gitRepoUrl} 
+                    <Input
+                      placeholder="https://github.com/owner/repo"
+                      value={gitRepoUrl}
                       onChange={e => handleGitUrlChange(e.target.value)}
                       className="h-10 bg-zinc-900 border-zinc-800 text-sm"
                     />
@@ -304,9 +305,9 @@ export default function ProjectSettings() {
                         <GitBranchIcon className="h-3 w-3 inline mr-1" />
                         Branch
                       </Label>
-                      <Input 
-                        placeholder="main" 
-                        value={gitBranch} 
+                      <Input
+                        placeholder="main"
+                        value={gitBranch}
                         onChange={e => setGitBranch(e.target.value)}
                         className="h-10 bg-zinc-900 border-zinc-800 text-sm"
                       />
@@ -316,9 +317,9 @@ export default function ProjectSettings() {
                         <FolderIcon className="h-3 w-3 inline mr-1" />
                         Folder Path
                       </Label>
-                      <Input 
-                        placeholder="tests (optional)" 
-                        value={gitPath} 
+                      <Input
+                        placeholder="tests (optional)"
+                        value={gitPath}
                         onChange={e => setGitPath(e.target.value)}
                         className="h-10 bg-zinc-900 border-zinc-800 text-sm"
                       />
@@ -330,15 +331,15 @@ export default function ProjectSettings() {
                     </div>
                   )}
                   <div className="flex gap-2 pt-2">
-                    <Button 
-                      size="sm" 
+                    <Button
+                      size="sm"
                       className="bg-blue-600 hover:bg-blue-500"
                       onClick={handleSaveGitConfig}
                     >
                       <SaveIcon className="h-3.5 w-3.5 mr-1" /> Save Git Config
                     </Button>
-                    <Button 
-                      size="sm" 
+                    <Button
+                      size="sm"
                       variant="outline"
                       className="border-zinc-700 hover:bg-zinc-800"
                       onClick={handleCancelGitEdit}
@@ -378,8 +379,8 @@ export default function ProjectSettings() {
                     </div>
                   </div>
                   <div className="pt-2">
-                    <Button 
-                      size="sm" 
+                    <Button
+                      size="sm"
                       variant="outline"
                       className="border-zinc-700 hover:bg-zinc-800"
                       onClick={handleSyncFromGit}
@@ -396,7 +397,7 @@ export default function ProjectSettings() {
                         "ml-3 text-xs font-bold",
                         syncResult.success ? "text-green-500" : "text-red-400"
                       )}>
-                        {syncResult.success 
+                        {syncResult.success
                           ? `✓ Synced ${syncResult.filesDownloaded} files`
                           : `✗ ${syncResult.error}`
                         }
@@ -512,10 +513,10 @@ export default function ProjectSettings() {
           </Card>
 
           <div className="flex items-center gap-6 pb-20 pt-4 border-t border-zinc-900">
-            <Button 
-              size="lg" 
-              className="px-10 h-11 bg-blue-600 hover:bg-blue-500 text-white font-bold transition-all shadow-lg shadow-blue-600/10" 
-              onClick={handleSave} 
+            <Button
+              size="lg"
+              className="px-10 h-11 bg-blue-600 hover:bg-blue-500 text-white font-bold transition-all shadow-lg shadow-blue-600/10"
+              onClick={handleSave}
               disabled={saving}
             >
               {saving ? (
@@ -526,11 +527,22 @@ export default function ProjectSettings() {
             </Button>
             {saved && (
               <span className="text-green-500 text-xs font-bold flex items-center gap-2 animate-in fade-in zoom-in duration-300">
-                <CheckCircleIcon className="size-4" /> 
+                <CheckCircleIcon className="size-4" />
                 Configuration Saved Successfully
               </span>
             )}
           </div>
+
+          {/* Data Export / Import */}
+          <Card className="border-zinc-800 bg-zinc-950/50">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-bold uppercase tracking-wider text-zinc-400">Data Export / Import</CardTitle>
+              <CardDescription className="text-xs">Export or import project-specific data (configs, templates, environments, datasets, schedules, executions).</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {projectId && <DataTransferControls apiBasePath={`/apis/admin/${projectId}`} />}
+            </CardContent>
+          </Card>
         </div>
       </div>
     </div>

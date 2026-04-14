@@ -262,7 +262,16 @@ router.get('/me', authMiddleware, async (req, res) => {
     const [r] = await db.select().from(roles).where(eq(roles.id, m.roleId));
     return { projectId: m.projectId, role: r?.name || 'user' };
   }));
-  res.json({ user: { id: user.id, email: user.email, name: user.name, avatarUrl: user.avatarUrl }, roles: rolesData });
+
+  // Resolve global role (membership where projectId IS NULL)
+  const globalMembership = rolesData.find(r => r.projectId === null);
+  const globalRole = globalMembership?.role ?? 'user';
+
+  res.json({
+    user: { id: user.id, email: user.email, name: user.name, avatarUrl: user.avatarUrl },
+    roles: rolesData,
+    globalRole,
+  });
 });
 
 router.post('/pats', authMiddleware, async (req, res) => {

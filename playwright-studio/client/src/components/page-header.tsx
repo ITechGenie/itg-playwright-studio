@@ -29,6 +29,8 @@ export function PageHeader({ title, description, className, action }: PageHeader
     if (segment === "data") return "Data Manager"
     if (segment === "templates") return "Data Templates"
     if (segment === "environments") return "Environments & Sets"
+    if (segment === "users") return "User Management"
+    if (segment === "data-transfer") return "Export / Import"
     return segment.charAt(0).toUpperCase() + segment.slice(1).replace('-', ' ')
   }
 

@@ -6,11 +6,13 @@ import { useNavigate } from "react-router-dom"
 import { useState, useEffect } from "react"
 import { apiClient } from "@/services/api-client"
 import { GitUrlParser } from "@/lib/git-url-parser"
-import { Settings2Icon, ExternalLinkIcon, PlusIcon, RefreshCwIcon, GitBranchIcon, FolderIcon } from "lucide-react"
+import { Settings2Icon, ExternalLinkIcon, PlusIcon, RefreshCwIcon, GitBranchIcon, FolderIcon, SlidersHorizontal } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { useAuth } from "@/contexts/AuthContext"
 
 export default function Projects() {
   const navigate = useNavigate();
+  const { isSuperAdmin } = useAuth();
   const [projects, setProjects] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [userName, setUserName] = useState("Developer");
@@ -78,6 +80,17 @@ export default function Projects() {
               <PlusIcon className="mr-2 h-4 w-4" />
               New Project
             </Button>
+            {isSuperAdmin && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-10 px-4 border-zinc-800 bg-zinc-950/50 hover:bg-zinc-900"
+                onClick={() => navigate("/app/admin/settings")}
+              >
+                <SlidersHorizontal className="mr-2 h-4 w-4" />
+                Studio Settings
+              </Button>
+            )}
           </div>
           <div className="w-full max-w-lg mt-4">
             <Input type="text" placeholder="Search projects..." className="w-full h-11 bg-zinc-900/50 border-zinc-800" />

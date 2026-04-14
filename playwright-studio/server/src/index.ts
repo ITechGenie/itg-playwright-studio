@@ -10,8 +10,10 @@ import { createRunRouter } from './routes/run.js';
 import { createDataRouter } from './routes/data.js';
 import { createSchedulesRouter } from './routes/schedules.js';
 import authRouter from './routes/auth.js';
+import superadminRouter from './routes/superadmin.js';
+import projectAdminRouter from './routes/project-admin.js';
 import { db, sqliteDb } from './db/index.js';
-import { projects, projectConfigs, roles, users, memberships } from './db/schema.js';
+import { projects, projectConfigs, roles, users, memberships, isPostgres } from './db/schema.js';
 import { authMiddleware, requireAdmin, requireProjectRole, decryptAes } from './middleware/auth.js';
 import { eq } from 'drizzle-orm';
 import { generateId } from './lib/uuid.js';
@@ -105,6 +107,7 @@ async function syncProjects() {
 }
 
 async function ensureColumn(table: string, column: string, definition: string) {
+  if (isPostgres || !sqliteDb) return; // Postgres schema managed via db:setup:pg
   const result = await sqliteDb.execute(`PRAGMA table_info(${table});`);
   const hasColumn = result.rows.some((row: any) => row.name === column);
   if (!hasColumn) {
@@ -114,6 +117,11 @@ async function ensureColumn(table: string, column: string, definition: string) {
 }
 
 async function applyMigrations() {
+  if (isPostgres) {
+    console.log('[Migration] Postgres mode detected, skipping manual SQLite migrations (use db:push)');
+    return;
+  }
+
   if (process.env.SKIP_MIGRATIONS === '1') {
     console.log('[Migration] SKIP_MIGRATIONS=1 set, skipping SQL migration file execution');
     return;
@@ -455,6 +463,18 @@ app.post('/apis/auth/projects', authMiddleware, requireProjectRole('user'), asyn
 // Auth routes: login/callback/me/pats
 app.use('/apis/auth', authRouter);
 
+// Super admin routes (requireSuperAdmin enforced inside router)
+app.use('/apis/superadmin', superadminRouter);
+
+// Project admin routes (requireProjectRole('admin') enforced inside router)
+app.use('/apis/admin/:projectId', projectAdminRouter);
+
+// Super admin routes (requireSuperAdmin enforced inside router)
+app.use('/apis/superadmin', superadminRouter);
+
+// Project admin routes (requireProjectRole('admin') enforced inside router)
+app.use('/apis/admin/:projectId', projectAdminRouter);
+
 // Mount run router and data router under /apis/project with authentication and project role checks
 app.use('/apis/project', authMiddleware, requireProjectRole('user'), createRunRouter(wss));
 app.use('/apis/project', authMiddleware, requireProjectRole('user'), createDataRouter());
@@ -639,8 +659,8 @@ app.put('/apis/project/:projectId/files/content', authMiddleware, requireProject
               console.error('[Git Push] Failed:', pushResult.error);
             }
           } catch (e: any) {
-             console.error('[Git Push] Exception:', e);
-             gitError = e.message;
+            console.error('[Git Push] Exception:', e);
+            gitError = e.message;
           }
         } else {
           gitError = "Failed to decrypt provider token";
@@ -757,7 +777,7 @@ app.post('/apis/project/:projectId/git-sync', authMiddleware, requireProjectRole
     const { GitUrlParser } = await import('./lib/git-url-parser.js');
     const basePath = process.env.PROJECTS_BASE_PATH || path.join(process.cwd(), 'projects');
     const syncService = createGitSyncService(basePath);
-    
+
     // Construct full parsed object
     const baseParsed = GitUrlParser.parseBaseUrl(project.repoBaseUrl);
     const parsedGitUrl = {
@@ -768,7 +788,7 @@ app.post('/apis/project/:projectId/git-sync', authMiddleware, requireProjectRole
       branch: project.repoBranch || 'main',
       folderPath: project.repoFolder || '/'
     };
-    
+
     const syncResult = await syncService.syncProject(project.name, parsedGitUrl as any, rawToken);
 
     if (!syncResult.success) {
