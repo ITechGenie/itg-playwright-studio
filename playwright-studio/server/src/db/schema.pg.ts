@@ -1,11 +1,20 @@
 import { pgTable, text, integer, timestamp, pgSchema } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
 import dotenv from 'dotenv';
-dotenv.config();
+import path from 'path';
+import { fileURLToPath } from 'url';
 
-export const playwrightSchema = pgSchema(process.env.DATABASE_SCHEMA || 'public');
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+// Explicitly resolve relative to this file to handle npm workspaces
+dotenv.config({ path: path.resolve(__dirname, '../../.env') });
 
-export const users = playwrightSchema.table('users', {
+const schemaName = process.env.DATABASE_SCHEMA;
+export const customSchema = schemaName && schemaName !== 'public' ? pgSchema(schemaName) : undefined;
+
+// Fallback gracefully: if schemaName is public or empty, use standard pgTable
+const createTable = customSchema ? customSchema.table : pgTable;
+
+export const users = createTable('users', {
   id: text('id').primaryKey(),
   email: text('email').notNull().unique(),
   name: text('name'),
@@ -20,13 +29,13 @@ export const users = playwrightSchema.table('users', {
   createdAt: timestamp('created_at', { mode: 'date' }).notNull().default(sql`now()`),
 });
 
-export const roles = playwrightSchema.table('roles', {
+export const roles = createTable('roles', {
   id: text('id').primaryKey(),
   name: text('name').notNull(),
   scope: text('scope').notNull(),
 });
 
-export const memberships = playwrightSchema.table('memberships', {
+export const memberships = createTable('memberships', {
   id: text('id').primaryKey(),
   userId: text('user_id').notNull().references(() => users.id),
   roleId: text('role_id').notNull().references(() => roles.id),
@@ -34,7 +43,7 @@ export const memberships = playwrightSchema.table('memberships', {
   createdAt: timestamp('created_at', { mode: 'date' }).notNull().default(sql`now()`),
 });
 
-export const accessTokens = playwrightSchema.table('access_tokens', {
+export const accessTokens = createTable('access_tokens', {
   id: text('id').primaryKey(),
   userId: text('user_id').notNull().references(() => users.id),
   name: text('name').notNull(),
@@ -45,7 +54,7 @@ export const accessTokens = playwrightSchema.table('access_tokens', {
   lastUsedAt: timestamp('last_used_at', { mode: 'date' }),
 });
 
-export const projects = playwrightSchema.table('projects', {
+export const projects = createTable('projects', {
   id: text('id').primaryKey(), // short-uuid
   name: text('name').notNull().unique(), // folder name
   repoBaseUrl: text('repo_base_url'),
@@ -56,7 +65,7 @@ export const projects = playwrightSchema.table('projects', {
   updatedAt: timestamp('updated_at', { mode: 'date' }).notNull(),
 });
 
-export const projectConfigs = playwrightSchema.table('project_configs', {
+export const projectConfigs = createTable('project_configs', {
   id: text('id').primaryKey(),
   projectId: text('project_id').notNull().references(() => projects.id),
   browser: text('browser').default('chromium').notNull(),
@@ -72,7 +81,7 @@ export const projectConfigs = playwrightSchema.table('project_configs', {
   extraArgs: text('extra_args').default('[]').notNull(),                   // JSON array of {flag, value}
 });
 
-export const executions = playwrightSchema.table('executions', {
+export const executions = createTable('executions', {
   id: text('id').primaryKey(), // runId
   projectId: text('project_id').notNull().references(() => projects.id),
   status: text('status').notNull(), // running, completed, failed, stopped
@@ -86,14 +95,14 @@ export const executions = playwrightSchema.table('executions', {
   targetPaths: text('target_paths'), // JSON array of paths for multi-select
 });
 
-export const dataTemplates = playwrightSchema.table('data_templates', {
+export const dataTemplates = createTable('data_templates', {
   id: text('id').primaryKey(),
   projectId: text('project_id').notNull().references(() => projects.id),
   name: text('name').notNull(),
   createdAt: timestamp('created_at', { mode: 'date' }).notNull(),
 });
 
-export const templateAttributes = playwrightSchema.table('template_attributes', {
+export const templateAttributes = createTable('template_attributes', {
   id: text('id').primaryKey(),
   templateId: text('template_id').notNull().references(() => dataTemplates.id),
   key: text('key').notNull(),
@@ -103,7 +112,7 @@ export const templateAttributes = playwrightSchema.table('template_attributes', 
   defaultValue: text('default_value'), // optional fallback when env/dataset doesn't set this key
 });
 
-export const environments = playwrightSchema.table('environments', {
+export const environments = createTable('environments', {
   id: text('id').primaryKey(),
   projectId: text('project_id').notNull().references(() => projects.id),
   templateId: text('template_id').notNull().references(() => dataTemplates.id),
@@ -112,7 +121,7 @@ export const environments = playwrightSchema.table('environments', {
   createdAt: timestamp('created_at', { mode: 'date' }).notNull(),
 });
 
-export const dataSets = playwrightSchema.table('data_sets', {
+export const dataSets = createTable('data_sets', {
   id: text('id').primaryKey(),
   projectId: text('project_id').notNull().references(() => projects.id),
   templateId: text('template_id').notNull().references(() => dataTemplates.id),
@@ -122,13 +131,13 @@ export const dataSets = playwrightSchema.table('data_sets', {
 });
 
 // Many-to-many: a dataset can be linked to multiple environments
-export const environmentDatasets = playwrightSchema.table('environment_datasets', {
+export const environmentDatasets = createTable('environment_datasets', {
   id: text('id').primaryKey(),
   environmentId: text('environment_id').notNull().references(() => environments.id),
   datasetId: text('dataset_id').notNull().references(() => dataSets.id),
 });
 
-export const schedules = playwrightSchema.table('schedules', {
+export const schedules = createTable('schedules', {
   id: text('id').primaryKey(),
   projectId: text('project_id').notNull().references(() => projects.id),
   name: text('name').notNull(),
@@ -143,7 +152,7 @@ export const schedules = playwrightSchema.table('schedules', {
   nextRunAt: timestamp('next_run_at', { mode: 'date' }),
 });
 
-export const schedulerLock = playwrightSchema.table('scheduler_lock', {
+export const schedulerLock = createTable('scheduler_lock', {
   lockKey: text('lock_key').primaryKey(),                              // always 'leader'
   holderId: text('holder_id').notNull(),                               // pod UUID
   expiresAt: timestamp('expires_at', { mode: 'date' }).notNull(),  // TTL 30s

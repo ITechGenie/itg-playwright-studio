@@ -9,6 +9,7 @@ import dotenv from 'dotenv';
 import { createRunRouter } from './routes/run.js';
 import { createDataRouter } from './routes/data.js';
 import { createSchedulesRouter } from './routes/schedules.js';
+import { createReportsRouter } from './routes/reports.js';
 import authRouter from './routes/auth.js';
 import superadminRouter from './routes/superadmin.js';
 import projectAdminRouter from './routes/project-admin.js';
@@ -479,6 +480,7 @@ app.use('/apis/admin/:projectId', projectAdminRouter);
 app.use('/apis/project', authMiddleware, requireProjectRole('user'), createRunRouter(wss));
 app.use('/apis/project', authMiddleware, requireProjectRole('user'), createDataRouter());
 app.use('/apis/project', authMiddleware, requireProjectRole('user'), createSchedulesRouter());
+app.use('/apis/project', authMiddleware, requireProjectRole('user'), createReportsRouter());
 
 // Project Specific Operations
 app.put('/apis/project/:projectId/config', authMiddleware, requireProjectRole('admin'), async (req, res) => {
