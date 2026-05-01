@@ -21,4 +21,5 @@ export const dataSets = (isPostgres ? pgSchema.dataSets : sqliteSchema.dataSets)
 export const environmentDatasets = (isPostgres ? pgSchema.environmentDatasets : sqliteSchema.environmentDatasets) as unknown as typeof sqliteSchema.environmentDatasets;
 export const schedules = (isPostgres ? pgSchema.schedules : sqliteSchema.schedules) as unknown as typeof sqliteSchema.schedules;
 export const schedulerLock = (isPostgres ? pgSchema.schedulerLock : sqliteSchema.schedulerLock) as unknown as typeof sqliteSchema.schedulerLock;
+export const testResults = (isPostgres ? pgSchema.testResults : sqliteSchema.testResults) as unknown as typeof sqliteSchema.testResults;
 

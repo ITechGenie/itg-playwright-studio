@@ -5,6 +5,7 @@ export interface PlaywrightCLIOption {
 }
 
 export const PLAYWRIGHT_CLI_OPTIONS: PlaywrightCLIOption[] = [
+  { flag: "--trace", description: "Record trace for each test (on, off, retain-on-failure, on-first-retry)", hasValue: true },
   { flag: "--block-service-workers", description: "Block service workers", hasValue: false },
   { flag: "--channel", description: "Browser channel (chrome, chrome-beta, msedge-dev, etc.)", hasValue: true },
   { flag: "--color-scheme", description: "Emulate color scheme (light or dark)", hasValue: true },

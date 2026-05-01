@@ -15,7 +15,7 @@ export const ALLOWED_PLAYWRIGHT_FLAGS = new Set([
   '--geolocation', '--ignore-https-errors', '--lang', '--proxy-server',
   '--proxy-bypass', '--timezone', '--timeout', '--user-agent', '--user-data-dir',
   '--viewport-size', '--save-har', '--save-har-glob', '--save-storage',
-  '--load-storage', '--is-mobile', '--has-touch',
+  '--load-storage', '--is-mobile', '--has-touch', '--trace',
 ]);
 
 export function createRunRouter(_wss: WebSocketServer) {
@@ -157,11 +157,21 @@ export function createRunRouter(_wss: WebSocketServer) {
       const runsWithReports = await Promise.all(runs.map(async (run) => {
         const executionRoot = path.join(executionsPath, projectId, 'runs', run.runId);
         const check = async (p: string) => { try { await fs.access(p); return true; } catch { return false; } };
+        let hasTraceFiles = false;
+        try {
+          const resultsDir = path.join(executionRoot, 'test-results');
+          const entries = await fs.readdir(resultsDir, { recursive: true, withFileTypes: true });
+          hasTraceFiles = entries.some(e => e.isFile() && e.name.endsWith('.zip'));
+        } catch {
+          // Ignore if directory doesn't exist or isn't readable
+        }
+
         return {
           ...run,
           hasHtmlReport: await check(path.join(executionRoot, 'report', 'html', 'index.html')),
           hasMonocartReport: await check(path.join(executionRoot, 'report', 'monocart', 'index.html')),
           hasHar: await check(path.join(executionRoot, 'test-results', 'network.har')),
+          hasTrace: hasTraceFiles,
         };
       }));
 

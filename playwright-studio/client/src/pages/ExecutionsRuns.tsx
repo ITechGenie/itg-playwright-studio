@@ -34,6 +34,7 @@ import {
 import { cn } from "@/lib/utils"
 import { apiClient } from "@/services/api-client"
 import { PageHeader } from "@/components/page-header"
+import { ReportDrawer } from "@/components/report-drawer"
 
 interface ExecutionRun {
   runId: string;
@@ -59,6 +60,9 @@ export default function ExecutionsRuns() {
   const [page, setPage] = useState(1);
   const [pageSize] = useState(10);
   const [hasMore, setHasMore] = useState(true);
+
+  // Report Viewer State
+  const [reportViewerConfig, setReportViewerConfig] = useState<{url: string, type: 'html' | 'monocart'} | null>(null);
 
   // Filter State
   const [statusFilter, setStatusFilter] = useState('all');
@@ -287,7 +291,7 @@ export default function ExecutionsRuns() {
                         <div className="flex items-center gap-4">
                           {run.hasMonocartReport ? (
                             <button
-                              onClick={() => window.open(apiClient.getReportUrl(projectId!, run.runId, 'monocart'), '_blank')}
+                              onClick={() => setReportViewerConfig({url: apiClient.getReportUrl(projectId!, run.runId, 'monocart'), type: 'monocart'})}
                               className="flex items-center gap-1.5 text-[10px] text-indigo-400 hover:text-indigo-300 transition-colors group/link"
                             >
                               <FileTextIcon className="h-3.5 w-3.5" />
@@ -301,7 +305,7 @@ export default function ExecutionsRuns() {
                           )}
                           {run.hasHtmlReport ? (
                             <button
-                              onClick={() => window.open(apiClient.getReportUrl(projectId!, run.runId, 'html'), '_blank')}
+                              onClick={() => setReportViewerConfig({url: apiClient.getReportUrl(projectId!, run.runId, 'html'), type: 'html'})}
                               className="flex items-center gap-1.5 text-[10px] text-orange-400 hover:text-orange-300 transition-colors group/link"
                             >
                               <ExternalLinkIcon className="h-3.5 w-3.5" />
@@ -447,7 +451,7 @@ export default function ExecutionsRuns() {
                         variant="outline" 
                         size="sm" 
                         className="h-9 text-xs border-indigo-500/20 bg-indigo-500/5 text-indigo-400 hover:bg-indigo-500/10"
-                        onClick={() => window.open(apiClient.getReportUrl(projectId!, selectedRun.runId, 'monocart'), '_blank')}
+                        onClick={() => setReportViewerConfig({url: apiClient.getReportUrl(projectId!, selectedRun.runId, 'monocart'), type: 'monocart'})}
                       >
                         <ExternalLinkIcon className="h-3 w-3 mr-2" />
                         Monocart View
@@ -458,7 +462,7 @@ export default function ExecutionsRuns() {
                         variant="outline" 
                         size="sm" 
                         className="h-9 text-xs border-orange-500/20 bg-orange-500/5 text-orange-400 hover:bg-orange-500/10"
-                        onClick={() => window.open(apiClient.getReportUrl(projectId!, selectedRun.runId, 'html'), '_blank')}
+                        onClick={() => setReportViewerConfig({url: apiClient.getReportUrl(projectId!, selectedRun.runId, 'html'), type: 'html'})}
                       >
                         <ExternalLinkIcon className="h-3 w-3 mr-2" />
                         HTML View
@@ -498,6 +502,14 @@ export default function ExecutionsRuns() {
           )}
         </SheetContent>
       </Sheet>
+
+      {/* Report Drawer component */}
+      <ReportDrawer 
+        open={!!reportViewerConfig} 
+        onOpenChange={(open) => !open && setReportViewerConfig(null)} 
+        reportUrl={reportViewerConfig?.url || null} 
+        reportType={reportViewerConfig?.type || null} 
+      />
     </div>
   );
 }

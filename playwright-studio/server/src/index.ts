@@ -209,7 +209,6 @@ async function applyMigrations() {
 
     // Data manager: default value support on template attributes
     await ensureColumn('template_attributes', 'default_value', 'TEXT');
-
     // Data manager: migrate datasets to project-level (many-to-many with environments)
     // Add project_id and template_id columns to data_sets if missing (for existing data)
     await ensureColumn('data_sets', 'project_id', 'TEXT');
@@ -259,6 +258,22 @@ async function applyMigrations() {
       await db.insert(roles).values({ id: roleId, name: 'user', scope: 'global' });
       console.log('[Migration] seeded default global user role');
     }
+
+    // Test results table for per-test failure tracking
+    await sqliteDb.execute(`CREATE TABLE IF NOT EXISTS test_results (
+      id TEXT PRIMARY KEY NOT NULL,
+      execution_id TEXT NOT NULL,
+      project_id TEXT NOT NULL,
+      suite_name TEXT NOT NULL,
+      test_title TEXT NOT NULL,
+      status TEXT NOT NULL,
+      duration INTEGER,
+      retries INTEGER NOT NULL DEFAULT 0,
+      browser TEXT,
+      error_message TEXT,
+      error_stack TEXT,
+      started_at INTEGER
+    )`);
   } catch (err: any) {
     console.warn('[Migration] post-migration check failed', err?.message || err);
   }
@@ -483,7 +498,7 @@ app.use('/apis/project', authMiddleware, requireProjectRole('user'), createSched
 app.use('/apis/project', authMiddleware, requireProjectRole('user'), createReportsRouter());
 
 // Project Specific Operations
-app.put('/apis/project/:projectId/config', authMiddleware, requireProjectRole('admin'), async (req, res) => {
+app.post('/apis/project/:projectId/config', authMiddleware, requireProjectRole('admin'), async (req, res) => {
   const { projectId } = req.params;
   const configUpdate = req.body;
 
@@ -613,7 +628,7 @@ app.get('/apis/project/:projectId/files/content', authMiddleware, requireProject
   }
 });
 
-app.put('/apis/project/:projectId/files/content', authMiddleware, requireProjectRole('user'), async (req, res) => {
+app.post('/apis/project/:projectId/files/content', authMiddleware, requireProjectRole('user'), async (req, res) => {
   try {
     const { projectId } = req.params;
     const requestedSubPath = (req.query.path as string);

@@ -187,7 +187,7 @@ export function FileManager({ basePath = "", title = "File Manager", actions, on
     const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
     const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
     const [refreshTrigger, setRefreshTrigger] = useState(0);
-    
+
     // Sync selections back to parent
     useEffect(() => {
         if (onSelectionChange) {
@@ -331,7 +331,7 @@ export function FileManager({ basePath = "", title = "File Manager", actions, on
         apiClient.getProjects().then((projects: any[]) => {
             const proj = projects.find((p: any) => p.id === projectId);
             setProjectRepoUrl(proj?.repoUrl ?? null);
-        }).catch(() => {});
+        }).catch(() => { });
     }, [projectId]);
 
     const openEditor = async (item: FileItem) => {
@@ -339,7 +339,7 @@ export function FileManager({ basePath = "", title = "File Manager", actions, on
         setIsEditing(true);
         setIsViewingMode(false);
         setIsLoadingEditor(true);
-        
+
         try {
             const data = await apiClient.getFileContent(projectId, item.id);
             setOriginalContent(data.content);
@@ -349,7 +349,7 @@ export function FileManager({ basePath = "", title = "File Manager", actions, on
             setOriginalContent("// Failed to load content");
             setCurrentContent("// Failed to load content");
         }
-        
+
         setIsReviewingDiff(false);
         setGitPushStatus(null);
         setIsLoadingEditor(false);
@@ -360,7 +360,7 @@ export function FileManager({ basePath = "", title = "File Manager", actions, on
         setIsEditing(true);
         setIsViewingMode(true);
         setIsLoadingEditor(true);
-        
+
         try {
             const data = await apiClient.getFileContent(projectId, item.id);
             setOriginalContent(data.content);
@@ -370,7 +370,7 @@ export function FileManager({ basePath = "", title = "File Manager", actions, on
             setOriginalContent("// Failed to load content");
             setCurrentContent("// Failed to load content");
         }
-        
+
         setIsReviewingDiff(false);
         setGitPushStatus(null);
         setIsLoadingEditor(false);
@@ -631,20 +631,6 @@ export function FileManager({ basePath = "", title = "File Manager", actions, on
                     )}
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
-                    {selectedItems.size === 1 && (
-                        <Button 
-                            variant="outline" 
-                            size="sm" 
-                            className="h-8 text-xs font-semibold" 
-                            onClick={() => {
-                                const id = Array.from(selectedItems)[0];
-                                const item = sortedCurrentItems.find(i => i.id === id) || rootItems.find(i => i.id === id);
-                                if (item && item.type === 'file') openViewer(item);
-                            }}
-                        >
-                            <EyeIcon className="mr-2 h-3.5 w-3.5" /> View Spec
-                        </Button>
-                    )}
                     <Button
                         variant="outline"
                         size="sm"
@@ -654,6 +640,49 @@ export function FileManager({ basePath = "", title = "File Manager", actions, on
                         <FolderPlusIcon className="mr-2 h-3.5 w-3.5" /> New Folder
                     </Button>
                     {actions}
+                    {selectedItems.size === 1 && (
+                        <>
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                className="h-8 text-xs font-semibold"
+                                onClick={async () => {
+                                    const id = Array.from(selectedItems)[0];
+                                    const item = sortedCurrentItems.find(i => i.id === id) || rootItems.find(i => i.id === id);
+                                    if (item && item.type === 'file') {
+                                        try {
+                                            const data = await apiClient.getFileContent(projectId, item.id);
+                                            const blob = new Blob([data.content], { type: 'text/plain' });
+                                            const url = window.URL.createObjectURL(blob);
+                                            const a = document.createElement('a');
+                                            a.href = url;
+                                            a.download = item.name;
+                                            document.body.appendChild(a);
+                                            a.click();
+                                            window.URL.revokeObjectURL(url);
+                                            document.body.removeChild(a);
+                                        } catch (e) {
+                                            console.error("Failed to download file", e);
+                                        }
+                                    }
+                                }}
+                            >
+                                <DownloadIcon className="mr-2 h-3.5 w-3.5" /> Download
+                            </Button>
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                className="h-8 text-xs font-semibold"
+                                onClick={() => {
+                                    const id = Array.from(selectedItems)[0];
+                                    const item = sortedCurrentItems.find(i => i.id === id) || rootItems.find(i => i.id === id);
+                                    if (item && item.type === 'file') openViewer(item);
+                                }}
+                            >
+                                <EyeIcon className="mr-2 h-3.5 w-3.5" /> View Spec
+                            </Button>
+                        </>
+                    )}
                 </div>
             </div>
 

@@ -1,6 +1,9 @@
 import { db } from './db/index.js';
-import { executions } from './db/schema.js';
+import { executions, testResults } from './db/schema.js';
 import { eq, desc, and, gte, lte } from 'drizzle-orm';
+import * as fs from 'fs/promises';
+import * as path from 'path';
+import { randomUUID } from 'crypto';
 export interface RunLog {
   timestamp: string;
   type: 'stdout' | 'stderr' | 'info' | 'done' | 'error';
@@ -114,9 +117,57 @@ class RunStore {
         duration,
       }).where(eq(executions.id, runId));
 
+      // Parse results.json and persist per-test results
+      if (run) {
+        await this._persistTestResults(runId, run.projectId).catch(err => {
+          console.warn(`[RunStore] Failed to persist test results for ${runId}:`, err?.message ?? err);
+        });
+      }
+
       // In a real app, we might dump logs to a file here and clear memory
       // this.activeLogs.delete(runId);
     }
+  }
+
+  /**
+   * Reads results.json produced by the Playwright JSON reporter and bulk-inserts
+   * one row per test case into the test_results table.
+   */
+  private async _persistTestResults(runId: string, projectId: string): Promise<void> {
+    const executionsPath = process.env.EXECUTIONS_BASE_PATH || path.join(process.cwd(), 'executions');
+    const resultsFile = path.join(executionsPath, projectId, 'runs', runId, 'report', 'results.json');
+
+    let raw: string;
+    try {
+      raw = await fs.readFile(resultsFile, 'utf8');
+    } catch {
+      // results.json not present (e.g. run was stopped before Playwright finished)
+      return;
+    }
+
+    let report: PlaywrightJsonReport;
+    try {
+      report = JSON.parse(raw);
+    } catch {
+      console.warn(`[RunStore] results.json for ${runId} is not valid JSON`);
+      return;
+    }
+
+    const rows: (typeof testResults.$inferInsert)[] = [];
+
+    for (const suite of report.suites ?? []) {
+      collectTestRows(suite, suite.title ?? '', runId, projectId, rows);
+    }
+
+    if (rows.length === 0) return;
+
+    // Batch insert in chunks of 100 to avoid hitting SQLite variable limits
+    const CHUNK = 100;
+    for (let i = 0; i < rows.length; i += CHUNK) {
+      await db.insert(testResults).values(rows.slice(i, i + CHUNK));
+    }
+
+    console.log(`[RunStore] Persisted ${rows.length} test result(s) for run ${runId}`);
   }
 
   async getRecentRuns(projectId: string, options: { 
@@ -163,3 +214,103 @@ class RunStore {
 }
 
 export const runStore = new RunStore();
+
+// ── Playwright JSON report types ──────────────────────────────────────────────
+
+interface PlaywrightJsonReport {
+  suites?: PlaywrightSuite[];
+}
+
+interface PlaywrightSuite {
+  title?: string;
+  file?: string;
+  suites?: PlaywrightSuite[];
+  specs?: PlaywrightSpec[];
+}
+
+interface PlaywrightSpec {
+  title?: string;
+  file?: string;
+  tests?: PlaywrightTest[];
+}
+
+interface PlaywrightTest {
+  projectName?: string;
+  status?: string;
+  duration?: number;
+  results?: PlaywrightTestResult[];
+}
+
+interface PlaywrightTestResult {
+  status?: string;
+  duration?: number;
+  startTime?: string;
+  retry?: number;
+  errors?: { message?: string; stack?: string }[];
+}
+
+// ── Helper: recursively collect test rows from nested suites ──────────────────
+
+function collectTestRows(
+  suite: PlaywrightSuite,
+  filePath: string,
+  executionId: string,
+  projectId: string,
+  rows: (typeof testResults.$inferInsert)[],
+): void {
+  // Recurse into nested suites
+  for (const child of suite.suites ?? []) {
+    collectTestRows(child, suite.file ?? filePath, executionId, projectId, rows);
+  }
+
+  for (const spec of suite.specs ?? []) {
+    const suiteName = spec.file ?? suite.file ?? filePath;
+    const testTitle = spec.title ?? '';
+
+    for (const test of spec.tests ?? []) {
+      const browser = test.projectName ?? null;
+
+      // Playwright reports one result per retry attempt; the last one is the final outcome
+      const results = test.results ?? [];
+      const finalResult = results[results.length - 1];
+      if (!finalResult) continue;
+
+      const status = normaliseStatus(finalResult.status ?? test.status ?? 'unknown');
+      const duration = finalResult.duration ?? test.duration ?? null;
+      const retries = Math.max(0, results.length - 1);
+      const startedAt = finalResult.startTime ? new Date(finalResult.startTime) : null;
+
+      const firstError = finalResult.errors?.[0];
+      const errorMessage = firstError?.message
+        ? firstError.message.slice(0, 500)
+        : null;
+      const errorStack = firstError?.stack ?? null;
+
+      rows.push({
+        id: randomUUID(),
+        executionId,
+        projectId,
+        suiteName,
+        testTitle,
+        status,
+        duration,
+        retries,
+        browser,
+        errorMessage,
+        errorStack,
+        startedAt,
+      });
+    }
+  }
+}
+
+function normaliseStatus(raw: string): string {
+  switch (raw) {
+    case 'passed': return 'passed';
+    case 'failed': return 'failed';
+    case 'timedOut': return 'timedOut';
+    case 'skipped':
+    case 'pending': return 'skipped';
+    default: return 'failed';
+  }
+}

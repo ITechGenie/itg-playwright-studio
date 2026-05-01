@@ -1,4 +1,5 @@
 import { ENDPOINTS } from './api-endpoints';
+import { toast } from 'sonner';
 
 function authHeaders(): Record<string, string> {
   const token = localStorage.getItem('authToken');
@@ -6,14 +7,35 @@ function authHeaders(): Record<string, string> {
 }
 
 async function apiFetch(url: string | URL, options: RequestInit = {}) {
-  const res = await fetch(url.toString(), options);
+  let res: Response;
+  try {
+    res = await fetch(url.toString(), options);
+  } catch {
+    // Network-level failure (offline, DNS, CORS preflight, etc.)
+    toast.error('Network error — check your connection and try again.');
+    throw new Error('Network error');
+  }
+
   if (res.status === 401) {
     localStorage.removeItem('authToken');
-    // Save current path to redirect back after login if needed? 
-    // For now, just redirect to login as requested.
     window.location.href = '/app/login';
     throw new Error('Unauthorized');
   }
+
+  if (!res.ok) {
+    // Try to extract a server-provided message, fall back to HTTP status text
+    let message = `Request failed (${res.status})`;
+    try {
+      const cloned = res.clone();
+      const body = await cloned.json();
+      if (body?.error) message = body.error;
+      else if (body?.message) message = body.message;
+    } catch {
+      // body wasn't JSON — keep the default message
+    }
+    toast.error(message);
+  }
+
   return res;
 }
 
@@ -72,7 +94,7 @@ export const apiClient = {
 
   async updateProjectConfig(projectId: string, config: any) {
     const res = await apiFetch(ENDPOINTS.PROJECT_CONFIG(projectId), {
-      method: 'PUT',
+      method: 'POST',
       headers: { 'Content-Type': 'application/json', ...authHeaders() },
       body: JSON.stringify(config),
     });
@@ -189,7 +211,7 @@ export const apiClient = {
     const url = new URL(window.location.origin + ENDPOINTS.PROJECT_FILES(projectId) + '/content');
     url.searchParams.set('path', path);
     const res = await apiFetch(url, { 
-        method: 'PUT',
+        method: 'POST',
         headers: { 'Content-Type': 'application/json', ...authHeaders() },
         body: JSON.stringify({ content, ...(commitMessage ? { commitMessage } : {}) })
     });
@@ -435,8 +457,14 @@ export const apiClient = {
   },
 
   // --- Execution Reports ---
-  async getExecutionReports(projectId: string, days: 7 | 30 | 90 = 30) {
-    const url = `${ENDPOINTS.EXECUTION_REPORTS(projectId)}?days=${days}`;
+  async getExecutionReports(
+    projectId: string,
+    days: 7 | 30 | 90 = 30,
+    trigger = 'all',
+    status = 'all',
+  ) {
+    const params = new URLSearchParams({ days: String(days), trigger, status });
+    const url = `${ENDPOINTS.EXECUTION_REPORTS(projectId)}?${params}`;
     const res = await apiFetch(url, { headers: authHeaders() });
     if (!res.ok) throw new Error('Failed to fetch execution reports');
     return res.json() as Promise<{
@@ -449,6 +477,23 @@ export const apiClient = {
       statusBreakdown: { completed: number; failed: number; stopped: number; running: number };
       topFailingPaths: { targetPath: string; failCount: number; lastFailed: string }[];
       runsByTrigger: { trigger: string; count: number }[];
+      availableTriggers: string[];
+      topFailingTests: {
+        testTitle: string;
+        suiteName: string;
+        browser: string | null;
+        failCount: number;
+        lastFailed: string | null;
+        lastErrorMessage: string | null;
+      }[];
+      flakyTests: {
+        testTitle: string;
+        suiteName: string;
+        passCount: number;
+        failCount: number;
+        totalRetries: number;
+      }[];
+      failureReasons: { reason: string; count: number }[];
     }>;
   },
 

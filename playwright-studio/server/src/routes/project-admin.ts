@@ -37,8 +37,8 @@ router.get('/users/:userId/roles', async (req, res) => {
   }
 });
 
-// PUT /apis/admin/:projectId/users/:userId/roles
-router.put('/users/:userId/roles', async (req, res) => {
+// POST /apis/admin/:projectId/users/:userId/roles
+router.post('/users/:userId/roles', async (req, res) => {
   const { roleId, roleName } = req.body;
   if (!roleId && !roleName) return res.status(400).json({ error: 'roleId or roleName is required' });
   try {

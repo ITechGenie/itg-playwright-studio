@@ -38,8 +38,8 @@ router.get('/users/:userId/roles', async (req, res) => {
   }
 });
 
-// PUT /apis/superadmin/users/:userId/roles
-router.put('/users/:userId/roles', async (req, res) => {
+// POST /apis/superadmin/users/:userId/roles
+router.post('/users/:userId/roles', async (req, res) => {
   const { globalRoleId, globalRoleName, projectRoles } = req.body;
   if (!globalRoleId && !globalRoleName && (!projectRoles || projectRoles.length === 0)) {
     return res.status(400).json({ error: 'Must provide globalRoleId, globalRoleName, or projectRoles' });

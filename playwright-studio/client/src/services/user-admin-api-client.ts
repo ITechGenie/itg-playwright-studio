@@ -91,7 +91,7 @@ export async function upsertUserRoles(
   payload: UpsertGlobalRolesPayload | UpsertProjectRolePayload,
 ): Promise<void> {
   const res = await apiFetch(`${basePath}/users/${userId}/roles`, {
-    method: 'PUT',
+    method: 'POST',
     headers: { 'Content-Type': 'application/json', ...authHeaders() },
     body: JSON.stringify(payload),
   });
