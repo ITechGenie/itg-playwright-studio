@@ -16,6 +16,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
 import { Loader2Icon, CheckCircleIcon, XCircleIcon, ExternalLinkIcon, PlusIcon } from "lucide-react"
 import { PLAYWRIGHT_CLI_OPTIONS } from "@/lib/playwright-options"
 import { ViewportPicker } from "@/components/viewport-picker"
+import { ReportDrawer } from "@/components/report-drawer"
 
 // Simple ANSI to HTML converter
 function ansiToHtml(text: string): string {
@@ -95,6 +96,9 @@ export function TestRunnerPanel({
   const [localConfig, setLocalConfig] = useState(runConfig);
   const [isConfigExpanded, setIsConfigExpanded] = useState(false);
   const [grep, setGrep] = useState("");
+  
+  // Report Viewer State
+  const [reportViewerConfig, setReportViewerConfig] = useState<{url: string, type: 'html' | 'monocart'} | null>(null);
 
   // Data Manager States
   const [environments, setEnvironments] = useState<any[]>([]);
@@ -654,7 +658,7 @@ export function TestRunnerPanel({
                         variant="outline" size="sm"
                         disabled={r.status === "running"}
                         className="h-7 text-[10px] bg-zinc-900 border-zinc-700 text-zinc-300 hover:text-white hover:bg-zinc-800 uppercase font-bold tracking-wider"
-                        onClick={() => window.open(apiClient.getReportUrl(projectId, r.runId, 'html'), '_blank')}
+                        onClick={() => setReportViewerConfig({url: apiClient.getReportUrl(projectId, r.runId, 'html'), type: 'html'})}
                       >
                         <ExternalLinkIcon className="h-3 w-3 mr-1.5 opacity-70" /> HTML Report
                       </Button>
@@ -662,7 +666,7 @@ export function TestRunnerPanel({
                         variant="outline" size="sm"
                         disabled={r.status === "running"}
                         className="h-7 text-[10px] bg-blue-900/40 border-blue-800/50 text-blue-300 hover:text-white hover:bg-blue-800/80 uppercase font-bold tracking-wider"
-                        onClick={() => window.open(apiClient.getReportUrl(projectId, r.runId, 'monocart'), '_blank')}
+                        onClick={() => setReportViewerConfig({url: apiClient.getReportUrl(projectId, r.runId, 'monocart'), type: 'monocart'})}
                       >
                         <ExternalLinkIcon className="h-3 w-3 mr-1.5 opacity-70" /> Monocart Report
                       </Button>
@@ -675,6 +679,14 @@ export function TestRunnerPanel({
           </Tabs>
         )}
       </div>
+
+      {/* Report Drawer component */}
+      <ReportDrawer 
+        open={!!reportViewerConfig} 
+        onOpenChange={(open) => !open && setReportViewerConfig(null)} 
+        reportUrl={reportViewerConfig?.url || null} 
+        reportType={reportViewerConfig?.type || null} 
+      />
     </div>
   );
 }

@@ -105,6 +105,10 @@ const getExtraUseOptions = () => {
     options.hasTouch = process.env.PW_STUDIO_ARG_HAS_TOUCH === 'true';
   }
 
+  if (process.env.PW_STUDIO_ARG_TRACE) {
+    options.trace = process.env.PW_STUDIO_ARG_TRACE;
+  }
+
   if (process.env.PW_STUDIO_ARG_IGNORE_HTTPS_ERRORS) {
     options.ignoreHTTPSErrors = process.env.PW_STUDIO_ARG_IGNORE_HTTPS_ERRORS === 'true';
   }

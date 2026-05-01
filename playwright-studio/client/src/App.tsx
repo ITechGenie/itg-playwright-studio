@@ -2,6 +2,7 @@ import { lazy, Suspense } from "react"
 import { ThemeProvider } from "@/components/theme-provider"
 import { TooltipProvider } from "@/components/ui/tooltip"
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom"
+import { Toaster } from "sonner"
 import PageLoader from "./pages/PageLoader"
 import { AuthProvider } from "./contexts/AuthContext"
 
@@ -28,6 +29,19 @@ export default function App() {
   return (
     <ThemeProvider defaultTheme="dark" storageKey="playwright-studio-theme">
       <TooltipProvider>
+        <Toaster
+          position="top-right"
+          theme="dark"
+          richColors
+          closeButton
+          toastOptions={{
+            classNames: {
+              toast: "bg-zinc-900 border border-zinc-800 text-zinc-100",
+              error: "!bg-red-950/80 !border-red-800/60 !text-red-200",
+              success: "!bg-green-950/80 !border-green-800/60 !text-green-200",
+            },
+          }}
+        />
         <BrowserRouter>
           <Suspense fallback={<PageLoader />}>
             <AuthProvider>

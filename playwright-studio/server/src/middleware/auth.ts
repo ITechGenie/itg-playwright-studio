@@ -53,7 +53,7 @@ export function extractToken(req: any) {
 }
 
 export function signJwt(userId: string) {
-  return jwt.sign({ sub: userId }, JWT_SECRET, { expiresIn: '1h' });
+  return jwt.sign({ sub: userId }, JWT_SECRET, { expiresIn: '8h' });
 }
 
 export function verifyJwt(token: string) {

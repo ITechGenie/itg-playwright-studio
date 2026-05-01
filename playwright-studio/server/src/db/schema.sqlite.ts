@@ -144,3 +144,18 @@ export const schedulerLock = sqliteTable('scheduler_lock', {
   holderId: text('holder_id').notNull(),                               // pod UUID
   expiresAt: integer('expires_at', { mode: 'timestamp' }).notNull(),  // TTL 30s
 });
+
+export const testResults = sqliteTable('test_results', {
+  id: text('id').primaryKey(),
+  executionId: text('execution_id').notNull().references(() => executions.id),
+  projectId: text('project_id').notNull().references(() => projects.id),
+  suiteName: text('suite_name').notNull(),       // file path, e.g. "tests/auth/login.spec.ts"
+  testTitle: text('test_title').notNull(),        // full test name
+  status: text('status').notNull(),               // passed | failed | skipped | timedOut
+  duration: integer('duration'),                  // ms
+  retries: integer('retries').notNull().default(0),
+  browser: text('browser'),                       // chromium | firefox | webkit
+  errorMessage: text('error_message'),            // first error message (truncated to 500 chars)
+  errorStack: text('error_stack'),                // full stack trace
+  startedAt: integer('started_at', { mode: 'timestamp' }),
+});
