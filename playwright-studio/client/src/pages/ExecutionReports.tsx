@@ -4,7 +4,7 @@ import {
   BarChart, Bar, LineChart, Line, PieChart, Pie,
   XAxis, YAxis, CartesianGrid, Label,
 } from "recharts"
-import { RefreshCwIcon, AlertCircleIcon, FilterIcon } from "lucide-react"
+import { RefreshCwIcon, AlertCircleIcon, FilterIcon, InfoIcon } from "lucide-react"
 import { PageHeader } from "@/components/page-header"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -12,6 +12,9 @@ import { Button } from "@/components/ui/button"
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table"
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
+} from "@/components/ui/dialog"
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select"
@@ -171,6 +174,7 @@ export default function ExecutionReports() {
   const [data, setData] = useState<ReportData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [selectedError, setSelectedError] = useState<{test: string, error: string} | null>(null)
 
   const fetchData = useCallback(async () => {
     if (!projectId) return
@@ -505,8 +509,17 @@ export default function ExecutionReports() {
                         </TableCell>
                         <TableCell className="text-xs font-semibold text-red-400">{row.failCount}</TableCell>
                         <TableCell className="text-xs text-zinc-400">{row.browser ?? "—"}</TableCell>
-                        <TableCell className="text-xs text-zinc-500 truncate max-w-[160px]" title={row.lastErrorMessage ?? ""}>
-                          {row.lastErrorMessage ? row.lastErrorMessage.slice(0, 60) + (row.lastErrorMessage.length > 60 ? "…" : "") : "—"}
+                        <TableCell className="text-xs text-zinc-500 max-w-[200px]">
+                          {row.lastErrorMessage ? (
+                            <div className="flex items-center gap-2 group/err cursor-pointer" onClick={() => setSelectedError({ test: row.testTitle, error: row.lastErrorMessage! })}>
+                              <code className="text-[10px] font-mono truncate bg-zinc-950/50 px-1.5 py-0.5 rounded border border-zinc-800/50 flex-1">
+                                {row.lastErrorMessage.slice(0, 60) + (row.lastErrorMessage.length > 60 ? "…" : "")}
+                              </code>
+                              <InfoIcon className="h-3 w-3 text-zinc-700 group-hover/err:text-red-400 transition-colors shrink-0" />
+                            </div>
+                          ) : (
+                            "—"
+                          )}
                         </TableCell>
                         <TableCell className="text-xs text-zinc-400 pr-6">{row.lastFailed ? timeAgo(row.lastFailed) : "—"}</TableCell>
                       </TableRow>
@@ -557,6 +570,18 @@ export default function ExecutionReports() {
 
         </div>
       </div>
+
+      <Dialog open={!!selectedError} onOpenChange={(open) => !open && setSelectedError(null)}>
+        <DialogContent className="sm:max-w-[700px] bg-zinc-950 border border-zinc-800 text-white">
+          <DialogHeader>
+            <DialogTitle className="text-lg font-bold">Error Details</DialogTitle>
+            <DialogDescription className="text-zinc-400 text-xs font-mono">{selectedError?.test}</DialogDescription>
+          </DialogHeader>
+          <div className="mt-4 p-4 bg-black rounded-lg border border-zinc-800 overflow-auto max-h-[400px]">
+            <pre className="text-xs text-red-400 font-mono whitespace-pre-wrap">{selectedError?.error}</pre>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

@@ -126,12 +126,28 @@ export function createReportsRouter() {
     const failsByPath: Record<string, { failCount: number; lastFailed: Date | null }> = {};
     for (const row of rows) {
       if (row.status === 'failed') {
-        const p = row.targetPath;
-        if (!failsByPath[p]) failsByPath[p] = { failCount: 0, lastFailed: null };
-        failsByPath[p].failCount++;
-        const st = new Date(row.startTime);
-        if (!failsByPath[p].lastFailed || st > failsByPath[p].lastFailed!) {
-          failsByPath[p].lastFailed = st;
+        let pathsToCount: string[] = [];
+        if (row.targetPaths) {
+          try {
+            const parsed = typeof row.targetPaths === 'string' ? JSON.parse(row.targetPaths) : row.targetPaths;
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              pathsToCount = parsed;
+            }
+          } catch (e) {
+            // ignore parse error
+          }
+        }
+        if (pathsToCount.length === 0) {
+          pathsToCount = [row.targetPath || 'Root Project'];
+        }
+
+        for (const p of pathsToCount) {
+          if (!failsByPath[p]) failsByPath[p] = { failCount: 0, lastFailed: null };
+          failsByPath[p].failCount++;
+          const st = new Date(row.startTime);
+          if (!failsByPath[p].lastFailed || st > failsByPath[p].lastFailed!) {
+            failsByPath[p].lastFailed = st;
+          }
         }
       }
     }
