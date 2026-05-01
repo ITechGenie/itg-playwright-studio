@@ -249,6 +249,24 @@ export function ScheduleDrawer({
             <div className="space-y-3">
               <Label className={labelCls}>Run configuration</Label>
               <ConfigPanel value={config} onChange={setConfig} />
+
+              {/* Extra args - Read Only */}
+              {config.extraArgs && config.extraArgs.length > 0 && (
+                <div className="mt-4 p-3 bg-zinc-950/50 rounded-md border border-zinc-800 space-y-2">
+                  <Label className={labelCls}>Advanced CLI Options</Label>
+                  <div className="space-y-1">
+                    {config.extraArgs.map((arg, i) => (
+                      <div key={i} className="flex items-center gap-2 text-xs">
+                        <span className="font-mono text-zinc-400 bg-zinc-900 px-1.5 py-0.5 rounded">{arg.flag}</span>
+                        <span className="text-zinc-300">{arg.value}</span>
+                      </div>
+                    ))}
+                  </div>
+                  <p className="text-[10px] text-muted-foreground pt-1">
+                    Advanced options are inherited from Project Settings and cannot be edited per schedule.
+                  </p>
+                </div>
+              )}
             </div>
 
           </div>

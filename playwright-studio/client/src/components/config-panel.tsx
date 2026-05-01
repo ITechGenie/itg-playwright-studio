@@ -18,6 +18,7 @@ export type RunConfig = {
   timeout: number
   envId?: string
   dataSetIds?: string[]
+  extraArgs?: { flag: string; value: string }[]
 }
 
 export const DEFAULT_RUN_CONFIG: RunConfig = {

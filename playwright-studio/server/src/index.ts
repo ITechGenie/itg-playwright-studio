@@ -316,6 +316,7 @@ app.get('/apis/auth/projects', authMiddleware, requireProjectRole('user'), async
         workers: projectConfigs.workers,
         browsers: projectConfigs.browsers,
         extraArgs: projectConfigs.extraArgs,
+        timeout: projectConfigs.timeout,
       }
     })
       .from(projects)
