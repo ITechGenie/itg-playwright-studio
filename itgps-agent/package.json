@@ -1,0 +1,33 @@
+{
+  "name": "itgps-agent",
+  "version": "0.1.0",
+  "description": "CLI agent that bridges ITG Playwright Studio data into local Playwright workflows",
+  "type": "commonjs",
+  "main": "./dist/index.js",
+  "bin": {
+    "itgps-agent": "./dist/index.js"
+  },
+  "files": [
+    "dist",
+    "playwright.config.cjs"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest --run"
+  },
+  "dependencies": {
+    "@clack/prompts": "^0.9.1",
+    "dotenv": "^16.4.5",
+    "ws": "^8.18.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.0",
+    "@types/ws": "^8.5.10",
+    "fast-check": "^3.19.0",
+    "typescript": "^5.4.5",
+    "vitest": "^1.6.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
