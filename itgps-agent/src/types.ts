@@ -32,6 +32,8 @@ export interface ProjectConfig {
   screenshot: string;
   browsers: string; // JSON array of browser names
   extraArgs: string; // JSON array of { flag, value }
+  viewportWidth?: number;
+  viewportHeight?: number;
 }
 
 /** A named set of environment variables scoped to a project */
@@ -131,7 +133,9 @@ export interface StudioClient {
   getMe(): Promise<UserInfo>;
   getProjects(): Promise<Project[]>;
   getEnvironments(projectId: string): Promise<Environment[]>;
+  getEnvironmentDetail(projectId: string, environmentId: string): Promise<Environment>;
   getDatasets(projectId: string): Promise<Dataset[]>;
+  getDatasetDetail(projectId: string, datasetId: string): Promise<Dataset>;
   triggerRun(projectId: string, payload: RunPayload): Promise<RunResult>;
   getRunStatus(projectId: string, runId: string): Promise<RunStatus>;
   reportLocalRun(projectId: string, meta: LocalRunMeta): Promise<void>;

@@ -145,11 +145,19 @@ export function createStudioClient(
     },
 
     getEnvironments(projectId: string): Promise<Environment[]> {
-      return get<Environment[]>(`/apis/project/${projectId}/environments`);
+      return get<Environment[]>(`/apis/project/${projectId}/data/environments`);
+    },
+
+    getEnvironmentDetail(projectId: string, environmentId: string): Promise<Environment> {
+      return get<Environment>(`/apis/project/${projectId}/data/environments/${environmentId}`);
     },
 
     getDatasets(projectId: string): Promise<Dataset[]> {
-      return get<Dataset[]>(`/apis/project/${projectId}/datasets`);
+      return get<Dataset[]>(`/apis/project/${projectId}/data/datasets`);
+    },
+
+    getDatasetDetail(projectId: string, datasetId: string): Promise<Dataset> {
+      return get<Dataset>(`/apis/project/${projectId}/data/datasets/${datasetId}`);
     },
 
     triggerRun(projectId: string, payload: RunPayload): Promise<RunResult> {

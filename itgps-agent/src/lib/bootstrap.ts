@@ -18,15 +18,19 @@ interface BootstrapOpts {
  * Keys match the env vars consumed by the bundled playwright.config.cjs.
  */
 function projectConfigToEnvVars(config: Project['config']): Record<string, string> {
-  return {
-    BROWSER: String(config.browser),
+  const vars: Record<string, string> = {
+    BROWSER: String(config.browser ?? 'chromium'),
     HEADED: String(config.headless === 0 ? 'true' : 'false'),
-    WORKERS: String(config.workers),
-    TIMEOUT: String(config.timeout),
-    BASE_URL: String(config.baseUrl),
-    VIDEO: String(config.video),
-    SCREENSHOT: String(config.screenshot),
+    WORKERS: String(config.workers ?? 1),
+    TIMEOUT: String(config.timeout ?? 30000),
+    BASE_URL: String(config.baseUrl ?? ''),
+    VIDEO: String(config.video ?? 'off'),
+    SCREENSHOT: String(config.screenshot ?? 'off'),
   };
+  // Server returns viewportWidth/viewportHeight
+  if (config.viewportWidth) vars['WIDTH'] = String(config.viewportWidth);
+  if (config.viewportHeight) vars['HEIGHT'] = String(config.viewportHeight);
+  return vars;
 }
 
 /**
@@ -169,12 +173,33 @@ export async function bootstrap(opts: BootstrapOpts): Promise<BootstrapResult> {
 
   const projectDefaults = projectConfigToEnvVars(projectConfig);
 
-  // Find selected environment and dataset
+  // Find selected environment and dataset from the list (for name/id)
   const selectedEnv = environments.find((e) => e.id === resolvedEnvId);
   const selectedDataset = datasets.find((d) => d.id === resolvedDatasetId);
 
-  const envVars = parseVariables(selectedEnv?.variables);
-  const datasetVars = parseVariables(selectedDataset?.variables);
+  // The list endpoint strips variables for security — fetch detail to get real variables
+  let envVars: Record<string, string> = {};
+  let datasetVars: Record<string, string> = {};
+
+  if (selectedEnv && resolvedEnvId) {
+    try {
+      const envDetail = await studioClient.getEnvironmentDetail(projectId, resolvedEnvId);
+      envVars = parseVariables(envDetail.variables);
+    } catch {
+      // Fall back to the (empty) list variables if detail fetch fails
+      envVars = parseVariables(selectedEnv.variables);
+    }
+  }
+
+  if (selectedDataset && resolvedDatasetId) {
+    try {
+      const dsDetail = await studioClient.getDatasetDetail(projectId, resolvedDatasetId);
+      datasetVars = parseVariables(dsDetail.variables);
+    } catch {
+      datasetVars = parseVariables(selectedDataset.variables);
+    }
+  }
+
   const localEnvVars = readLocalEnv(envPath);
 
   const mergedVars = mergeVariables({

@@ -66,9 +66,10 @@ export async function runConfig(_opts: { yes: boolean }): Promise<void> {
   note(
     [
       '1. Open the Studio in your browser: ' + studioUrl,
-      '2. Navigate to Developer Settings',
-      '3. Generate a Personal Access Token (PAT)',
-      '4. Paste the token below',
+      '2. Navigate to Studio Settings',
+      '3. Scroll to "Personal Access Tokens" section',
+      '4. Click "Generate Token", give it a name, and copy the token',
+      '5. Paste the token below',
     ].join('\n'),
     'Get your Personal Access Token'
   );
