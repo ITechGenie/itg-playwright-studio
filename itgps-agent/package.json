@@ -1,20 +1,46 @@
 {
-  "name": "itgps-agent",
+  "name": "@itechgenie/itgps-agent",
   "version": "0.1.0",
   "description": "CLI agent that bridges ITG Playwright Studio data into local Playwright workflows",
   "type": "commonjs",
   "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "bin": {
     "itgps-agent": "./dist/index.js"
   },
   "files": [
     "dist",
-    "playwright.config.cjs"
+    "playwright.config.cjs",
+    "README.md",
+    "LICENSE"
   ],
   "scripts": {
     "build": "tsc",
-    "test": "vitest --run"
+    "prepublishOnly": "npm run build",
+    "test": "vitest --run",
+    "lint": "tsc --noEmit"
   },
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/itechgenie/itgps-agent.git"
+  },
+  "keywords": [
+    "playwright",
+    "automation",
+    "testing",
+    "itg-playwright-studio",
+    "cli-agent",
+    "workflow"
+  ],
+  "author": "ITechGenie",
+  "license": "Apache-2.0",
+  "bugs": {
+    "url": "https://github.com/itechgenie/itgps-agent/issues"
+  },
+  "homepage": "https://github.com/itechgenie/itgps-agent#readme",
   "dependencies": {
     "@clack/prompts": "^0.9.1",
     "dotenv": "^16.4.5",
@@ -25,7 +51,7 @@
     "@types/ws": "^8.5.10",
     "fast-check": "^3.19.0",
     "typescript": "^5.4.5",
-    "vitest": "^1.6.0"
+    "vitest": "^4.1.5"
   },
   "engines": {
     "node": ">=18.0.0"

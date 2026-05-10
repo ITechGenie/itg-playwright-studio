@@ -22,6 +22,22 @@ const validEnvKey = fc
   .map(([first, rest]) => first + rest);
 
 /**
+ * Valid env key that does NOT start with ITGPS_
+ */
+const nonAgentEnvKey = fc
+  .tuple(
+    fc.constantFrom(...'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_'.split(''))
+      .filter((c) => c !== 'I'),  // Exclude 'I' to avoid ITGPS_ prefix
+    fc.string({ minLength: 0, maxLength: 20 }).map((s) =>
+      s
+        .split('')
+        .filter((c) => /[A-Za-z0-9_]/.test(c))
+        .join('')
+    )
+  )
+  .map(([first, rest]) => first + rest);
+
+/**
  * Env value that can round-trip through dotenv.
  *
  * dotenv limitations that prevent round-tripping:
@@ -70,10 +86,7 @@ const validEnvDict = fc
  * Arbitrary for a dictionary with valid env keys NOT starting with ITGPS_.
  */
 const userEnvDict = fc
-  .uniqueArray(
-    validEnvKey.filter((k) => !k.startsWith('ITGPS_')),
-    { minLength: 1, maxLength: 10 }
-  )
+  .uniqueArray(nonAgentEnvKey, { minLength: 1, maxLength: 10 })
   .chain((keys) =>
     fc
       .tuple(...keys.map(() => roundTrippableValue))
@@ -148,7 +161,7 @@ describe('env-store', () => {
           await fs.promises.rm(tmpDir, { recursive: true, force: true });
         }
       }),
-      { numRuns: 100 }
+      { numRuns: 100, timeout: 10000 }
     );
   });
 
