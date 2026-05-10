@@ -160,6 +160,15 @@ export async function runConfig(_opts: { yes: boolean }): Promise<void> {
   ]);
   envDatasetSpinner.stop('Environments and datasets fetched.');
 
+  // Check if environments exist
+  if (!environments || environments.length === 0) {
+    note(
+      'No environments found for this project.\nPlease create an environment in the Studio before running config.',
+      'No Environments Available'
+    );
+    process.exit(1);
+  }
+
   const envResult = await select({
     message: 'Select environment:',
     options: environments.map((e) => ({ value: e.id, label: e.name })),
@@ -168,6 +177,15 @@ export async function runConfig(_opts: { yes: boolean }): Promise<void> {
   if (isCancel(envResult)) handleCancel();
   const envId = envResult as string;
   const selectedEnv = environments.find((e) => e.id === envId)!;
+
+  // Check if datasets exist
+  if (!datasets || datasets.length === 0) {
+    note(
+      'No datasets found for this project.\nPlease create a dataset in the Studio before running config.',
+      'No Datasets Available'
+    );
+    process.exit(1);
+  }
 
   const datasetResult = await select({
     message: 'Select dataset:',

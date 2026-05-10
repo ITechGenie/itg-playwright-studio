@@ -35,6 +35,7 @@ npm install --save-dev @itechgenie/itgps-agent
 - Node.js >= 18.0.0
 - Access to an ITG Playwright Studio instance
 - Valid Personal Access Token (PAT) from Studio
+- `@playwright/test` >= 1.40.0 (installed automatically with the agent)
 
 ## Quick Start
 
@@ -314,6 +315,12 @@ The agent integrates with the following Studio API endpoints:
 **Solution:**
 1. Install Playwright in your project: `npm install -D @playwright/test`
 2. Install Playwright browsers: `npx playwright install`
+
+**Note:** The `@itechgenie/itgps-agent` package includes `@playwright/test` as a dependency, so it should be installed automatically. If you encounter this error, try:
+```bash
+npm install -D @playwright/test
+npx playwright install chromium  # or firefox, webkit
+```
 
 ## Development
 

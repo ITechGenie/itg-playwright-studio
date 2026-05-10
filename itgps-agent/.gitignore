@@ -6,6 +6,9 @@ yarn-debug.log*
 yarn-error.log*
 lerna-debug.log*
 
+# npm pack tarballs
+*.tgz
+
 # Dependency directories
 node_modules/
 jspm_packages/

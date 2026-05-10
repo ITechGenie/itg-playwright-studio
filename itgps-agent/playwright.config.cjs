@@ -240,56 +240,72 @@ module.exports = defineConfig({
   // Output directory for test artifacts
   outputDir: resultsDir,
 
-  // Define projects for all supported browsers
-  projects: [
-    {
-      name: 'chromium',
-      use: {
-        ...devices['Desktop Chrome'],
-        viewport: { width, height },
-        ...getExtraUseOptions(),
+  // Define projects - only include the browser specified in BROWSER env var
+  // If BROWSER is not set, default to chromium only
+  projects: (() => {
+    const requestedBrowser = (process.env.BROWSER || 'chromium').toLowerCase();
+    
+    const allProjects = [
+      {
+        name: 'chromium',
+        use: {
+          ...devices['Desktop Chrome'],
+          viewport: { width, height },
+          ...getExtraUseOptions(),
+        },
       },
-    },
-    {
-      name: 'firefox',
-      use: {
-        ...devices['Desktop Firefox'],
-        viewport: { width, height },
-        // Only apply compatible extra options (omit chrome-only things like channel/har)
-        ...(() => {
-          const { channel, har, ...rest } = getExtraUseOptions();
-          return rest;
-        })()
+      {
+        name: 'firefox',
+        use: {
+          ...devices['Desktop Firefox'],
+          viewport: { width, height },
+          ...(() => {
+            const { channel, har, ...rest } = getExtraUseOptions();
+            return rest;
+          })()
+        },
       },
-    },
-    {
-      name: 'webkit',
-      use: {
-        ...devices['Desktop Safari'],
-        viewport: { width, height },
-        ...(() => {
-          const { channel, har, ...rest } = getExtraUseOptions();
-          return rest;
-        })()
+      {
+        name: 'webkit',
+        use: {
+          ...devices['Desktop Safari'],
+          viewport: { width, height },
+          ...(() => {
+            const { channel, har, ...rest } = getExtraUseOptions();
+            return rest;
+          })()
+        },
       },
-    },
-    {
-      name: 'chrome',
-      use: {
-        ...devices['Desktop Chrome'],
-        channel: 'chrome',
-        viewport: { width, height },
-        ...getExtraUseOptions(),
+      {
+        name: 'chrome',
+        use: {
+          ...devices['Desktop Chrome'],
+          channel: 'chrome',
+          viewport: { width, height },
+          ...getExtraUseOptions(),
+        },
       },
-    },
-    {
-      name: 'msedge',
-      use: {
-        ...devices['Desktop Edge'],
-        channel: 'msedge',
-        viewport: { width, height },
-        ...getExtraUseOptions(),
+      {
+        name: 'msedge',
+        use: {
+          ...devices['Desktop Edge'],
+          channel: 'msedge',
+          viewport: { width, height },
+          ...getExtraUseOptions(),
+        },
       },
-    },
-  ],
+    ];
+
+    // If a specific browser is requested via BROWSER env var, only return that project
+    // Otherwise return all projects (user can filter with --project CLI flag)
+    const matchedProject = allProjects.find(p => p.name === requestedBrowser);
+    if (matchedProject && process.env.BROWSER) {
+      console.log(`[Config] Running on browser: ${requestedBrowser}`);
+      return [matchedProject];
+    }
+
+    // Default: return only chromium to avoid running all browsers
+    console.log('[Config] No BROWSER specified, defaulting to chromium only');
+    return [allProjects[0]]; // chromium
+  })(),
 });

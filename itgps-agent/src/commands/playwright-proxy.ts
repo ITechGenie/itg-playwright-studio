@@ -75,6 +75,7 @@ export async function runPlaywrightProxy(
   const subprocess = childProcess.spawn('npx', spawnArgs, {
     stdio: 'inherit',
     env: { ...process.env },
+    shell: true,  // Required on Windows to find npx.cmd
   });
 
   // ── Step 7: Register SIGINT handler ───────────────────────────────────────
