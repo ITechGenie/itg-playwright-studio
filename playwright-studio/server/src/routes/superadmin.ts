@@ -3,6 +3,9 @@ import multer from 'multer';
 import { authMiddleware, requireSuperAdmin } from '../middleware/auth.js';
 import { listUsers, getUserRoles, upsertUserRoles } from '../lib/user-admin-service.js';
 import { exportData, importData } from '../lib/csv-service.js';
+import { db } from '../db/index.js';
+import { accessTokens, users } from '../db/schema.js';
+import { eq } from 'drizzle-orm';
 
 const router = Router();
 const upload = multer({ storage: multer.memoryStorage() });
@@ -78,6 +81,44 @@ router.post('/import', upload.single('file'), async (req, res) => {
     if (err.message === 'INVALID_ZIP') return res.status(400).json({ error: 'Invalid ZIP archive' });
     console.error('[Superadmin] import error:', err);
     res.status(500).json({ error: 'Import failed' });
+  }
+});
+
+// GET /apis/superadmin/pats — list ALL tokens across all users (super_admin only)
+router.get('/pats', async (_req, res) => {
+  try {
+    const rows = await db
+      .select({
+        id: accessTokens.id,
+        name: accessTokens.name,
+        expiresAt: accessTokens.expiresAt,
+        revoked: accessTokens.revoked,
+        createdAt: accessTokens.createdAt,
+        lastUsedAt: accessTokens.lastUsedAt,
+        userId: accessTokens.userId,
+        userEmail: users.email,
+        userName: users.name,
+      })
+      .from(accessTokens)
+      .leftJoin(users, eq(accessTokens.userId, users.id));
+    res.json(rows);
+  } catch (err) {
+    console.error('[Superadmin] listPats error:', err);
+    res.status(500).json({ error: 'Failed to list tokens' });
+  }
+});
+
+// POST /apis/superadmin/pats/:id/revoke — revoke any token (super_admin only)
+router.post('/pats/:id/revoke', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const [token] = await db.select().from(accessTokens).where(eq(accessTokens.id, id));
+    if (!token) return res.status(404).json({ error: 'Token not found' });
+    await db.update(accessTokens).set({ revoked: 1 }).where(eq(accessTokens.id, id));
+    res.json({ success: true });
+  } catch (err) {
+    console.error('[Superadmin] revokePat error:', err);
+    res.status(500).json({ error: 'Failed to revoke token' });
   }
 });
 

@@ -1,14 +1,18 @@
 import { useNavigate } from 'react-router-dom';
 import { UserManagementPanel } from '@/components/user-management-panel';
 import { DataTransferControls } from '@/components/data-transfer-controls';
+import { PatManager } from '@/components/pat-manager';
 import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
 import { ArrowLeftIcon } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
 
 const BASE_PATH = '/apis/superadmin';
 
 export default function StudioSettingsPage() {
   const navigate = useNavigate();
+  const { isSuperAdmin } = useAuth();
+  const token = localStorage.getItem('authToken') ?? '';
 
   return (
     <div className="min-h-screen bg-background font-sans">
@@ -59,6 +63,18 @@ export default function StudioSettingsPage() {
             </p>
           </div>
           <DataTransferControls apiBasePath={BASE_PATH} />
+        </section>
+
+        <Separator className="border-zinc-800" />
+
+        <section className="space-y-4">
+          <div>
+            <h2 className="text-lg font-semibold text-white">Personal Access Tokens</h2>
+            <p className="text-sm text-muted-foreground">
+              Generate tokens to authenticate <code className="text-zinc-300 text-xs">itgps-agent</code> and other API clients. Tokens are shown only once on creation.
+            </p>
+          </div>
+          <PatManager token={token} isSuperAdmin={isSuperAdmin} />
         </section>
       </div>
     </div>
