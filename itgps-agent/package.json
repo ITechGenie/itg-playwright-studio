@@ -1,12 +1,12 @@
 {
   "name": "@itechgenie/itgps-agent",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "CLI agent that bridges ITG Playwright Studio data into local Playwright workflows",
   "type": "commonjs",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "bin": {
-    "itgps-agent": "./dist/index.js"
+    "itgps-agent": "dist/index.js"
   },
   "files": [
     "dist",
@@ -25,7 +25,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/itechgenie/itgps-agent.git"
+    "url": "git@github.com:ITechGenie/itg-playwright-studio.git"
   },
   "keywords": [
     "playwright",
@@ -33,14 +33,15 @@
     "testing",
     "itg-playwright-studio",
     "cli-agent",
-    "workflow"
+    "workflow",
+    "itgps-agent"
   ],
   "author": "ITechGenie",
   "license": "Apache-2.0",
   "bugs": {
-    "url": "https://github.com/itechgenie/itgps-agent/issues"
+    "url": "https://github.com/ITechGenie/itg-playwright-studio/issues"
   },
-  "homepage": "https://github.com/itechgenie/itgps-agent#readme",
+  "homepage": "https://github.com/ITechGenie/itg-playwright-studio/blob/itgps-agent-init/itgps-agent/README.md",
   "dependencies": {
     "@clack/prompts": "^0.9.1",
     "dotenv": "^16.4.5",

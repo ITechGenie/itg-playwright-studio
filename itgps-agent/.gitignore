@@ -43,5 +43,5 @@ vite.config.ts.timestamp-*
 /playwright-studio/server/monocart-report
 /playwright-studio/server/html-report
 /playwright-studio/server/test-results
-/dist
+dist
 /agent-tests/.itgps
