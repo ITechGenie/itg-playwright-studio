@@ -1,4 +1,5 @@
 import * as path from 'path';
+import * as fs from 'fs';
 import * as childProcess from 'child_process';
 import { log } from '@clack/prompts';
 import { readGlobalConfig } from '../lib/config-store';
@@ -60,11 +61,17 @@ export async function runPlaywrightProxy(
   }
 
   // ── Step 5: Build spawn args ───────────────────────────────────────────────
-  const bundledConfigPath = path.resolve(__dirname, '../../playwright.config.cjs');
+  // Use the config from .itgps folder (copied during config command)
+  // Falls back to bundled config if .itgps config doesn't exist
+  const itgpsConfigPath = path.join(process.cwd(), '.itgps', 'playwright.config.cjs');
+  const packageRoot = path.resolve(__dirname, '../..');
+  const bundledConfigPath = path.join(packageRoot, 'playwright.config.cjs');
+  
+  const configPath = fs.existsSync(itgpsConfigPath) ? itgpsConfigPath : bundledConfigPath;
 
   let spawnArgs: string[];
   if (command === 'test') {
-    spawnArgs = ['playwright', 'test', '--config', bundledConfigPath, ...args];
+    spawnArgs = ['playwright', 'test', '--config', configPath, ...args];
   } else {
     spawnArgs = ['playwright', command, ...args];
   }
@@ -72,9 +79,16 @@ export async function runPlaywrightProxy(
   // ── Step 6: Spawn subprocess ───────────────────────────────────────────────
   const startTime = Date.now();
 
+  // Set NODE_PATH to user's node_modules so the config uses user's @playwright/test
+  const userNodeModules = path.join(process.cwd(), 'node_modules');
+  
   const subprocess = childProcess.spawn('npx', spawnArgs, {
     stdio: 'inherit',
-    env: { ...process.env },
+    env: { 
+      ...process.env,
+      NODE_PATH: userNodeModules + (process.env.NODE_PATH ? path.delimiter + process.env.NODE_PATH : ''),
+    },
+    shell: true,  // Required on Windows to find npx.cmd
   });
 
   // ── Step 7: Register SIGINT handler ───────────────────────────────────────

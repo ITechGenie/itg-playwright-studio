@@ -16,7 +16,7 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar"
-import { ChevronsUpDown, Plus, ArrowLeftRight } from "lucide-react"
+import { ChevronsUpDown, Plus, ArrowLeftRight,  SlidersHorizontal } from "lucide-react"
 
 export function TeamSwitcher({
   teams,
@@ -84,17 +84,23 @@ export function TeamSwitcher({
               </DropdownMenuItem>
             ))}
             <DropdownMenuSeparator />
-            <DropdownMenuItem className="gap-2 p-2" onClick={() => navigate('/app/projects')}>
+            <DropdownMenuItem className="gap-2 p-2" onClick={() => navigate('/app/admin/settings')}>
               <div className="flex size-6 items-center justify-center rounded-md border bg-transparent">
-                <ArrowLeftRight className="size-4" />
+                <SlidersHorizontal className="size-4" />
               </div>
-              <div className="font-medium text-muted-foreground">Switch Project</div>
+              <div className="font-medium text-muted-foreground">Studio Settings</div>
             </DropdownMenuItem>
             <DropdownMenuItem className="gap-2 p-2" onClick={() => navigate('/app/projects/new')}>
               <div className="flex size-6 items-center justify-center rounded-md border bg-transparent">
                 <Plus className="size-4" />
               </div>
               <div className="font-medium text-muted-foreground">Add Project</div>
+            </DropdownMenuItem>
+            <DropdownMenuItem className="gap-2 p-2" onClick={() => navigate('/app/projects')}>
+              <div className="flex size-6 items-center justify-center rounded-md border bg-transparent">
+                <ArrowLeftRight className="size-4" />
+              </div>
+              <div className="font-medium text-muted-foreground">Switch Project</div>
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

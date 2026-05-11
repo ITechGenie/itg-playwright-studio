@@ -81,12 +81,26 @@ export async function runRemoteRun(opts: { yes: boolean }): Promise<void> {
   }
 
   // ── Step 3: Select environment and dataset ─────────────────────────────────
+  // Check if environments exist
+  if (!environments || environments.length === 0) {
+    console.error('No environments found for this project.');
+    console.error('Please create an environment in the Studio before running remote-run.');
+    process.exit(1);
+  }
+
   const envResult = await select({
     message: 'Select environment:',
     options: environments.map((e) => ({ value: e.id, label: e.name })),
   });
   if (isCancel(envResult)) { cancel('Cancelled.'); process.exit(130); }
   const envId = envResult as string;
+
+  // Check if datasets exist
+  if (!datasets || datasets.length === 0) {
+    console.error('No datasets found for this project.');
+    console.error('Please create a dataset in the Studio before running remote-run.');
+    process.exit(1);
+  }
 
   const datasetResult = await select({
     message: 'Select dataset:',

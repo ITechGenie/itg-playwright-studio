@@ -54,16 +54,16 @@ export async function triggerRun(opts: TriggerRunOptions): Promise<TriggerRunRes
   const executionsPath = process.env.EXECUTIONS_BASE_PATH || path.join(process.cwd(), 'executions');
   const projectRoot = path.resolve(basePath, project.name);
 
-  // 2. Resolve absolute paths
+  // 2. Resolve absolute paths and normalize to forward slashes (cross-platform)
   const finalAbsPaths: string[] = targetPaths.length > 0
-    ? targetPaths.map(p => path.resolve(projectRoot, p))
-    : [projectRoot];
+    ? targetPaths.map(p => path.resolve(projectRoot, p).replace(/\\/g, '/'))
+    : [projectRoot.replace(/\\/g, '/')];
 
   // 3. Build CLI args
   const args: string[] = ['test'];
   for (const abs of finalAbsPaths) args.push(`"${abs}"`);
 
-  const serverConfigPath = path.join(process.cwd(), 'playwright.config.cjs');
+  const serverConfigPath = path.join(process.cwd(), 'playwright.config.cjs').replace(/\\/g, '/');
   args.push('--config', `"${serverConfigPath}"`);
 
   if (!config.headless)  args.push('--headed');

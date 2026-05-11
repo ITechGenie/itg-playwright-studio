@@ -13,7 +13,7 @@
   },
   "dependencies": {
     "@libsql/client": "^0.17.2",
-    "@playwright/test": "^1.58.2",
+    "@playwright/test": "^1.59.1",
     "@types/multer": "^2.1.0",
     "@types/node-schedule": "^2.1.8",
     "cors": "^2.8.5",

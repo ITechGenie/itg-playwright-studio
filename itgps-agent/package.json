@@ -1,6 +1,6 @@
 {
   "name": "@itechgenie/itgps-agent",
-  "version": "0.1.1",
+  "version": "0.1.4",
   "description": "CLI agent that bridges ITG Playwright Studio data into local Playwright workflows",
   "type": "commonjs",
   "main": "./dist/index.js",
@@ -18,7 +18,8 @@
     "build": "tsc",
     "prepublishOnly": "npm run build",
     "test": "vitest --run",
-    "lint": "tsc --noEmit"
+    "lint": "tsc --noEmit",
+    "postinstall": "node -e \"console.log('\\n✓ @itechgenie/itgps-agent installed successfully!\\n\\nNext steps:\\n  1. Run: itgps-agent config\\n  2. Install Playwright browsers: npx playwright install\\n')\""
   },
   "publishConfig": {
     "access": "public"
@@ -44,8 +45,18 @@
   "homepage": "https://github.com/ITechGenie/itg-playwright-studio/blob/itgps-agent-init/itgps-agent/README.md",
   "dependencies": {
     "@clack/prompts": "^0.9.1",
+    "@playwright/test": "^1.48.0",
     "dotenv": "^16.4.5",
+    "monocart-reporter": "^2.11.2",
     "ws": "^8.18.0"
+  },
+  "peerDependencies": {
+    "@playwright/test": ">=1.40.0"
+  },
+  "peerDependenciesMeta": {
+    "@playwright/test": {
+      "optional": false
+    }
   },
   "devDependencies": {
     "@types/node": "^20.14.0",

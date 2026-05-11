@@ -18,7 +18,7 @@ RUN npm run build
 #FROM node:22-slim AS runner
 # Install Chromium and its system dependencies only 
 # - but end of the including chromium, firefox, webkit ends up bloating it to 3gb
-#RUN npx -y playwright@1.58.2 install --with-deps chromium firefox
+#RUN npx -y playwright@1.59.1 install --with-deps chromium firefox
 
 # Stage 3: Production Image
 FROM mcr.microsoft.com/playwright:v1.59.1-noble AS runner

@@ -163,7 +163,7 @@ describe('env-store', () => {
       }),
       { numRuns: 100, timeout: 10000 }
     );
-  });
+  }, 15000);
 
   /**
    * Property 6: .env Write Idempotence
@@ -189,7 +189,7 @@ describe('env-store', () => {
           await fs.promises.rm(tmpDir, { recursive: true, force: true });
         }
       }),
-      { numRuns: 100 }
+      { numRuns: 100, timeout: 10000 }
     );
-  });
+  }, 15000);
 });

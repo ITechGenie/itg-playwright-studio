@@ -8,7 +8,10 @@ import {
   note,
   cancel,
   isCancel,
+  confirm,
 } from '@clack/prompts';
+import * as fs from 'fs';
+import * as path from 'path';
 import { writeGlobalConfig } from '../lib/config-store';
 import { writeLocalEnv } from '../lib/env-store';
 import { writeCache } from '../lib/cache-store';
@@ -160,6 +163,15 @@ export async function runConfig(_opts: { yes: boolean }): Promise<void> {
   ]);
   envDatasetSpinner.stop('Environments and datasets fetched.');
 
+  // Check if environments exist
+  if (!environments || environments.length === 0) {
+    note(
+      'No environments found for this project.\nPlease create an environment in the Studio before running config.',
+      'No Environments Available'
+    );
+    process.exit(1);
+  }
+
   const envResult = await select({
     message: 'Select environment:',
     options: environments.map((e) => ({ value: e.id, label: e.name })),
@@ -168,6 +180,15 @@ export async function runConfig(_opts: { yes: boolean }): Promise<void> {
   if (isCancel(envResult)) handleCancel();
   const envId = envResult as string;
   const selectedEnv = environments.find((e) => e.id === envId)!;
+
+  // Check if datasets exist
+  if (!datasets || datasets.length === 0) {
+    note(
+      'No datasets found for this project.\nPlease create a dataset in the Studio before running config.',
+      'No Datasets Available'
+    );
+    process.exit(1);
+  }
 
   const datasetResult = await select({
     message: 'Select dataset:',
@@ -194,7 +215,46 @@ export async function runConfig(_opts: { yes: boolean }): Promise<void> {
 
   bootstrapSpinner.stop('Bootstrap complete.');
 
-  // ── Step 8: Confirmation summary ──────────────────────────────────────────
+  // ── Step 8: Copy Playwright config to .itgps folder ───────────────────────
+  const itgpsDir = path.join(process.cwd(), '.itgps');
+  const configDestPath = path.join(itgpsDir, 'playwright.config.cjs');
+  const gitignorePath = path.join(process.cwd(), '.gitignore');
+
+  // Create .itgps directory if it doesn't exist
+  if (!fs.existsSync(itgpsDir)) {
+    fs.mkdirSync(itgpsDir, { recursive: true });
+  }
+
+  // Check if config already exists
+  let shouldCopyConfig = true;
+  if (fs.existsSync(configDestPath)) {
+    const overwrite = await confirm({
+      message: 'Playwright config already exists in .itgps/. Overwrite with latest version?',
+    });
+    if (isCancel(overwrite)) handleCancel();
+    shouldCopyConfig = overwrite as boolean;
+  }
+
+  if (shouldCopyConfig) {
+    // Copy the bundled config from the package
+    const bundledConfigPath = path.resolve(__dirname, '../../playwright.config.cjs');
+    fs.copyFileSync(bundledConfigPath, configDestPath);
+    note(`Playwright config copied to .itgps/playwright.config.cjs`, 'Config Setup');
+  }
+
+  // Add .itgps/ to .gitignore if not already present
+  let gitignoreContent = '';
+  if (fs.existsSync(gitignorePath)) {
+    gitignoreContent = fs.readFileSync(gitignorePath, 'utf8');
+  }
+
+  if (!gitignoreContent.includes('.itgps')) {
+    const newContent = gitignoreContent + (gitignoreContent.endsWith('\n') ? '' : '\n') + '\n# ITG Playwright Studio Agent\n.itgps/\n';
+    fs.writeFileSync(gitignorePath, newContent, 'utf8');
+    note('Added .itgps/ to .gitignore', 'Git Setup');
+  }
+
+  // ── Step 9: Confirmation summary ──────────────────────────────────────────
   outro('Configuration complete!');
 
   console.log('');
